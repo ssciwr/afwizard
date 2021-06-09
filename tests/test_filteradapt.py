@@ -2,4 +2,4 @@ import filteradapt
 
 
 def test_filteradapt():
-    assert True
+    dataset = filteradapt.DataSet()
