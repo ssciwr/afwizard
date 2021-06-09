@@ -4,5 +4,6 @@
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ssciwr/filteradapt/CI)](https://github.com/ssciwr/filteradapt/actions?query=workflow%3ACI)
 [![PyPI Release](https://img.shields.io/pypi/v/filteradapt.svg)](https://pypi.org/project/filteradapt)
 [![Documentation Status](https://readthedocs.org/projects/filteradapt/badge/)](https://filteradapt.readthedocs.io/)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ssciwr/filteradapt/main)
 
 *This library is currently under development.*
