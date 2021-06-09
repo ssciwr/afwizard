@@ -1,0 +1,7 @@
+name: filteradapt
+channels:
+  - conda-forge
+dependencies:
+  - ipyvolume
+  - jupyterlab
+  - laspy

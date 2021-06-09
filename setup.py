@@ -8,6 +8,9 @@ setup(
     description="Adaptive Ground Point Filtering Library",
     long_description="*This library is currently under development.*",
     packages=find_packages(),
+    install_requires=[
+        "laspy",
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
