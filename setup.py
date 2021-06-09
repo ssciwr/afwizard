@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name="filteradapt",
@@ -7,6 +7,7 @@ setup(
     author_email="ssc@iwr.uni-heidelberg.de",
     description="Adaptive Ground Point Filtering Library",
     long_description="*This library is currently under development.*",
+    packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
