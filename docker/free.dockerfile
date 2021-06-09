@@ -8,3 +8,7 @@ RUN python -m pip install /opt/filteradapt
 
 # Make JupyterLab the default for this application
 ENV JUPYTER_ENABLE_LAB=yes
+
+# Copy all the notebook files into the home directory
+RUN rm -rf ${HOME}/work && \
+    cp /opt/filteradapt/jupyter/* ${HOME}
