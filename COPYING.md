@@ -1,6 +1,5 @@
-This is the list of copyright holders of Adaptive Ground Point Filtering Library.
+This is the list of copyright holders of filteradapt.
 
 For information on the license, see LICENSE.md.
 
-
-* Dominic Kempf, 2020
+* Dominic Kempf, 2021
