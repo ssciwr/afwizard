@@ -45,7 +45,7 @@ jobs:
 
     - name: Run Python tests
       run: |
-        python -m pytest
+        python -m pytest --nbval-lax
 
   coverage:
     name: Coverage Testing
