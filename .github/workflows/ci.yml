@@ -58,7 +58,7 @@ jobs:
     - name: Set up Conda with Python ${{ matrix.python-version }}
       uses: s-weigand/setup-conda@v1
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.8
 
     - name: Install conda dependencies
       run: |
