@@ -6,7 +6,7 @@
 set -e
 
 # Build the open source Docker image
-docker build -t ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest --file ./docker/free.dockerfile .
+docker build -t ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest .
 
 # Build the image that includes OPALS
 docker build -t ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-proprietary:latest --file ./docker/proprietary.dockerfile .

@@ -1,5 +1,11 @@
 # Ignore the Docker subfolder - otherwise the Docker caching mechanism is disabled
 docker
+Dockerfile
+
+# Ignore Git-related files - changes in them should not trigger Docker context changes
+.git
+.gitignore
+.gitattributes
 
 # The rest of this file is the normal Python gitignore
 
