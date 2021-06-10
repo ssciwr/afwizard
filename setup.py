@@ -9,6 +9,7 @@ setup(
     long_description="*This library is currently under development.*",
     packages=find_packages(),
     install_requires=[
+        "ipyvolume",
         "laspy",
     ],
     classifiers=[

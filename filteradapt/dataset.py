@@ -5,7 +5,7 @@ import laspy
 
 
 class DataSet:
-    def __init__(self, filename=None):
+    def __init__(self, filename):
         filename = locate_file(filename)
         self.data = laspy.file.File(filename, mode="r")
 
