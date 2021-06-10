@@ -45,6 +45,10 @@ jobs:
       run: |
         python -m pip install -r requirements-dev.txt
 
+    - name: Install the filteradapt Python package
+      run: |
+        python -m pip install .
+
     - name: Run Python tests
       run: |
         python -m pytest --nbval-lax
