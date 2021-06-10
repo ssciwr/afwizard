@@ -29,6 +29,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with:
+        lfs: true
 
     - name: Set up Conda with Python ${{ matrix.python-version }}
       uses: s-weigand/setup-conda@v1
@@ -54,6 +56,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with:
+        lfs: true
 
     - name: Set up Conda with Python ${{ matrix.python-version }}
       uses: s-weigand/setup-conda@v1
