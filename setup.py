@@ -12,6 +12,8 @@ setup(
         "ipyvolume",
         "laspy",
     ],
+    include_package_data=True,
+    package_data={"": ["data/*"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

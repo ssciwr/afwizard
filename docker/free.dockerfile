@@ -8,7 +8,8 @@ RUN conda env update -n base --file /opt/filteradapt/environment.yml && \
     conda clean -a -q -y
 
 # Build and install the project
-RUN conda run -n base python -m pip install /opt/filteradapt
+RUN conda run -n base python -m pip install /opt/filteradapt && \
+    rm -rf /opt/filteradapt
 
 # Make JupyterLab the default for this application
 ENV JUPYTER_ENABLE_LAB=yes
