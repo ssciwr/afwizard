@@ -1,0 +1,65 @@
+Dataset Information:
+
+Dataset Name: Westport, West Coast, New Zealand 2020
+Dataset Short Name: NZ20_Westport
+DOI: https://doi.org/10.5069/G9Z31WV0
+
+Data Access Acknowledgement: This material is based on [data, processing] services provided by the OpenTopography Facility with support from the National Science Foundation under NSF Award Numbers 1833703, 1833643, and 1833632.
+
+Dataset Acknowledgement: Released under Creative Commons CC By 4.0 (https://creativecommons.org/licenses/by/4.0/). Attribution Required for Copies: "Copyright in this work is owned West Coast Regional Council". Attribution Required for Derivative works: "Copyright in the underlying dataset from which this work has been derived is owned by West Coast Regional Council".
+
+Dataset Citation: West Coast Regional Council, LINZ (2021). Westport, West Coast, New Zealand 2020. Distributed by OpenTopography. https://doi.org/10.5069/G9Z31WV0 Accessed: 2021-06-10
+
+Horizontal Coordinates: NZTM2000 NZGD2000 Meters [EPSG: 2193]
+Vertical Coordinates: NZVD2016 [EPSG: 7839]
+
+Job Description:
+	User:[Guest] dominic.kempf@iwr.uni-heidelberg.de
+	Job ID: pc1623325495548
+	Title:
+	Description:
+
+Job Processing Result:
+	Submission Time: 2021-06-10 04:44:55
+	Completion Time: 2021-06-10 04:45:06
+	Duration: 11 seconds
+	Number of Points: 429,010
+	Status: Done
+
+Data Selection Coordinates:
+	Xmin: 1491668.04884
+	Xmax: 1491914.388302
+	Ymin: 5372057.353874
+	Ymax: 5372316.79623
+	Classifications: Ground,Vegetation
+	Exclude Noise: No
+
+Point Cloud Results:
+	Download point cloud data in ASCII format: No
+	Download point cloud data in LAS format: No
+	Download point cloud data in LAZ format: Yes
+
+DEM Generation (Local Gridding):
+	Calculate Zmin grid: No
+	Calculate Zmax grid: No
+	Calculate Zmean grid: No
+	Calculate Zidw grid: No
+	Calculate point count: No
+
+DEM Generation (TIN):
+	Calculate TIN: No
+
+Derivative Products:
+	Generate hillshade and slope grids: N/A
+
+Visualization:
+	Images & Google Earth KML: No
+
+3D Point Cloud Visualization: No
+Hydrologic Terrain Analysis (TauDEM) Products:
+	Hydrologically correct DEM with pits filled: No
+	D-Infinity Flow Direction : No
+	D-Infinity Specific Catchment Area: No
+	Topographic Wetness Index: No
+	D8 Flow Direction: No
+	tauDemD8FlowDir: No
