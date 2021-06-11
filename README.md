@@ -18,7 +18,7 @@ Main features are:
 
 ## Installing and using
 
-You can try `filteradapt` without prior installation by using Binder: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ssciwr/filteradapt/main)
+You can try `filteradapt` without prior installation by using [Binder](https://mybinder.org/v2/gh/ssciwr/filteradapt/main).
 You might experience long startup times, slow user experience and limitations to disk space and memory though.
 
 ### Using Conda
