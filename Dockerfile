@@ -1,4 +1,4 @@
-FROM jupyter/base-notebook:584f43f06586
+FROM jupyter/base-notebook:396024a4ddc1
 
 # Copy the repository into the container
 COPY --chown=${NB_UID} . /opt/filteradapt
