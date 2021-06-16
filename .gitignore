@@ -136,3 +136,9 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+#pdal files
+jupyter/collision-notes.txt
+jupyter/force-nodes.txt
+jupyter/initial-nodes.txt
+jupyter/cloth_nodes.txt
