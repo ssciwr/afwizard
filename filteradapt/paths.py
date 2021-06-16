@@ -5,6 +5,9 @@ _data_dir = None
 
 
 def set_data_directory(directory):
+    """
+    test doc
+    """
     global _data_dir
     _data_dir = directory
 
