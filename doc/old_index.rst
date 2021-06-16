@@ -7,9 +7,11 @@ Welcome to adaptivefiltering's documentation!
 ==================================================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
    :caption: Contents:
 
+
+* test results
 
 
 Indices and tables

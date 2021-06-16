@@ -10,7 +10,7 @@ Welcome to adaptivefiltering's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+test
 
 Indices and tables
 ==================
@@ -18,3 +18,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. mdinclude:: ../../README.md

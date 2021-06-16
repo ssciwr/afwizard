@@ -13,6 +13,17 @@ def set_data_directory(directory):
 
 
 def locate_file(filename):
+    """[summary]
+
+    Args:
+        filename ([type]): [description]
+
+    Raises:
+        FileNotFoundError: [description]
+
+    Returns:
+        [type]: [description]
+    """
     # If the path is absolute, do not change it
     if os.path.isabs(filename):
         return filename
