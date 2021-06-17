@@ -17,7 +17,7 @@ import sys
 #
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath("../../filteradapt"))
+sys.path.insert(0, os.path.abspath("../.."))
 print(sys.path)
 # -- Project information -----------------------------------------------------
 
