@@ -7,11 +7,11 @@ Welcome to adaptivefiltering's documentation!
 =============================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-   User_API
-   modules
+   user_API
+   developer_API
 
 
 Indices and tables

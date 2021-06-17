@@ -1,6 +1,5 @@
 filteradapt package
 ===================
-
 Submodules
 ----------
 
