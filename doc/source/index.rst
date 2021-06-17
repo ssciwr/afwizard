@@ -10,11 +10,12 @@ Welcome to adaptivefiltering's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-test
+   User_API
+   modules
+
 
 Indices and tables
 ==================
-
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
