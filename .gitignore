@@ -1,3 +1,7 @@
+# Exclude OPALS-related files that are not publicly available
+opals_nightly_linux64.tar.gz
+opals.key
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
