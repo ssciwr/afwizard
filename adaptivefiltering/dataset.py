@@ -5,10 +5,8 @@ import laspy
 
 
 class DataSet:
-    """The main class that represents a Lidar data set."""
-
     def __init__(self, filename):
-        """Initialization of a Lidar data set
+        """The main class that represents a Lidar data set.
 
         :param filename:
             Filename to load the dataset from. The dataset is expected to be in LAS/LAZ 1.2-1.4 format.
