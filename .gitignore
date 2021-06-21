@@ -1,6 +1,10 @@
 # Ignore VSCode setting
 .vscode
 
+# Exclude OPALS-related files that are not publicly available
+opals_nightly_linux64.tar.gz
+opals.key
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -139,9 +143,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-#pdal files
-jupyter/collision-notes.txt
-jupyter/force-nodes.txt
-jupyter/initial-nodes.txt
-jupyter/cloth_nodes.txt
