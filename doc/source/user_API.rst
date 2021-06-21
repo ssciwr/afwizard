@@ -3,7 +3,7 @@ User API
 
 .. toctree::
 
-.. automodule:: filteradapt
+.. automodule:: adaptivefiltering
     :members:
     :undoc-members:
     :special-members: __init__

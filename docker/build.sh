@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Make sure to run this from the top-level directory of filteradapt
+# Make sure to run this from the top-level directory of adaptivefiltering
 # To build the proprietary container, place the following files into
-# the filteradapt root directory before running this script:
+# the adaptivefiltering root directory before running this script:
 #
 # * opals_nightly_linux64.tar.gz
 #       The OPALS (Linux) tarball that you downloaded

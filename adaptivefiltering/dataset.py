@@ -1,5 +1,5 @@
-from filteradapt.visualization import vis_pointcloud
-from filteradapt.paths import locate_file
+from adaptivefiltering.visualization import vis_pointcloud
+from adaptivefiltering.paths import locate_file
 
 import laspy
 
