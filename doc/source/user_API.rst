@@ -1,6 +1,8 @@
 User API
 ========
 
+.. toctree::
+
 .. automodule:: filteradapt
     :members:
     :undoc-members:
