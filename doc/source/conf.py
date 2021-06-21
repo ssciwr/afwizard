@@ -32,6 +32,8 @@ extensions = [
     "sphinx.ext.autodoc",
     "m2r2",
     "sphinx_rtd_theme",
+    "nbsphinx",
+    "nbsphinx_link",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

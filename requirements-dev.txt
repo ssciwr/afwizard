@@ -1,4 +1,6 @@
 m2r2
+nbsphinx
+nbsphinx-link
 nbval
 pytest
 pytest-cov
