@@ -1,7 +1,5 @@
 filteradapt package
 ===================
-Submodules
-----------
 
 filteradapt.dataset module
 --------------------------
@@ -23,14 +21,6 @@ filteradapt.visualization module
 --------------------------------
 
 .. automodule:: filteradapt.visualization
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: filteradapt
    :members:
    :undoc-members:
    :show-inheritance:
