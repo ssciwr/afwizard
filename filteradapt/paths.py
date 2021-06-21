@@ -5,11 +5,36 @@ _data_dir = None
 
 
 def set_data_directory(directory):
+    """Set a custom root directory to locate data files
+
+    :param directory: The custom data directory
+    :type directory: str
+    """
     global _data_dir
     _data_dir = directory
 
 
 def locate_file(filename):
+    """Locate a file on the filesystem
+
+    This function abstracts the resolution of paths given by the user.
+    It should be used whenever data is loaded from user-provided locations.
+    The priority list for path resolution is the following:
+
+    * If the given path is absolute, it is used as is.
+    * If a path was set with :any:`set_data_directory` check whether
+      the given relative path exists with respect to that directory
+    * Check whether the given relative path exists with respect to
+      the current working directory
+    * Check whether the given relative path exists with respect to
+      the package installation directory. This can be used to write
+      examples that use package-provided data.
+
+    :param filename: The (relative) filename to resolve
+    :type filename: str
+    :raises FileNotFoundError: Thrown if all resolution methods fail.
+    :returns: The resolved, absolute filename
+    """
     # If the path is absolute, do not change it
     if os.path.isabs(filename):
         return filename
