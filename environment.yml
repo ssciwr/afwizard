@@ -1,4 +1,4 @@
-name: filteradapt
+name: adaptivefiltering
 channels:
   - conda-forge
 dependencies:

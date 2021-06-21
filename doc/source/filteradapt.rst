@@ -1,26 +1,26 @@
-filteradapt package
-===================
+adaptivefiltering package
+=========================
 
-filteradapt.dataset module
---------------------------
-
-.. automodule:: filteradapt.dataset
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-filteradapt.paths module
-------------------------
-
-.. automodule:: filteradapt.paths
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-filteradapt.visualization module
+adaptivefiltering.dataset module
 --------------------------------
 
-.. automodule:: filteradapt.visualization
+.. automodule:: adaptivefiltering.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.paths module
+------------------------------
+
+.. automodule:: adaptivefiltering.paths
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.visualization module
+--------------------------------------
+
+.. automodule:: adaptivefiltering.visualization
    :members:
    :undoc-members:
    :show-inheritance:

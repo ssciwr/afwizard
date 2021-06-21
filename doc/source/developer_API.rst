@@ -6,4 +6,4 @@ Developer API
 
 .. toctree::
 
-   filteradapt
+   adaptivefiltering

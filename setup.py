@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="filteradapt",
+    name="adaptivefiltering",
     version="0.0.1",
     author="Dominic Kempf",
     author_email="ssc@iwr.uni-heidelberg.de",

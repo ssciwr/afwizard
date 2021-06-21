@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "filteradapt"
+project = "adaptivefiltering"
 copyright = "2021, Scientific Software Center, Heidelberg University"
 author = "Dominic Kempf"
 
