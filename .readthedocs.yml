@@ -8,7 +8,3 @@ formats: all
 
 conda:
   environment: doc/environment-rtd.yml
-
-python:
-  install:
-    - path: .
