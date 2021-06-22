@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "ipyvolume",
-        "laspy",
+        "laspy==1.7.0",
     ],
     include_package_data=True,
     package_data={"": ["data/*"]},
