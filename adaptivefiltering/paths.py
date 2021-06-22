@@ -1,4 +1,6 @@
 import os
+import platform
+import xdg
 
 # Storage for the data directory that will be used to resolve relative paths
 _data_dir = None
@@ -27,6 +29,9 @@ def locate_file(filename):
     * Check whether the given relative path exists with respect to
       the current working directory
     * Check whether the given relative path exists with respect to
+      the specified XDG data directory (e.g. through the environment
+      variable :code:`XDG_DATA_DIR`) - Linux/MacOS only.
+    * Check whether the given relative path exists with respect to
       the package installation directory. This can be used to write
       examples that use package-provided data.
 
@@ -48,6 +53,11 @@ def locate_file(filename):
 
     # Use the current working directory
     candidates.append(os.path.join(os.getcwd(), filename))
+
+    # Use the XDG data directories
+    if platform.system() in ["Linux", "Darwin"]:
+        for xdg_dir in xdg.xdg_data_dirs():
+            candidates.append(os.path.join(xdg_dir, filename))
 
     # Use the package installation directory
     candidates.append(os.path.join(os.path.split(__file__)[0], filename))
