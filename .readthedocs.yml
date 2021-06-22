@@ -7,9 +7,8 @@ sphinx:
 formats: all
 
 conda:
-  environment: environment.yml
+  environment: doc/environment-rtd.yml
 
 python:
   install:
     - path: .
-    - requirements: doc/requirements-rtd.txt
