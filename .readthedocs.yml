@@ -6,6 +6,9 @@ sphinx:
 
 formats: all
 
+conda:
+  environment: environment.yml
+
 python:
   install:
     - path: .
