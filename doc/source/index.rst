@@ -2,7 +2,8 @@
    :maxdepth: 2
    :caption: Contents:
 
+   intro
    basics
-   demo
+   advanced
    user_API
    developer_API
