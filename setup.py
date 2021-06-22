@@ -11,6 +11,7 @@ setup(
     install_requires=[
         "ipyvolume",
         "laspy==1.7.0",
+        "xdg",
     ],
     include_package_data=True,
     package_data={"": ["data/*"]},

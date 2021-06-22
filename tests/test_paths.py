@@ -1,0 +1,42 @@
+from adaptivefiltering.paths import locate_file, set_data_directory
+
+from . import mock_environment
+
+import os
+import platform
+import pytest
+import tempfile
+
+
+def test_paths(tmp_path):
+    # An absolute path is preserved
+    abspath = os.path.abspath(__file__)
+    assert abspath == locate_file(abspath)
+
+    # Check that a file in the current working directory is picked up correctly
+    with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
+        assert os.path.join(os.getcwd(), tmp_file.name) == locate_file(tmp_file.name)
+
+    # Check that XDG paths are correctly recognized
+    if platform.system() in ["Linux", "Darwin"]:
+        with mock_environment(XDG_DATA_DIRS=str(tmp_path)):
+            abspath = os.path.join(tmp_path, "somefile.txt")
+            open(abspath, "w").close()
+            assert abspath == locate_file("somefile.txt")
+
+    # Check that we always find the data provided by the package
+    assert os.path.exists(locate_file("data/500k_NZ20_Westport.laz"))
+
+
+def test_set_data_directory(tmp_path):
+    # Create a test file in tmp_path
+    abspath = os.path.join(tmp_path, "somefile.txt")
+    open(abspath, "w").close()
+
+    # Trying to locate it should fail
+    with pytest.raises(FileNotFoundError):
+        locate_file("somefile.txt")
+
+    # Unless we specifically set the directory
+    set_data_directory(tmp_path)
+    assert abspath == locate_file("somefile.txt")
