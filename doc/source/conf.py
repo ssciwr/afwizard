@@ -76,4 +76,4 @@ if os.environ.get("READTHEDOCS", "False") == "True":
     # We also need to make sure to install our package for autodoc and
     # nbsphinx to work properly. Doing so through .readthedocs.yml creates
     # a chicken egg situation with above lfs checkout code
-    os.system("python -m pip install .")
+    os.system("python -m pip install ../..")
