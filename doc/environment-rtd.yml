@@ -1,3 +1,7 @@
+# Note: The version pinning in this file is necessary to make the
+#       conda environment solve not exceed the memory limitations
+#       of readthedocs. They are aware of the situation and might
+#       eventually improve it: https://blog.readthedocs.com/better-conda-support/
 name: adaptivefiltering-rtd
 channels:
   - conda-forge
