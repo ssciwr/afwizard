@@ -7,5 +7,6 @@ dependencies:
   - jupyterlab
   - laspy
   - python-pdal
+  - pip
   - pip:
     - xdg
