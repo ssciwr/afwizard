@@ -64,10 +64,11 @@ autoclass_content = "init"
 # This workaround to install and execute git-lfs on Read the Docs
 # is taken from https://github.com/readthedocs/readthedocs.org/issues/1846
 if os.environ.get("READTHEDOCS", "False") == "True":
+    os.environ["PATH"] += os.path.pathsep + os.getcwd()
     os.system(
         "wget https://github.com/git-lfs/git-lfs/releases/download/v2.7.1/git-lfs-linux-amd64-v2.7.1.tar.gz"
     )
     os.system("tar xvfz git-lfs-linux-amd64-v2.7.1.tar.gz")
-    os.system("./git-lfs install")
-    os.system("./git-lfs fetch")
-    os.system("./git-lfs checkout")
+    os.system("git-lfs install")
+    os.system("git-lfs fetch")
+    os.system("git-lfs checkout")
