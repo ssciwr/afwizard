@@ -21,7 +21,11 @@ class DataSet:
         self.warning_threshold = warning_threshold
 
         filename = locate_file(filename)
-        self.data = laspy.file.File(filename, mode="r")
+        # old laspy style
+        # self.data = laspy.file.File(filename, mode="r")
+
+        # new laspy style
+        self.data = laspy.read(filename, mode="r")
         if len(self.data.x) >= self.warning_threshold:
             print(
                 "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
