@@ -29,7 +29,7 @@ class DataSet:
                 )
             )
 
-    def show(self):
+    def show(self, az=0, el=0):
         """Visualize the point cloud in Jupyter notebook
 
         Non-operational if called outside of Jupyter Notebook.
@@ -40,4 +40,4 @@ class DataSet:
             )
             raise ValueError(error_text)
 
-        return vis_pointcloud(self.data.x, self.data.y, self.data.z)
+        return vis_pointcloud(self.data.x, self.data.y, self.data.z, az, el)
