@@ -14,14 +14,30 @@ class DataSet:
             are interpreted (in this order) with respect to the directory set with :any:`set_data_directory`,
             the current working directory, XDG data directories (Unix only) and the Python package
             installation directory.
+            Will give a warning if too many data points are present.
         :type filename: str
         """
+        # initilize warning threshold to warn the user that show() is not available
+        self.warning_threshold = 750000
+
         filename = locate_file(filename)
         self.data = laspy.file.File(filename, mode="r")
+        if len(self.data.x) >= self.warning_threshold:
+            print(
+                "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
+                    len(self.data.x), self.warning_threshold
+                )
+            )
 
     def show(self):
         """Visualize the point cloud in Jupyter notebook
 
         Non-operational if called outside of Jupyter Notebook.
         """
+        if len(self.data.x) >= self.warning_threshold:
+            error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
+                len(self.data.x), self.warning_threshold
+            )
+            raise ValueError(error_text)
+
         return vis_pointcloud(self.data.x, self.data.y, self.data.z)
