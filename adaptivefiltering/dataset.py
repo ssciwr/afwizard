@@ -5,7 +5,7 @@ import laspy
 
 
 class DataSet:
-    def __init__(self, filename):
+    def __init__(self, filename, warning_threshold=750000):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -18,7 +18,7 @@ class DataSet:
         :type filename: str
         """
         # initilize warning threshold to warn the user that show() is not available
-        self.warning_threshold = 750000
+        self.warning_threshold = warning_threshold
 
         filename = locate_file(filename)
         self.data = laspy.file.File(filename, mode="r")

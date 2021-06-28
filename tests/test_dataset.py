@@ -1,4 +1,5 @@
 import adaptivefiltering
+import pytest
 
 
 def test_adaptivefiltering():
@@ -8,3 +9,11 @@ def test_adaptivefiltering():
     # Test visualization - this is not actually very good in the absence of a display
     # But it helps in measuring coverage of the test suite.
     dataset.show()
+
+
+def test_adaptivefiltering_threshold():
+    # Load a dataset and set threshold to 500
+    dataset = adaptivefiltering.DataSet("data/500k_NZ20_Westport.laz", 500)
+    # The given Dataset has more than 500 points, this a ValueError is raised.
+    with pytest.raises(ValueError):
+        dataset.show()
