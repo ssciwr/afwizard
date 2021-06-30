@@ -61,9 +61,14 @@ class WidgetForm:
         return __update_function
 
     def _construct(self, schema):
+        # Enumerations are handled a dropdowns
+        if "enum" in schema:
+            return self._construct_enum(schema)
+
+        # Handle other input based on the input type
         type_ = schema.get("type", None)
         if type_ is None:
-            raise WidgetFormError("Expecting type information for all properties")
+            raise WidgetFormError("Expecting type information for non-enum properties")
         if not isinstance(type_, str):
             raise WidgetFormError("Not accepting arrays of types currently")
         getattr(self, f"_construct_{type_}")(schema)
@@ -74,13 +79,10 @@ class WidgetForm:
             self._construct(subschema)
             self._construction_stack.pop()
 
-    def _construct_simple(self, schema, widgetType):
+    def _construct_simple(self, schema, widget):
         # Construct the label widget that describes the input
         label = schema.get("title", self._construction_stack[-1])
         label = ipywidgets.Label(label)
-
-        # Construct the input widget
-        widget = widgetType()
 
         # Apply a potential default
         if "default" in schema:
@@ -95,13 +97,13 @@ class WidgetForm:
         self._handlers.append(self._update_function(widget))
 
     def _construct_string(self, schema):
-        return self._construct_simple(schema, ipywidgets.Text)
+        return self._construct_simple(schema, ipywidgets.Text())
 
     def _construct_number(self, schema):
-        return self._construct_simple(schema, ipywidgets.FloatText)
+        return self._construct_simple(schema, ipywidgets.FloatText())
 
     def _construct_boolean(self, schema):
-        return self._construct_simple(schema, ipywidgets.Checkbox)
+        return self._construct_simple(schema, ipywidgets.Checkbox())
 
     def _construct_null(self, schema):
         prop = self._construction_stack[-1]
@@ -113,3 +115,8 @@ class WidgetForm:
 
     def _construct_array(self, schema):
         raise NotImplementedError("array not yet implemented")
+
+    def _construct_enum(self, schema):
+        return self._construct_simple(
+            schema, ipywidgets.Dropdown(options=schema["enum"])
+        )
