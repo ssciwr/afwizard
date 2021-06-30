@@ -2,6 +2,8 @@ from IPython.display import display
 
 import ipywidgets
 import jsonschema
+import json
+import os
 
 
 class WidgetFormError(Exception):
@@ -24,7 +26,13 @@ class WidgetForm:
             (currently) accepts no parameters and its return value is ignored.
         """
         # Make sure that the given schema is valid
-        jsonschema.Draft7Validator.check_schema(schema)
+        filename = os.path.join(
+            os.path.split(jsonschema.__file__)[0], "schemas", "draft7.json"
+        )
+        with open(filename, "r") as f:
+            meta_schema = json.load(f)
+        meta_schema["additionalProperties"] = False
+        jsonschema.validate(instance=schema, schema=meta_schema)
 
         # Create data members
         self.widget_list = []
