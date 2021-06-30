@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "ipyvolume",
-        "laspy",
+        "laspy[laszip]",
         "xdg",
     ],
     include_package_data=True,
