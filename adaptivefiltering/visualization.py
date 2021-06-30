@@ -13,14 +13,12 @@ def vis_pointcloud(x, y, z):
     :type z: numpy.array
     """
 
-    # get
+    # converting to numpy array solves the IndexType error.
 
     x = np.asarray(x)
     y = np.asarray(y)
-
     z = np.asarray(z)
 
-    print(x)
     fig = vis.figure(width=1000)
     vis.scatter(
         x,
