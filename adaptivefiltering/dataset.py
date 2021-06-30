@@ -1,7 +1,8 @@
 from adaptivefiltering.visualization import vis_pointcloud
 from adaptivefiltering.paths import locate_file
-
+import json
 import laspy
+import pdal
 
 
 class DataSet:
@@ -20,16 +21,13 @@ class DataSet:
         # initilize warning threshold to warn the user that show() is not available
         self.warning_threshold = warning_threshold
 
-        filename = locate_file(filename)
+        self.filename = locate_file(filename)
         # old laspy style
         # self.data = laspy.file.File(filename, mode="r")
 
         # new laspy style
         # test = laspy.read(test, l)
-        self.data = laspy.read(filename)
-        print(self.data.x)
-        print(self.data.y)
-        print(self.data.z)
+        self.data = laspy.read(self.filename)
 
         if len(self.data.x) >= self.warning_threshold:
             print(
@@ -37,6 +35,17 @@ class DataSet:
                     len(self.data.x), self.warning_threshold
                 )
             )
+
+    def calc_simple_DTM(self, resolution=10):
+        pipeline_json = [
+            self.filename,
+            {"type": "filters.poisson"},
+            {"type": "writers.ply", "filename": "isosurface.ply"},
+        ]
+        print(json.dumps(pipeline_json))
+        pipeline = pdal.Pipeline(json.dumps(pipeline_json))
+        test = pipeline.execute()
+        print(test)
 
     def show(self):
         """Visualize the point cloud in Jupyter notebook
