@@ -26,9 +26,10 @@ class DataSet:
 
         # new laspy style
         # test = laspy.read(test, l)
-        self.data = laspy.open(
-            filename, mode="r", laz_backend=laspy.LazBackend.detect_available()
-        )
+        self.data = laspy.read(filename)
+        print(self.data.x)
+        print(self.data.y)
+        print(self.data.z)
 
         if len(self.data.x) >= self.warning_threshold:
             print(

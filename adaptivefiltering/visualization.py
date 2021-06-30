@@ -1,4 +1,5 @@
 import ipyvolume.pylab as vis
+import numpy as np
 
 
 def vis_pointcloud(x, y, z):
@@ -11,6 +12,15 @@ def vis_pointcloud(x, y, z):
     :type y: numpy.array
     :type z: numpy.array
     """
+
+    # get
+
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    z = np.asarray(z)
+
+    print(x)
     fig = vis.figure(width=1000)
     vis.scatter(
         x,
