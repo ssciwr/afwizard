@@ -4,6 +4,10 @@ import ipywidgets
 import jsonschema
 
 
+class WidgetFormError(Exception):
+    pass
+
+
 class WidgetForm:
     def __init__(self, schema, on_change=None):
         """Create a form with Jupyter widgets from a JSON schema
@@ -59,7 +63,9 @@ class WidgetForm:
     def _construct(self, schema):
         type_ = schema.get("type", None)
         if type_ is None:
-            raise ValueError("Expecting type information for all properties")
+            raise WidgetFormError("Expecting type information for all properties")
+        if not isinstance(type_, str):
+            raise WidgetFormError("Not accepting arrays of types currently")
         getattr(self, f"_construct_{type_}")(schema)
 
     def _construct_object(self, schema):
