@@ -97,5 +97,16 @@ class WidgetForm:
     def _construct_number(self, schema):
         return self._construct_simple(schema, ipywidgets.FloatText)
 
+    def _construct_boolean(self, schema):
+        return self._construct_simple(schema, ipywidgets.Checkbox)
+
+    def _construct_null(self, schema):
+        prop = self._construction_stack[-1]
+
+        def _add_none(data):
+            data[prop] = None
+
+        self._handlers.append(_add_none)
+
     def _construct_array(self, schema):
         raise NotImplementedError("array not yet implemented")
