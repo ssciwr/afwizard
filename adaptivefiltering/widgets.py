@@ -75,8 +75,11 @@ class WidgetForm:
             self._construction_stack.pop()
 
     def _construct_simple(self, schema, widgetType):
-        # Construct the base widgets
-        label = ipywidgets.Label(self._construction_stack[-1])
+        # Construct the label widget that describes the input
+        label = schema.get("title", self._construction_stack[-1])
+        label = ipywidgets.Label(label)
+
+        # Construct the input widget
         widget = widgetType()
 
         # Apply a potential default
