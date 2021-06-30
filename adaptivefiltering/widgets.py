@@ -75,8 +75,13 @@ class WidgetForm:
             self._construction_stack.pop()
 
     def _construct_simple(self, schema, widgetType):
+        # Construct the base widgets
         label = ipywidgets.Label(self._construction_stack[-1])
         widget = widgetType()
+
+        # Apply a potential default
+        if "default" in schema:
+            widget.value = schema["default"]
 
         def _fire_on_change(change):
             if self.on_change:
