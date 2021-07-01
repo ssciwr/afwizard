@@ -5,7 +5,7 @@ import laspy
 
 
 class DataSet:
-    def __init__(self, filename, warning_threshold=750000):
+    def __init__(self, filename):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -14,11 +14,10 @@ class DataSet:
             are interpreted (in this order) with respect to the directory set with :any:`set_data_directory`,
             the current working directory, XDG data directories (Unix only) and the Python package
             installation directory.
-            Will give a warning if too many data points are present.
+
         :type filename: str
         """
         # initilize warning threshold to warn the user that show() is not available
-        self.warning_threshold = warning_threshold
 
         filename = locate_file(filename)
         # old laspy style
@@ -27,26 +26,18 @@ class DataSet:
         # new laspy style
         # test = laspy.read(test, l)
         self.data = laspy.read(filename)
-        print(self.data.x)
-        print(self.data.y)
-        print(self.data.z)
 
-        if len(self.data.x) >= self.warning_threshold:
-            print(
-                "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
-                    len(self.data.x), self.warning_threshold
-                )
-            )
-
-    def show(self):
+    def show(self, warning_threshold=750000):
         """Visualize the point cloud in Jupyter notebook
-
+        Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
         """
-        if len(self.data.x) >= self.warning_threshold:
-            error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data.x), self.warning_threshold
-            )
-            raise ValueError(error_text)
 
-        return vis_pointcloud(self.data.x, self.data.y, self.data.z)
+        if len(self.data.x) >= warning_threshold:
+            print(
+                "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
+                    len(self.data.x), warning_threshold
+                )
+            )
+        else:
+            return vis_pointcloud(self.data.x, self.data.y, self.data.z)
