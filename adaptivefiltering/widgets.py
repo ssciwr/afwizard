@@ -34,14 +34,14 @@ class WidgetForm:
         meta_schema["additionalProperties"] = False
         jsonschema.validate(instance=schema, schema=meta_schema)
 
-        # Create data members
-        self.widget_list = []
+        # Store the given data members
         self.on_change = on_change
-        self._handlers = []
+        self.schema = schema
 
         # Construct the widgets
         self._construction_stack = []
-        self._construct(schema)
+        self._handlers = []
+        self.widget_list = self._construct(schema)
 
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
@@ -55,16 +55,24 @@ class WidgetForm:
             A dictionary that reflects the current state of the widget and
             conforms to the given schema.
         """
+        # Construct the data by calling all the data handlers on an empty dictionary
         data = {}
         for handler in self._handlers:
             handler(data)
+
+        # Validate the resulting document just to be sure
+        jsonschema.validate(instance=data, schema=self.schema)
+
         return data
 
     def _update_function(self, widget):
-        prop = self._construction_stack[-1]
+        props = tuple(self._construction_stack)
 
         def __update_function(data):
-            data[prop] = widget.value
+            _data = data
+            for prop in props[:-1]:
+                _data = data.setdefault(prop, {})
+            _data[props[-1]] = widget.value
 
         return __update_function
 
@@ -79,13 +87,23 @@ class WidgetForm:
             raise WidgetFormError("Expecting type information for non-enum properties")
         if not isinstance(type_, str):
             raise WidgetFormError("Not accepting arrays of types currently")
-        getattr(self, f"_construct_{type_}")(schema)
+        return getattr(self, f"_construct_{type_}")(schema)
 
     def _construct_object(self, schema):
+        widget_list = []
         for prop, subschema in schema["properties"].items():
             self._construction_stack.append(prop)
-            self._construct(subschema)
+            widget_list.extend(self._construct(subschema))
             self._construction_stack.pop()
+
+        # If this is not the root document, we wrap this in an Accordion widget
+        if len(self._construction_stack):
+            label = schema.get("title", self._construction_stack[-1])
+            accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
+            accordion.set_title(0, label)
+            widget_list = [accordion]
+
+        return widget_list
 
     def _construct_simple(self, schema, widget):
         # Construct the label widget that describes the input
@@ -106,8 +124,8 @@ class WidgetForm:
                 self.on_change()
 
         widget.observe(_fire_on_change)
-        self.widget_list.append(ipywidgets.Box([label, widget]))
         self._handlers.append(self._update_function(widget))
+        return [ipywidgets.Box([label, widget])]
 
     def _construct_string(self, schema):
         return self._construct_simple(schema, ipywidgets.Text())
@@ -125,6 +143,7 @@ class WidgetForm:
             data[prop] = None
 
         self._handlers.append(_add_none)
+        return []
 
     def _construct_array(self, schema):
         raise NotImplementedError("array not yet implemented")
