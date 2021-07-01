@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.9
   - ipyvolume
-  - ipywidgets
+  - ipywidgets<8
   - jupyterlab
   - laspy
   - python-pdal

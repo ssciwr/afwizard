@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "ipyvolume",
-        "ipywidgets",
+        "ipywidgets<8",
         "jsonschema",
         "laspy==1.7.0",
         "numpy",
