@@ -14,6 +14,7 @@ setup(
         "jsonschema",
         "laspy==1.7.0",
         "numpy",
+        "pyrsistent",
         "xdg",
     ],
     include_package_data=True,

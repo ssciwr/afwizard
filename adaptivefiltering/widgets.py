@@ -4,6 +4,7 @@ import ipywidgets
 import jsonschema
 import json
 import os
+import pyrsistent
 
 
 class WidgetFormError(Exception):
@@ -40,8 +41,7 @@ class WidgetForm:
 
         # Construct the widgets
         self._construction_stack = []
-        self._handlers = []
-        self.widget_list = self._construct(schema)
+        self._data_creator, self.widget_list = self._construct(schema)
 
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
@@ -56,25 +56,12 @@ class WidgetForm:
             conforms to the given schema.
         """
         # Construct the data by calling all the data handlers on an empty dictionary
-        data = {}
-        for handler in self._handlers:
-            handler(data)
+        data = self._data_creator()
 
         # Validate the resulting document just to be sure
-        jsonschema.validate(instance=data, schema=self.schema)
+        jsonschema.validate(instance=pyrsistent.thaw(data), schema=self.schema)
 
         return data
-
-    def _update_function(self, widget):
-        props = tuple(self._construction_stack)
-
-        def __update_function(data):
-            _data = data
-            for prop in props[:-1]:
-                _data = data.setdefault(prop, {})
-            _data[props[-1]] = widget.value
-
-        return __update_function
 
     def _construct(self, schema, label=True):
         # Enumerations are handled a dropdowns
@@ -90,10 +77,13 @@ class WidgetForm:
         return getattr(self, f"_construct_{type_}")(schema, label=label)
 
     def _construct_object(self, schema, label=True):
+        update_list = []
         widget_list = []
         for prop, subschema in schema["properties"].items():
             self._construction_stack.append(prop)
-            widget_list.extend(self._construct(subschema, label=label))
+            u, w = self._construct(subschema, label=label)
+            update_list.append((prop, u))
+            widget_list.extend(w)
             self._construction_stack.pop()
 
         # If this is not the root document, we wrap this in an Accordion widget
@@ -105,7 +95,7 @@ class WidgetForm:
                 )
             widget_list = [accordion]
 
-        return widget_list
+        return lambda: pyrsistent.m(**{p: f() for p, f in update_list}), widget_list
 
     def _construct_simple(self, schema, widget, label=True):
         # Construct the label widget that describes the input
@@ -124,13 +114,15 @@ class WidgetForm:
             widget.value = schema["const"]
             widget.disabled = True
 
+        # Register a change handler that triggers the forms change handler
         def _fire_on_change(change):
             if self.on_change:
                 self.on_change()
 
         widget.observe(_fire_on_change)
-        self._handlers.append(self._update_function(widget))
-        return [ipywidgets.Box(box)]
+
+        # self._handlers.append(self._update_function(widget))
+        return lambda: widget.value, [ipywidgets.Box(box)]
 
     def _construct_string(self, schema, label=True):
         return self._construct_simple(schema, ipywidgets.Text(), label=label)
@@ -142,13 +134,7 @@ class WidgetForm:
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 
     def _construct_null(self, schema, label=True):
-        prop = self._construction_stack[-1]
-
-        def _add_none(data):
-            data[prop] = None
-
-        self._handlers.append(_add_none)
-        return []
+        return lambda: None, []
 
     def _construct_array(self, schema, label=True):
         if "items" not in schema:
@@ -159,7 +145,7 @@ class WidgetForm:
         vbox = ipywidgets.VBox([button])
 
         def add_entry(_):
-            item = self._construct(schema["items"], label=False)[0]
+            item = self._construct(schema["items"], label=False)[1][0]
             trash = ipywidgets.Button(icon="trash")
             up = ipywidgets.Button(icon="arrow-up")
             down = ipywidgets.Button(icon="arrow-down")
@@ -192,7 +178,11 @@ class WidgetForm:
 
         button.on_click(add_entry)
 
-        return [vbox]
+        # TODO: I know this is not fit for non-scalar list entries, but we might need
+        #       a bit of refactoring to target the more general use case
+        return lambda: pyrsistent.pvector(
+            i.children[0].children[0].value for i in vbox.children[:-1]
+        ), [vbox]
 
     def _construct_enum(self, schema, label=True):
         return self._construct_simple(
