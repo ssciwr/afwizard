@@ -77,6 +77,12 @@ class WidgetForm:
             raise WidgetFormError("Not accepting arrays of types currently")
         return getattr(self, f"_construct_{type_}")(schema, label=label, root=root)
 
+    def _wrap_accordion(self, widget_list, schema, label=None):
+        accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
+        if label is not None or "title" in schema:
+            accordion.set_title(0, schema.get("title", label))
+        return [accordion]
+
     def _construct_object(self, schema, label=None, root=False):
         update_list = []
         widget_list = []
@@ -87,10 +93,7 @@ class WidgetForm:
 
         # If this is not the root document, we wrap this in an Accordion widget
         if not root:
-            accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
-            if label is not None or "title" in schema:
-                accordion.set_title(0, schema.get("title", label))
-            widget_list = [accordion]
+            widget_list = self._wrap_accordion(widget_list, schema, label=label)
 
         return lambda: pyrsistent.m(**{p: f() for p, f in update_list}), widget_list
 
@@ -184,7 +187,12 @@ class WidgetForm:
 
         button.on_click(add_entry)
 
-        return lambda: pyrsistent.pvector(h() for h in data_handlers), [vbox]
+        # If this is not the root document, we wrap this in an Accordion widget
+        wrapped_vbox = [vbox]
+        if not root:
+            wrapped_vbox = self._wrap_accordion(wrapped_vbox, schema, label=label)
+
+        return lambda: pyrsistent.pvector(h() for h in data_handlers), wrapped_vbox
 
     def _construct_enum(self, schema, label=None, root=False):
         return self._construct_simple(
