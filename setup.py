@@ -12,7 +12,7 @@ setup(
         "ipyvolume",
         "ipywidgets<8",
         "jsonschema",
-        "laspy==1.7.0",
+        "laspy[laszip]",
         "numpy",
         "pyrsistent",
         "xdg",
