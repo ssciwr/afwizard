@@ -40,8 +40,9 @@ class WidgetForm:
         self.schema = schema
 
         # Construct the widgets
-        self._construction_stack = []
-        self._data_creator, self.widget_list = self._construct(schema)
+        self._data_creator, self.widget_list = self._construct(
+            schema, root=True, label=None
+        )
 
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
@@ -63,7 +64,7 @@ class WidgetForm:
 
         return data
 
-    def _construct(self, schema, label=True):
+    def _construct(self, schema, label=None, root=False):
         # Enumerations are handled a dropdowns
         if "enum" in schema:
             return self._construct_enum(schema, label=label)
@@ -74,36 +75,30 @@ class WidgetForm:
             raise WidgetFormError("Expecting type information for non-enum properties")
         if not isinstance(type_, str):
             raise WidgetFormError("Not accepting arrays of types currently")
-        return getattr(self, f"_construct_{type_}")(schema, label=label)
+        return getattr(self, f"_construct_{type_}")(schema, label=label, root=root)
 
-    def _construct_object(self, schema, label=True):
+    def _construct_object(self, schema, label=None, root=False):
         update_list = []
         widget_list = []
         for prop, subschema in schema["properties"].items():
-            self._construction_stack.append(prop)
-            u, w = self._construct(subschema, label=label)
+            u, w = self._construct(subschema, label=prop)
             update_list.append((prop, u))
             widget_list.extend(w)
-            self._construction_stack.pop()
 
         # If this is not the root document, we wrap this in an Accordion widget
-        if len(self._construction_stack):
+        if not root:
             accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
-            if label:
-                accordion.set_title(
-                    0, schema.get("title", self._construction_stack[-1])
-                )
+            if label is not None or "title" in schema:
+                accordion.set_title(0, schema.get("title", label))
             widget_list = [accordion]
 
         return lambda: pyrsistent.m(**{p: f() for p, f in update_list}), widget_list
 
-    def _construct_simple(self, schema, widget, label=True):
+    def _construct_simple(self, schema, widget, label=None, root=False):
         # Construct the label widget that describes the input
         box = [widget]
-        if label:
-            box.insert(
-                0, ipywidgets.Label(schema.get("title", self._construction_stack[-1]))
-            )
+        if label is not None or "title" in schema:
+            box.insert(0, ipywidgets.Label(schema.get("title", label)))
 
         # Apply a potential default
         if "default" in schema:
@@ -121,22 +116,21 @@ class WidgetForm:
 
         widget.observe(_fire_on_change)
 
-        # self._handlers.append(self._update_function(widget))
         return lambda: widget.value, [ipywidgets.Box(box)]
 
-    def _construct_string(self, schema, label=True):
+    def _construct_string(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Text(), label=label)
 
-    def _construct_number(self, schema, label=True):
+    def _construct_number(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.FloatText(), label=label)
 
-    def _construct_boolean(self, schema, label=True):
+    def _construct_boolean(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 
-    def _construct_null(self, schema, label=True):
+    def _construct_null(self, schema, label=None, root=False):
         return lambda: None, []
 
-    def _construct_array(self, schema, label=True):
+    def _construct_array(self, schema, label=None, root=False):
         if "items" not in schema:
             raise WidgetFormError("Expecting 'items' key for 'array' type")
 
@@ -145,7 +139,7 @@ class WidgetForm:
         vbox = ipywidgets.VBox([button])
 
         def add_entry(_):
-            item = self._construct(schema["items"], label=False)[1][0]
+            item = self._construct(schema["items"], label=None)[1][0]
             trash = ipywidgets.Button(icon="trash")
             up = ipywidgets.Button(icon="arrow-up")
             down = ipywidgets.Button(icon="arrow-down")
@@ -184,7 +178,7 @@ class WidgetForm:
             i.children[0].children[0].value for i in vbox.children[:-1]
         ), [vbox]
 
-    def _construct_enum(self, schema, label=True):
+    def _construct_enum(self, schema, label=None, root=False):
         return self._construct_simple(
             schema, ipywidgets.Dropdown(options=schema["enum"]), label=label
         )
