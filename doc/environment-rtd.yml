@@ -9,7 +9,7 @@ dependencies:
   - python=3.9
   - ipyvolume==0.6.0a8
   - jupyterlab==3.0.16
-  - laspy==1.7.0
+  - laspy[laszip]==2.0.1
   - python-pdal==2.4.0
   - pip:
     - m2r2

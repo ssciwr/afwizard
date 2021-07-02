@@ -1,4 +1,5 @@
 import ipyvolume.pylab as vis
+import numpy as np
 
 
 def vis_pointcloud(x, y, z):
@@ -11,8 +12,23 @@ def vis_pointcloud(x, y, z):
     :type y: numpy.array
     :type z: numpy.array
     """
+
+    # converting to numpy array solves the IndexType error.
+
+    x = np.asarray(x)
+    y = np.asarray(y)
+    z = np.asarray(z)
+
     fig = vis.figure(width=1000)
-    vis.scatter(x, y, z, color="red", size=0.05)
+    vis.scatter(
+        x,
+        y,
+        z,
+        color="red",
+        size=0.05,
+    )
+    vis.style.box_off()
+    vis.view(azimuth=180, elevation=90)
     fig.xlim = (min(x), max(x))
     fig.ylim = (min(y), max(y))
     fig.zlim = (min(z), max(z))
