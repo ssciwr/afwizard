@@ -17,5 +17,5 @@ dependencies:
     - m2r2
     - nbsphinx
     - nbsphinx-link
-    - pyrsisent
+    - pyrsistent
     - xdg
