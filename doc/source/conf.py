@@ -59,21 +59,3 @@ html_static_path = []
 
 # Make sure that classes are documented by their init method
 autoclass_content = "init"
-
-if os.environ.get("READTHEDOCS", "False") == "True":
-    # By default, Read the Docs does not recognize git lfs content
-    # This workaround to install and execute git-lfs on Read the Docs
-    # is taken from https://github.com/readthedocs/readthedocs.org/issues/1846
-    os.environ["PATH"] += os.path.pathsep + os.getcwd()
-    os.system(
-        "wget https://github.com/git-lfs/git-lfs/releases/download/v2.7.1/git-lfs-linux-amd64-v2.7.1.tar.gz"
-    )
-    os.system("tar xvfz git-lfs-linux-amd64-v2.7.1.tar.gz")
-    os.system("git-lfs install")
-    os.system("git-lfs fetch")
-    os.system("git-lfs checkout")
-
-    # We also need to make sure to install our package for autodoc and
-    # nbsphinx to work properly. Doing so through .readthedocs.yml creates
-    # a chicken egg situation with above lfs checkout code
-    os.system("python -m pip install ../..")
