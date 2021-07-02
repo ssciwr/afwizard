@@ -17,3 +17,15 @@ def test_adaptivefiltering_threshold():
     # The given Dataset has more than 500 points, this a ValueError is raised.
     with pytest.raises(ValueError):
         dataset.show()
+
+
+def test_adaptivefiltering_show_mesh():
+    # Load a dataset
+    dataset = adaptivefiltering.DataSet("data/500k_NZ20_Westport.laz")
+
+    # test different methods of calling show_mesh
+    # generate_geoTif is automatically tested as well
+    dataset.show_mesh()
+    dataset.show_mesh(resolution=5)
+    with pytest.raises(Warning):
+        dataset.show_mesh("test")

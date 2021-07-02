@@ -98,7 +98,7 @@ class DataSet:
             # the temporary file is not removed automatically. Manual removal will be implemented
             with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
                 self.generate_geoTif(str(tmp_file.name), resolution=resolution)
-                geo_dif_data = gdal.Open(str(tmp_file.name) + ".tif", gdal.GA_ReadOnly)
+                geo_tif_data = gdal.Open(str(tmp_file.name) + ".tif", gdal.GA_ReadOnly)
                 os.remove(str(tmp_file.name) + ".tif")
         else:
             if filename.endswith(".tif"):
