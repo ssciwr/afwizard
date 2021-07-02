@@ -8,5 +8,6 @@ dependencies:
   - laspy[laszip]
   - python-pdal
   - pip
+  - gdal
   - pip:
     - xdg
