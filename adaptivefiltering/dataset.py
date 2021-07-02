@@ -17,14 +17,7 @@ class DataSet:
 
         :type filename: str
         """
-        # initilize warning threshold to warn the user that show() is not available
-
         filename = locate_file(filename)
-        # old laspy style
-        # self.data = laspy.file.File(filename, mode="r")
-
-        # new laspy style
-        # test = laspy.read(test, l)
         self.data = laspy.read(filename)
 
     def show(self, warning_threshold=750000):
@@ -32,7 +25,6 @@ class DataSet:
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
         """
-
         if len(self.data.x) >= warning_threshold:
             print(
                 "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
