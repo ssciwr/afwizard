@@ -137,17 +137,25 @@ class WidgetForm:
         # Construct a widget that allows to add an array entry
         button = ipywidgets.Button(description="Add entry", icon="plus")
         vbox = ipywidgets.VBox([button])
+        data_handlers = []
 
         def add_entry(_):
-            item = self._construct(schema["items"], label=None)[1][0]
+            handler, item = self._construct(schema["items"], label=None)
+            data_handlers.insert(0, handler)
+            item = item[0]
             trash = ipywidgets.Button(icon="trash")
             up = ipywidgets.Button(icon="arrow-up")
             down = ipywidgets.Button(icon="arrow-down")
 
             def remove_entry(b):
-                vbox.children = tuple(
-                    c for c in vbox.children[:-1] if b not in c.children
-                ) + (vbox.children[-1],)
+                # Identify the current list index of the entry
+                for index, child in enumerate(vbox.children):
+                    if b in child.children:
+                        break
+
+                # Remove it from the widget list and the handler list
+                vbox.children = vbox.children[:index] + vbox.children[index + 1 :]
+                data_handlers.pop(index)
 
             trash.on_click(remove_entry)
 
@@ -158,6 +166,10 @@ class WidgetForm:
                         if b in it.children:
                             newi = min(max(i + dir, 0), len(items) - 1)
                             items[i], items[newi] = items[newi], items[i]
+                            data_handlers[i], data_handlers[newi] = (
+                                data_handlers[newi],
+                                data_handlers[i],
+                            )
                             break
 
                     vbox.children = tuple(items) + (vbox.children[-1],)
@@ -172,11 +184,7 @@ class WidgetForm:
 
         button.on_click(add_entry)
 
-        # TODO: I know this is not fit for non-scalar list entries, but we might need
-        #       a bit of refactoring to target the more general use case
-        return lambda: pyrsistent.pvector(
-            i.children[0].children[0].value for i in vbox.children[:-1]
-        ), [vbox]
+        return lambda: pyrsistent.pvector(h() for h in data_handlers), [vbox]
 
     def _construct_enum(self, schema, label=None, root=False):
         return self._construct_simple(
