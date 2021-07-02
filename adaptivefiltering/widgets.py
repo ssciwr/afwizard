@@ -76,10 +76,10 @@ class WidgetForm:
 
         return __update_function
 
-    def _construct(self, schema):
+    def _construct(self, schema, label=True):
         # Enumerations are handled a dropdowns
         if "enum" in schema:
-            return self._construct_enum(schema)
+            return self._construct_enum(schema, label=label)
 
         # Handle other input based on the input type
         type_ = schema.get("type", None)
@@ -87,28 +87,33 @@ class WidgetForm:
             raise WidgetFormError("Expecting type information for non-enum properties")
         if not isinstance(type_, str):
             raise WidgetFormError("Not accepting arrays of types currently")
-        return getattr(self, f"_construct_{type_}")(schema)
+        return getattr(self, f"_construct_{type_}")(schema, label=label)
 
-    def _construct_object(self, schema):
+    def _construct_object(self, schema, label=True):
         widget_list = []
         for prop, subschema in schema["properties"].items():
             self._construction_stack.append(prop)
-            widget_list.extend(self._construct(subschema))
+            widget_list.extend(self._construct(subschema, label=label))
             self._construction_stack.pop()
 
         # If this is not the root document, we wrap this in an Accordion widget
         if len(self._construction_stack):
-            label = schema.get("title", self._construction_stack[-1])
             accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
-            accordion.set_title(0, label)
+            if label:
+                accordion.set_title(
+                    0, schema.get("title", self._construction_stack[-1])
+                )
             widget_list = [accordion]
 
         return widget_list
 
-    def _construct_simple(self, schema, widget):
+    def _construct_simple(self, schema, widget, label=True):
         # Construct the label widget that describes the input
-        label = schema.get("title", self._construction_stack[-1])
-        label = ipywidgets.Label(label)
+        box = [widget]
+        if label:
+            box.insert(
+                0, ipywidgets.Label(schema.get("title", self._construction_stack[-1]))
+            )
 
         # Apply a potential default
         if "default" in schema:
@@ -125,18 +130,18 @@ class WidgetForm:
 
         widget.observe(_fire_on_change)
         self._handlers.append(self._update_function(widget))
-        return [ipywidgets.Box([label, widget])]
+        return [ipywidgets.Box(box)]
 
-    def _construct_string(self, schema):
-        return self._construct_simple(schema, ipywidgets.Text())
+    def _construct_string(self, schema, label=True):
+        return self._construct_simple(schema, ipywidgets.Text(), label=label)
 
-    def _construct_number(self, schema):
-        return self._construct_simple(schema, ipywidgets.FloatText())
+    def _construct_number(self, schema, label=True):
+        return self._construct_simple(schema, ipywidgets.FloatText(), label=label)
 
-    def _construct_boolean(self, schema):
-        return self._construct_simple(schema, ipywidgets.Checkbox())
+    def _construct_boolean(self, schema, label=True):
+        return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 
-    def _construct_null(self, schema):
+    def _construct_null(self, schema, label=True):
         prop = self._construction_stack[-1]
 
         def _add_none(data):
@@ -145,10 +150,51 @@ class WidgetForm:
         self._handlers.append(_add_none)
         return []
 
-    def _construct_array(self, schema):
-        raise NotImplementedError("array not yet implemented")
+    def _construct_array(self, schema, label=True):
+        if "items" not in schema:
+            raise WidgetFormError("Expecting 'items' key for 'array' type")
 
-    def _construct_enum(self, schema):
+        # Construct a widget that allows to add an array entry
+        button = ipywidgets.Button(description="Add entry", icon="plus")
+        vbox = ipywidgets.VBox([button])
+
+        def add_entry(_):
+            item = self._construct(schema["items"], label=False)[0]
+            trash = ipywidgets.Button(icon="trash")
+            up = ipywidgets.Button(icon="arrow-up")
+            down = ipywidgets.Button(icon="arrow-down")
+
+            def remove_entry(b):
+                vbox.children = tuple(
+                    c for c in vbox.children[:-1] if b not in c.children
+                ) + (vbox.children[-1],)
+
+            trash.on_click(remove_entry)
+
+            def move(dir):
+                def _move(b):
+                    items = list(vbox.children[:-1])
+                    for i, it in enumerate(items):
+                        if b in it.children:
+                            newi = min(max(i + dir, 0), len(items) - 1)
+                            items[i], items[newi] = items[newi], items[i]
+                            break
+
+                    vbox.children = tuple(items) + (vbox.children[-1],)
+
+                return _move
+
+            # Register the handler for moving up and down
+            up.on_click(move(-1))
+            down.on_click(move(1))
+
+            vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
+
+        button.on_click(add_entry)
+
+        return [vbox]
+
+    def _construct_enum(self, schema, label=True):
         return self._construct_simple(
-            schema, ipywidgets.Dropdown(options=schema["enum"])
+            schema, ipywidgets.Dropdown(options=schema["enum"]), label=label
         )
