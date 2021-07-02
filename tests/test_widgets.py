@@ -10,7 +10,7 @@ _example_schema = [
         "type": "object",
         "properties": {
             "price": {"type": "number"},
-            "name": {"type": "string"},
+            "name": {"type": "string", "const": "This is a constant"},
         },
     },
     {
