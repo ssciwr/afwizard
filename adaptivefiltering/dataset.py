@@ -1,8 +1,13 @@
 from adaptivefiltering.visualization import vis_pointcloud
+from adaptivefiltering.visualization import vis_mesh
 from adaptivefiltering.paths import locate_file
 import json
 import laspy
 import pdal
+import tempfile
+import numpy as np
+from osgeo import gdal
+import os
 
 
 class DataSet:
@@ -36,16 +41,79 @@ class DataSet:
                 )
             )
 
-    def calc_simple_DTM(self, resolution=10):
-        pipeline_json = [
+    def generate_geoTif(
+        self,
+        filename,
+        resolution=2.0,
+    ):
+        """Calculate and safe a meshgrid of the dataset with a custom resolution.
+
+        :param filename:
+            Filename to save the .tif. This can be a relative or absolute path
+        :type filename: str
+        :param resolution:
+            The resolution used to calculate the mesh from the point cloud.
+        :type resolution: float
+        """
+        # if .tif is already in the filename it will be removed to avoid double file extension
+        if filename.endswith(".tif"):
+            filename = filename.split(".tif")[0]
+        # configure the geotif pipeline
+        geotif_pipeline_json = [
             self.filename,
-            {"type": "filters.poisson"},
-            {"type": "writers.ply", "filename": "isosurface.ply"},
+            {
+                "filename": filename + ".tif",
+                "gdaldriver": "GTiff",
+                "output_type": "all",
+                "resolution": resolution,
+                "type": "writers.gdal",
+            },
         ]
-        print(json.dumps(pipeline_json))
-        pipeline = pdal.Pipeline(json.dumps(pipeline_json))
-        test = pipeline.execute()
-        print(test)
+        # setup and execute the geotif pipeline
+        pipeline = pdal.Pipeline(json.dumps(geotif_pipeline_json))
+        geotif_pipeline = pipeline.execute()
+
+    def show_mesh(self, filename=None, resolution=2.0):
+        """Load an existing . tif file or create a temporary file with a given resolution. The -tif is than visualised as a 3d mesh
+
+        :param filename:
+            optional filename to load a specific .tif file. The filename uses the same search method as the base class.
+            A .tif ending must be used.
+        :type filename: str
+        :param resolution:
+            The resolution used to calculate the mesh from the point cloud.
+        :type resolution: float
+
+        :raises Warning: Raised if something other than a .tif file is selected.
+
+        """
+
+        # check if a filename is given, if not make a temporary tif file to view data
+        if filename is None:
+            print(
+                "No geotif file was selected. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
+                    resolution
+                )
+            )
+            # the temporary file is not removed automatically. Manual removal will be implemented
+            with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
+                self.generate_geoTif(str(tmp_file.name), resolution=resolution)
+                geo_dif_data = gdal.Open(str(tmp_file.name) + ".tif", gdal.GA_ReadOnly)
+                os.remove(str(tmp_file.name) + ".tif")
+        else:
+            if filename.endswith(".tif"):
+                filename = locate_file(filename)
+                geo_tif_data = gdal.Open(filename, gdal.GA_ReadOnly)
+            else:
+                raise Warning("Please choose a .tif file")
+
+        # use the number of x and y points to generate a grid.
+        x = np.arange(0, geo_tif_data.RasterXSize)
+        y = np.arange(0, geo_tif_data.RasterYSize)
+        # get height information from
+        band = geo_tif_data.GetRasterBand(1)
+        z = band.ReadAsArray()
+        return vis_mesh(x, y, z)
 
     def show(self):
         """Visualize the point cloud in Jupyter notebook
