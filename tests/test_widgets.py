@@ -2,17 +2,28 @@ import pytest
 
 from adaptivefiltering.widgets import WidgetForm
 import jsonschema
+import pyrsistent
 
 
 _example_schema = [
     {
-        "$schema": "https://json-schema.org/schema#",
         "type": "object",
         "properties": {
             "price": {"type": "number"},
             "name": {"type": "string"},
         },
-    }
+    },
+    {
+        "type": "object",
+        "properties": {"things": {"type": "array", "items": {"enum": ["A", "B"]}}},
+    },
+    {
+        "type": "object",
+        "properties": {
+            "nested": {"type": "object", "properties": {"foo": {"type": "boolean"}}},
+            "name": {"type": "string"},
+        },
+    },
 ]
 
 
@@ -20,4 +31,4 @@ _example_schema = [
 def test_widget_form(schema):
     widget = WidgetForm(schema)
     widget.show()
-    jsonschema.validate(instance=widget.data(), schema=schema)
+    jsonschema.validate(instance=pyrsistent.thaw(widget.data()), schema=schema)
