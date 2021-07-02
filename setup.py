@@ -10,7 +10,11 @@ setup(
     packages=find_packages(),
     install_requires=[
         "ipyvolume",
+        "ipywidgets<8",
+        "jsonschema",
         "laspy[laszip]",
+        "numpy",
+        "pyrsistent",
         "xdg",
     ],
     include_package_data=True,

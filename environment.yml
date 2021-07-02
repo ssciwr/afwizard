@@ -4,9 +4,12 @@ channels:
 dependencies:
   - python=3.9
   - ipyvolume
+  - ipywidgets<8
   - jupyterlab
   - laspy[laszip]
   - python-pdal
   - pip
   - pip:
+    - jsonschema
+    - pyrsistent
     - xdg
