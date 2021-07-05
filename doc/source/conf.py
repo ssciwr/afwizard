@@ -64,8 +64,7 @@ autoclass_content = "init"
 # The path from this conf.py to the git root
 lfs_content_path_to_git_root = "../.."
 
-# We need to make sure to install our package for autodoc and
-# nbsphinx to work properly. Doing so through .readthedocs.yml creates
-# a chicken egg situation with the sphinx_lfs_content extension
-if os.environ.get("READTHEDOCS", "False") == "True":
-    os.system("python -m pip install ../..")
+# A command that resolves our chicken-egg situation
+lfs_content_post_commands = [
+    "python -m pip install ../.."
+]
