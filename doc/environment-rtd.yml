@@ -18,4 +18,5 @@ dependencies:
     - nbsphinx
     - nbsphinx-link
     - pyrsistent
+    - sphinx_lfs_content
     - xdg
