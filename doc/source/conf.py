@@ -34,7 +34,7 @@ extensions = [
     "sphinx_rtd_theme",
     "nbsphinx",
     "nbsphinx_link",
-    "sphinx_lfs_content"
+    "sphinx_lfs_content",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -65,6 +65,4 @@ autoclass_content = "init"
 lfs_content_path_to_git_root = "../.."
 
 # A command that resolves our chicken-egg situation
-lfs_content_post_commands = [
-    "python -m pip install ../.."
-]
+lfs_content_post_commands = ["python -m pip install ../.."]
