@@ -51,7 +51,7 @@ class DataSet:
             Lidar data.
         :type resolution: float
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
@@ -74,7 +74,7 @@ class DataSet:
             of valueable data files.
         :type overwrite: bool
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def save_mesh(self, filename, resolution=5.0):
         """Store the point cloud as a digital terrain model to a GeoTIFF file
@@ -95,7 +95,7 @@ class DataSet:
             Lidar data.
         :type resolution: float
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset
@@ -103,7 +103,7 @@ class DataSet:
         :param segmentation:
         :type: adaptivefiltering.segmentation.Segmentation
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
@@ -117,4 +117,4 @@ class DataSet:
             The stream to write the results to. Defaults to stdout, but
             could also e.g. be a file stream.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover

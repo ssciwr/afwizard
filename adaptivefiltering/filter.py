@@ -82,7 +82,7 @@ class Filter:
             A modified data set instance. This is the same object as the input data
             set if and only if the inplace parameter is true.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def serialize(self):
         """Serialize this filter
@@ -91,7 +91,7 @@ class Filter:
             The serialized string.
         :rtype: str
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def deserialize(self, data):
         """Deserialize this filter
@@ -100,7 +100,7 @@ class Filter:
             The data string from which to deserialize the filter
         :type data: str
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def save(self, filename):
         """Save this filter with its configuration to a file
@@ -127,7 +127,7 @@ class Filter:
             the Draft 7 JSON Schema standard (https://json-schema.org/).
         :rtype: pyrsistent.PMap
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def copy(self, **kwargs):
         """Create a copy of this filter with update configuration parameters

@@ -88,7 +88,6 @@ class WidgetForm:
         # Handle other input based on the input type
         type_ = schema.get("type", None)
         if type_ is None:
-            print(schema)
             raise WidgetFormError("Expecting type information for non-enum properties")
         if not isinstance(type_, str):
             raise WidgetFormError("Not accepting arrays of types currently")
