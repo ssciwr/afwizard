@@ -18,7 +18,7 @@ setup(
         "xdg",
     ],
     include_package_data=True,
-    package_data={"": ["data/*"]},
+    package_data={"": ["data/*", "schema/*", "schema/*/*"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

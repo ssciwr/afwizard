@@ -70,3 +70,22 @@ def locate_file(filename):
     raise FileNotFoundError(
         f"Cannot locate file {filename}, maybe use set_data_directory to point to the correct location. Tried the following: {', '.join(candidates)}"
     )
+
+
+def locate_schema(schema):
+    """Locate a schema JSON file by inspecting the Python installation
+
+    :arg schema:
+        The relative path of the schema in the schema directory.
+    :type schema: str
+    :return:
+        The absolute path of the schema
+    """
+    # Resolve the relative path with respect to the package installation directory
+    path = os.path.join(os.path.split(__file__)[0], "schema", schema)
+
+    # Check for existence of the file
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Requested schema '{schema}' was not found!")
+
+    return path

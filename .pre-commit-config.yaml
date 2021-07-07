@@ -21,3 +21,9 @@ repos:
       - id: check-yaml
       # Trim trailing whitespace of all sorts
       - id: trailing-whitespace
+      # Check validity of JSON files
+      - id: check-json
+      # Format JSON files consistently
+      - id: pretty-format-json
+        args:
+          - --autofix

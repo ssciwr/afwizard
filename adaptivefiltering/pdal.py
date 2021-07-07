@@ -1,4 +1,5 @@
 from adaptivefiltering.filter import Filter
+from adaptivefiltering.paths import locate_schema
 from adaptivefiltering.widgets import WidgetForm
 
 import json
@@ -8,33 +9,20 @@ import pyrsistent
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
+    def __init__(self, *args, **kwargs):
+        self._schema = None
+
     def widget_form(self):
         return PDALWidgetForm(self.schema)
 
     @property
     def schema(self):
-        return pyrsistent.freeze(
-            {
-                "anyOf": [
-                    {
-                        "title": "Crop (PDAL)",
-                        "type": "object",
-                        "properties": {
-                            "type": {"type": "string", "const": "filters.crop"},
-                            "point": {"type": "string"},
-                            "distance": {"type": "number"},
-                        },
-                    },
-                    {
-                        "title": "Cloth Simulation Filter (PDAL)",
-                        "type": "object",
-                        "properties": {
-                            "type": {"type": "string", "const": "filters.csf"}
-                        },
-                    },
-                ]
-            }
-        )
+        # If the schema has not been loaded, we do it now
+        if self._schema is None:
+            with open(locate_schema("pdal.json"), "r") as f:
+                self._schema = pyrsistent.freeze(json.load(f))
+
+        return self._schema
 
 
 class PDALWidgetForm(WidgetForm):

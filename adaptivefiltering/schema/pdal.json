@@ -1,0 +1,30 @@
+{
+  "anyOf": [
+    {
+      "properties": {
+        "distance": {
+          "type": "number"
+        },
+        "point": {
+          "type": "string"
+        },
+        "type": {
+          "const": "filters.crop",
+          "type": "string"
+        }
+      },
+      "title": "Crop (PDAL)",
+      "type": "object"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "filters.csf",
+          "type": "string"
+        }
+      },
+      "title": "Cloth Simulation Filter (PDAL)",
+      "type": "object"
+    }
+  ]
+}
