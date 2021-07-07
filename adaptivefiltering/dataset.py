@@ -23,6 +23,8 @@ class DataSet:
             Will give a warning if too many data points are present.
         :type filename: str
         """
+        # initilizise self._geo_tif_data_resolution as 0
+        self._geo_tif_data_resolution = 0
         # initilize warning threshold to warn the user that show() is not available
         self.warning_threshold = warning_threshold
 
@@ -73,8 +75,10 @@ class DataSet:
         # setup and execute the geotif pipeline
         pipeline = pdal.Pipeline(json.dumps(geotif_pipeline_json))
         geotif_pipeline = pipeline.execute()
+        self._geo_tif_data = gdal.Open(filename + ".tif", gdal.GA_ReadOnly)
+        self._geo_tif_data_resolution = resolution
 
-    def show_mesh(self, filename=None, resolution=2.0):
+    def show_mesh(self, resolution=2.0):
         """Load an existing . tif file or create a temporary file with a given resolution. The -tif is than visualised as a 3d mesh
 
         :param filename:
@@ -90,29 +94,28 @@ class DataSet:
         """
 
         # check if a filename is given, if not make a temporary tif file to view data
-        if filename is None:
+        if self._geo_tif_data_resolution is not resolution:
             print(
-                "No geotif file was selected. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
+                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
                     resolution
                 )
             )
+
             # the temporary file is not removed automatically. Manual removal will be implemented
             with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
-                geo_tif_data = gdal.Open(str(tmp_file.name) + ".tif", gdal.GA_ReadOnly)
                 os.remove(str(tmp_file.name) + ".tif")
-        else:
-            if os.path.splitext(filename)[1] == ".tif":
-                filename = locate_file(filename)
-                geo_tif_data = gdal.Open(filename, gdal.GA_ReadOnly)
-            else:
-                raise Warning("Please choose a .tif file")
 
         # use the number of x and y points to generate a grid.
-        x = np.arange(0, geo_tif_data.RasterXSize)
-        y = np.arange(0, geo_tif_data.RasterYSize)
+        x = np.arange(0, self._geo_tif_data.RasterXSize)
+        y = np.arange(0, self._geo_tif_data.RasterYSize)
+
+        # multiplay x and y with the given resolution for comparable plot.
+        x = x * self._geo_tif_data.GetGeoTransform()[1]
+        y = y * self._geo_tif_data.GetGeoTransform()[1]
+
         # get height information from
-        band = geo_tif_data.GetRasterBand(1)
+        band = self._geo_tif_data.GetRasterBand(1)
         z = band.ReadAsArray()
         return vis_mesh(x, y, z)
 

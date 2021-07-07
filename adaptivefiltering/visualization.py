@@ -47,8 +47,6 @@ def vis_mesh(x, y, z):
     :type z: numpy.array
     """
 
-    # converting to numpy array solves the IndexType error.
-
     X, Y = np.meshgrid(x, y)
 
     # define the color map
