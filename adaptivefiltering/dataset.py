@@ -41,23 +41,24 @@ class DataSet:
                 )
             )
 
-    def generate_geoTif(
+    def save_mesh(
         self,
         filename,
         resolution=2.0,
     ):
-        """Calculate and safe a meshgrid of the dataset with a custom resolution.
+        """Calculate and save a meshgrid of the dataset with a custom resolution.
 
         :param filename:
-            Filename to save the .tif. This can be a relative or absolute path
+            Filename to save the .tif. This can be a relative or absolute path.
+            Relative paths are interpreted w.r.t. the current working directory.
         :type filename: str
         :param resolution:
-            The resolution used to calculate the mesh from the point cloud.
+            The resolution in meters used to calculate the mesh from the point cloud.
         :type resolution: float
         """
         # if .tif is already in the filename it will be removed to avoid double file extension
-        if filename.endswith(".tif"):
-            filename = filename.split(".tif")[0]
+        if os.path.splitext(filename)[1] == ".tif":
+            filename = os.path.splitext(filename)[0]
         # configure the geotif pipeline
         geotif_pipeline_json = [
             self.filename,
@@ -81,7 +82,7 @@ class DataSet:
             A .tif ending must be used.
         :type filename: str
         :param resolution:
-            The resolution used to calculate the mesh from the point cloud.
+            The resolution in meters used to calculate the mesh from the point cloud.
         :type resolution: float
 
         :raises Warning: Raised if something other than a .tif file is selected.
@@ -97,11 +98,11 @@ class DataSet:
             )
             # the temporary file is not removed automatically. Manual removal will be implemented
             with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
-                self.generate_geoTif(str(tmp_file.name), resolution=resolution)
+                self.save_mesh(str(tmp_file.name), resolution=resolution)
                 geo_tif_data = gdal.Open(str(tmp_file.name) + ".tif", gdal.GA_ReadOnly)
                 os.remove(str(tmp_file.name) + ".tif")
         else:
-            if filename.endswith(".tif"):
+            if os.path.splitext(filename)[1] == ".tif":
                 filename = locate_file(filename)
                 geo_tif_data = gdal.Open(filename, gdal.GA_ReadOnly)
             else:

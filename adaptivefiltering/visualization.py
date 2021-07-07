@@ -13,8 +13,8 @@ def vis_pointcloud(x, y, z):
     :type y: numpy.array
     :type z: numpy.array
     """
-
-    # converting to numpy array solves the IndexType error.
+    # laspy.read() gives the x,y and z coordinates as a special datatype "laspy.point.dims.ScaledArrayView"
+    # this data type is not compatible with the ipyvolume plot, thus all coordinates are converted to numpy arrays before plotting.
 
     x = np.asarray(x)
     y = np.asarray(y)
@@ -51,7 +51,7 @@ def vis_mesh(x, y, z):
 
     X, Y = np.meshgrid(x, y)
 
-    # define the color maü
+    # define the color map
     colormap = cm.terrain
     znorm = z / (np.max(z) + 100)
     znorm.min(), znorm.max()
