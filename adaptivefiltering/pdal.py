@@ -11,6 +11,7 @@ class PDALFilter(Filter, identifier="pdal"):
 
     def __init__(self, *args, **kwargs):
         self._schema = None
+        super(PDALFilter, self).__init__(*args, **kwargs)
 
     def widget_form(self):
         return PDALWidgetForm(self.schema)

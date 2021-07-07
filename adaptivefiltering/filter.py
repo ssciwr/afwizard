@@ -47,7 +47,7 @@ class Filter:
         """Register all filter implementations that subclass this base class"""
         if identifier is None:
             raise FilterError("Please specify identifier when inheriting from filter")
-        if identifier in Filter._subclasses:
+        if identifier in Filter._filter_impls:
             raise FilterError(f"Filter identifier {identifier} already taken")
         Filter._filter_impls[identifier] = cls
         cls._identifier = identifier
@@ -157,6 +157,9 @@ class Filter:
         """Adding filters composes a pipeline"""
         return self.as_pipeline() + other
 
+    def __iadd__(self, other):
+        raise FilterError("Cannot add filters in place. Use operator + instead")
+
     def widget_form(self):
         return WidgetForm(self.schema)
 
@@ -177,6 +180,10 @@ class Pipeline(Filter, identifier="pipeline"):
         """The filter stages in this pipeline"""
         return self._filters
 
+    def copy(self):
+        """Create a copy of this pipeline"""
+        return Pipeline(filters=self.filters)
+
     def as_profile(self, author=None, description=None, example_data_url=None):
         return Profile(
             filters=self.filters,
@@ -189,7 +196,10 @@ class Pipeline(Filter, identifier="pipeline"):
         return self
 
     def __add__(self, other):
-        self._filters += other.as_pipeline().filters
+        return type(self)(filters=self.filters + other.as_pipeline().filters)
+
+    def __iadd__(self, other):
+        return Pipeline(filters=self.filters + other.as_pipeline().filters)
 
 
 class Profile(Pipeline, identifier="profile"):

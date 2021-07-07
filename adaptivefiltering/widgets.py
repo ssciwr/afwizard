@@ -35,7 +35,7 @@ class WidgetForm:
         with open(filename, "r") as f:
             meta_schema = json.load(f)
         meta_schema["additionalProperties"] = False
-        jsonschema.validate(instance=schema, schema=meta_schema)
+        jsonschema.validate(instance=pyrsistent.thaw(schema), schema=meta_schema)
 
         # Store the given data members
         self.on_change = on_change
@@ -62,7 +62,9 @@ class WidgetForm:
         data = self._data_creator()
 
         # Validate the resulting document just to be sure
-        jsonschema.validate(instance=pyrsistent.thaw(data), schema=self.schema)
+        jsonschema.validate(
+            instance=pyrsistent.thaw(data), schema=pyrsistent.thaw(self.schema)
+        )
 
         return data
 

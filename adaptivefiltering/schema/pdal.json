@@ -1,5 +1,5 @@
 {
-  "anyOf": [
+  "oneOf": [
     {
       "properties": {
         "distance": {
@@ -13,6 +13,9 @@
           "type": "string"
         }
       },
+      "required": [
+        "type"
+      ],
       "title": "Crop (PDAL)",
       "type": "object"
     },
@@ -23,6 +26,9 @@
           "type": "string"
         }
       },
+      "required": [
+        "type"
+      ],
       "title": "Cloth Simulation Filter (PDAL)",
       "type": "object"
     }
