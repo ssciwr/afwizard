@@ -8,6 +8,25 @@ import pdal
 import pyrsistent
 
 
+def execute_pdal_pipeline(dataset, pipeline_json):
+    """Execute a PDAL pipeline defined as JSON"""
+    # Undo stringification of the JSON to manipulate the pipeline
+    if isinstance(pipeline_json, str):
+        pipeline_json = json.loads(pipeline_json)
+
+    # Make sure that the JSON is a list of stages, even if just the
+    # dictionary for a single stage was given
+    if isinstance(pipeline_json, dict):
+        pipeline_json = [pipeline_json]
+
+    # Add the input filename to the pipeline
+    pipeline_json = [dataset.filename] + pipeline_json
+
+    # Define and execute the pipeline
+    pipeline = pdal.Pipeline(json.dumps(pipeline_json))
+    pipeline.execute()
+
+
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
@@ -16,10 +35,7 @@ class PDALFilter(Filter, identifier="pdal"):
         super(PDALFilter, self).__init__(*args, **kwargs)
 
     def execute(self, dataset, inplace=False):
-        raise NotImplementedError
-        pipeline = pdal.Pipeline(json.dumps([self._serialize()]))
-        pipeline.execute()
-        return DataSet()
+        return execute_pdal_pipeline(dataset, self._serialize())
 
     def widget_form(self):
         return PDALWidgetForm(self.schema())
@@ -40,6 +56,10 @@ class PDALFilter(Filter, identifier="pdal"):
 class PDALPipeline(
     PipelineMixin, PDALFilter, identifier="pdal_pipeline", backend=False
 ):
+    def execute(self, dataset, inplace=False):
+        pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
+        return execute_pdal_pipeline(dataset, pipeline_json)
+
     def widget_form(self):
         # Provide a widget that is restricted to the PDAL backend
         schema = pyrsistent.thaw(self.schema())

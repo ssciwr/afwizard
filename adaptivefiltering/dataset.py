@@ -20,8 +20,8 @@ class DataSet:
 
         :type filename: str
         """
-        filename = locate_file(filename)
-        self.data = laspy.read(filename)
+        self.filename = locate_file(filename)
+        self.data = laspy.read(self.filename)
 
     def show(self, warning_threshold=750000):
         """Visualize the point cloud in Jupyter notebook
