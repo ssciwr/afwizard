@@ -110,12 +110,14 @@ def test_serialization(f, tmp_path):
     # Test pure serialization
     f2 = deserialize_filter(serialize_filter(f))
     assert f.config == f2.config
+    assert type(f) == type(f2)
 
     # Test file saving and loading
     filename = os.path.join(tmp_path, "test.json")
     save_filter(f, filename)
     f2 = load_filter(filename)
     assert f.config == f2.config
+    assert type(f) == type(f2)
 
 
 @pytest.mark.parametrize(
