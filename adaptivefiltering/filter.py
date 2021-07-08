@@ -31,14 +31,24 @@ class Filter:
 
     # Store a registry of filter implementations derived from this base class
     _filter_impls = {}
+    _filter_is_backend = {}
 
-    def __init_subclass__(cls, identifier=None):
-        """Register all filter implementations that subclass this base class"""
+    def __init_subclass__(cls, identifier=None, backend=True):
+        """Register all filter implementations that subclass this base class
+
+        :param identifier:
+            A name that identifies this subclass
+        :type identifier: str
+        :param backend:
+            Whether this class defines a new filtering backend. Meta filters like
+            pipelines, profiles etc. should set this to False.
+        """
         if identifier is None:
             raise FilterError("Please specify identifier when inheriting from filter")
         if identifier in Filter._filter_impls:
             raise FilterError(f"Filter identifier {identifier} already taken")
         Filter._filter_impls[identifier] = cls
+        Filter._filter_is_backend[identifier] = backend
         cls._identifier = identifier
 
     @property
@@ -52,7 +62,7 @@ class Filter:
     @config.setter
     def config(self, _config):
         jsonschema.validate(
-            instance=pyrsistent.thaw(_config), schema=pyrsistent.thaw(self.schema)
+            instance=pyrsistent.thaw(_config), schema=pyrsistent.thaw(self.schema())
         )
         self._config = pyrsistent.freeze(_config)
 
@@ -104,8 +114,8 @@ class Filter:
         """
         return cls(config=data)
 
-    @property
-    def schema(self):
+    @classmethod
+    def schema(cls):
         """Define the configuration schema for this filter
 
         :return:
@@ -148,15 +158,16 @@ class Filter:
         raise FilterError("Cannot add filters in place. Use operator + instead")
 
     def widget_form(self):
-        return WidgetForm(self.schema)
+        return WidgetForm(self.schema())
 
 
 # Register the base class itself
 Filter._filter_impls["base"] = Filter
+Filter._filter_is_backend["base"] = False
 Filter._identifier = "base"
 
 
-class Pipeline(Filter, identifier="pipeline"):
+class Pipeline(Filter, identifier="pipeline", backend=False):
     def __init__(self, filters=[]):
         """A filter pipeline consisting of several steps
 
@@ -165,20 +176,19 @@ class Pipeline(Filter, identifier="pipeline"):
             of :class:`~adapativefiltering.filter.Filter`.
         :type filters: list
         """
-        self._filters = filters
+        self.config = filters
 
-    @property
-    def filters(self):
-        """The filter stages in this pipeline"""
-        return self._filters
+    @classmethod
+    def schema(cls):
+        return pyrsistent.m(type="array")
 
     def copy(self):
         """Create a copy of this pipeline"""
-        return Pipeline(filters=self.filters)
+        return Pipeline(filters=self.config)
 
     def as_profile(self, author=None, description=None, example_data_url=None):
         return Profile(
-            filters=self.filters,
+            filters=self.config,
             author=author,
             description=description,
             example_data_url=example_data_url,
@@ -188,13 +198,30 @@ class Pipeline(Filter, identifier="pipeline"):
         return self
 
     def __add__(self, other):
-        return type(self)(filters=self.filters + other.as_pipeline().filters)
+        return type(self)(filters=self.config + other.as_pipeline().config)
 
     def __iadd__(self, other):
-        return Pipeline(filters=self.filters + other.as_pipeline().filters)
+        return Pipeline(filters=self.config + other.as_pipeline().config)
+
+    def widget_form(self):
+        # Collect the list of available backend implementations
+        backends = []
+        for ident, class_ in Filter._filter_impls.items():
+            if Filter._filter_is_backend[ident]:
+                backends.append(class_.schema())
+
+        # Construct a widget that let's you select the backend
+        return WidgetForm(
+            pyrsistent.freeze(
+                {
+                    "type": "array",
+                    "items": {"oneOf": backends},
+                }
+            )
+        )
 
 
-class Profile(Pipeline, identifier="profile"):
+class Profile(Pipeline, identifier="profile", backend=False):
     def __init__(self, author=None, description=None, example_data_url=None, **kwargs):
         """A filter pipeline with additional metadata to share with other users
 

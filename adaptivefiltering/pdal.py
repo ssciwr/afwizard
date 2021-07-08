@@ -14,16 +14,16 @@ class PDALFilter(Filter, identifier="pdal"):
         super(PDALFilter, self).__init__(*args, **kwargs)
 
     def widget_form(self):
-        return PDALWidgetForm(self.schema)
+        return PDALWidgetForm(self.schema())
 
-    @property
-    def schema(self):
+    @classmethod
+    def schema(cls):
         # If the schema has not been loaded, we do it now
-        if self._schema is None:
+        if getattr(cls, "_schema", None) is None:
             with open(locate_schema("pdal.json"), "r") as f:
-                self._schema = pyrsistent.freeze(json.load(f))
+                cls._schema = pyrsistent.freeze(json.load(f))
 
-        return self._schema
+        return cls._schema
 
 
 class PDALWidgetForm(WidgetForm):

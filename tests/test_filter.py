@@ -31,26 +31,26 @@ def test_baseclass_conversions():
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
     assert isinstance(pipeline, Pipeline)
-    assert len(pipeline.filters) == 1
+    assert len(pipeline.config) == 1
 
     # Filter creation is idempotent
     pipeline = pipeline.as_pipeline()
     assert isinstance(pipeline, Pipeline)
-    assert len(pipeline.filters) == 1
+    assert len(pipeline.config) == 1
 
     # Filters and pipelines can be turned into profiles
     profile = f.as_profile()
     assert isinstance(profile, Profile)
-    assert len(profile.filters) == 1
+    assert len(profile.config) == 1
     profile = pipeline.as_profile()
     assert isinstance(profile, Profile)
-    assert len(profile.filters) == 1
+    assert len(profile.config) == 1
 
     # Test addition operators
     def test_add(a, b):
         add = a + b
         assert isinstance(add, Pipeline)
-        assert len(add.filters) == 2
+        assert len(add.config) == 2
 
     # Test all combinations of types for operator +
     test_add(f, f)
@@ -78,7 +78,7 @@ def test_baseclass_conversions():
         a2 = a.copy()
         a2 += b
         assert isinstance(a2, Pipeline)
-        assert len(a2.filters) == 2
+        assert len(a2.config) == 2
 
     # Combinations
     test_iadd(pipeline, f)

@@ -32,5 +32,6 @@
       "title": "Cloth Simulation Filter (PDAL)",
       "type": "object"
     }
-  ]
+  ],
+  "title": "PDAL Filter"
 }
