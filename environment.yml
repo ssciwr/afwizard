@@ -8,8 +8,8 @@ dependencies:
   - ipywidgets<8
   - jupyterlab
   - laspy[laszip]
-  - pdal=2.2
-  - python-pdal
+  - pdal=2.3.0=hffa3947_3
+  - python-pdal=2.4.2=py39h1a9c180_0
   - pip
   - pip:
     - jsonschema
