@@ -1,8 +1,10 @@
+from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter
 from adaptivefiltering.paths import locate_schema
 from adaptivefiltering.widgets import WidgetForm
 
 import json
+import pdal
 import pyrsistent
 
 
@@ -12,6 +14,12 @@ class PDALFilter(Filter, identifier="pdal"):
     def __init__(self, *args, **kwargs):
         self._schema = None
         super(PDALFilter, self).__init__(*args, **kwargs)
+
+    def execute(self, dataset, inplace=False):
+        raise NotImplementedError
+        pipeline = pdal.Pipeline(json.dumps([self._serialize()]))
+        pipeline.execute()
+        return DataSet()
 
     def widget_form(self):
         return PDALWidgetForm(self.schema())

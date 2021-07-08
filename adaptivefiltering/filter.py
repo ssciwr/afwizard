@@ -150,6 +150,9 @@ class Filter:
         """Convert to a filter pipeline with one stage"""
         return Pipeline([self])
 
+    def widget_form(self):
+        return WidgetForm(self.schema())
+
     def __add__(self, other):
         """Adding filters composes a pipeline"""
         return self.as_pipeline() + other
@@ -165,9 +168,6 @@ class Filter:
 
     def __eq__(self, other):
         return repr(self) == repr(other)
-
-    def widget_form(self):
-        return WidgetForm(self.schema())
 
 
 # Register the base class itself
