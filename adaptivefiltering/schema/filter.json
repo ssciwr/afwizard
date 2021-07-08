@@ -1,0 +1,11 @@
+{
+  "properties": {
+    "filter_data": {
+      "type": "object"
+    },
+    "filter_type": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}

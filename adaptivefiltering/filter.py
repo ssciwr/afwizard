@@ -1,3 +1,4 @@
+from adaptivefiltering.paths import locate_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetForm
 
@@ -84,23 +85,36 @@ class Filter:
         """
         raise NotImplementedError  # pragma: no cover
 
-    def serialize(self):
-        """Serialize this filter
+    def _serialize(self):
+        """Serialize this filter.
+
+        Serialize this object into a (nested) built-in data structure. Passing
+        the result to :func:`~adaptivefiltering.filter.Filter._deserialize` should
+        reconstruct the object. Note that this method is an implementation detail
+        of a given filter implementation: To serialize a given filter, use
+        :func:`~adaptivefiltering.filter.serialize` instead.
 
         :return:
-            The serialized string.
-        :rtype: str
+            The data structure after serialization.
         """
-        raise NotImplementedError  # pragma: no cover
+        return pyrsistent.thaw(self.config)
 
-    def deserialize(self, data):
-        """Deserialize this filter
+    @classmethod
+    def _deserialize(cls, data):
+        """Deserialize this filter.
+
+        Deserialize this objecte from a (nested) built-in data structure. This is
+        the counterpart of :func:`~adaptivefiltering.filter.Filter._serialize`.
+        Note that this method is an implementation detail
+        of a given filter implementation: To serialize a given filter, use
+        :func:`~adaptivefiltering.filter.serialize` instead.
 
         :param data:
-            The data string from which to deserialize the filter
-        :type data: str
+            The data string from which to deserialize the filter.
+        :return:
+            The deserialized filter instance
         """
-        raise NotImplementedError  # pragma: no cover
+        return cls(config=data)
 
     def save(self, filename):
         """Save this filter with its configuration to a file
@@ -115,7 +129,7 @@ class Filter:
         :type filename: str
         """
         with open(os.path.abspath(filename)) as f:
-            f.write(self.serialize())
+            f.write(serialize(self))
 
     @property
     def schema(self):
@@ -127,7 +141,7 @@ class Filter:
             the Draft 7 JSON Schema standard (https://json-schema.org/).
         :rtype: pyrsistent.PMap
         """
-        raise NotImplementedError  # pragma: no cover
+        return pyrsistent.m(type="object")
 
     def copy(self, **kwargs):
         """Create a copy of this filter with update configuration parameters
@@ -162,6 +176,10 @@ class Filter:
 
     def widget_form(self):
         return WidgetForm(self.schema)
+
+
+# Register the base class itself
+Filter._filter_impls["base"] = Filter
 
 
 class Pipeline(Filter, identifier="pipeline"):
@@ -235,3 +253,34 @@ class Profile(Pipeline, identifier="profile"):
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
         return self._example_data_url
+
+
+def serialize(filter_):
+    """Serialize a given filter.
+
+    This relies on :func:`~adaptivefilter.filter.Filter._serialize` to do the
+    object serialization, but adds information about the correct filter type.
+    """
+    assert isinstance(filter_, Filter)
+
+    # Construct a dictionary with filter type and data
+    data = {}
+    data["filter_type"] = type(filter_)._identifier
+    data["filter_data"] = filter_._serialize()
+    return data
+
+
+def deserialize(data):
+    """Deserialize a filter.
+
+    This relies on :func:`~adaptivefilter.filter.Filter._deserialize` to do the
+    object deserialization, but reads the type information to select the correct
+    filter class to construct.
+    """
+    # Validate the data against our filter meta schema
+    schema = json.load(open(locate_schema("filter.json"), "r"))
+    jsonschema.validate(instance=data, schema=schema)
+
+    # Find the correct type and do the deserialization
+    type_ = Filter._filter_impls[data["filter_type"]]
+    return type_.deserialize(data["filter_data"])
