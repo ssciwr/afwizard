@@ -138,6 +138,7 @@ class Filter:
         return Pipeline(filters=[self])
 
     def widget_form(self):
+        """Create a widget form for this filter"""
         return WidgetForm(self.schema())
 
     def __add__(self, other):
