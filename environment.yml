@@ -3,14 +3,16 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
+  - gdal
   - ipyvolume
   - ipywidgets<8
   - jupyterlab
   - laspy[laszip]
+  - pdal=2.2
   - python-pdal
   - pip
-  - gdal
   - pip:
     - jsonschema
+    - matplotlib
     - pyrsistent
     - xdg

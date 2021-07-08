@@ -9,10 +9,12 @@ setup(
     long_description="*This library is currently under development.*",
     packages=find_packages(),
     install_requires=[
+        "gdal",
         "ipyvolume",
         "ipywidgets<8",
         "jsonschema",
         "laspy[laszip]",
+        "matplotlib",
         "numpy",
         "pyrsistent",
         "xdg",
