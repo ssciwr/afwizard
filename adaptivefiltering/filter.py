@@ -13,7 +13,7 @@ class FilterError(AdaptiveFilteringError):
 
 
 class Filter:
-    def __init__(self, config=None):
+    def __init__(self, **config):
         """The base class for a filter in adaptivefiltering
 
         A filter can either be constructed from a configuration or be deserialized
@@ -24,9 +24,6 @@ class Filter:
             defined by the schema property.
         :type config: dict
         """
-        if config is None:
-            raise FilterError("Filters need to be constructed with a configuration")
-
         self.config = config
 
     # Store a registry of filter implementations derived from this base class
@@ -112,7 +109,7 @@ class Filter:
         :return:
             The deserialized filter instance
         """
-        return cls(config=data)
+        return cls(**data)
 
     @classmethod
     def schema(cls):
@@ -134,21 +131,11 @@ class Filter:
             created instance of this filter.
         :type kwargs: dict
         """
-        return type(self)(self.config.update(kwargs))
-
-    def as_profile(self, author=None, description=None, example_data_url=None):
-        """Treat this filter object as a profile by adding the necessary metadata
-
-        :return: A profile instance
-        :rtype: adaptivefiltering.filter.Profile
-        """
-        return self.as_pipeline().as_profile(
-            author=author, description=description, example_data_url=example_data_url
-        )
+        return type(self)(**self.config.update(kwargs))
 
     def as_pipeline(self):
         """Convert to a filter pipeline with one stage"""
-        return Pipeline([self])
+        return Pipeline(filters=[self])
 
     def widget_form(self):
         return WidgetForm(self.schema())
@@ -161,7 +148,7 @@ class Filter:
         raise FilterError("Cannot add filters in place. Use operator + instead")
 
     def __repr__(self):
-        return f"{type(self).__name__}(config={repr(self.config)})"
+        return f"{type(self).__name__}({repr(self.config)})"
 
     def __hash__(self):
         return hash(repr(self))
@@ -176,8 +163,8 @@ Filter._filter_is_backend["base"] = False
 Filter._identifier = "base"
 
 
-class Pipeline(Filter, identifier="pipeline", backend=False):
-    def __init__(self, filters=[]):
+class PipelineMixin:
+    def __init__(self, filters=[], author="", description="", example_data_url=""):
         """A filter pipeline consisting of several steps
 
         :param filters:
@@ -185,32 +172,30 @@ class Pipeline(Filter, identifier="pipeline", backend=False):
             of :class:`~adapativefiltering.filter.Filter`.
         :type filters: list
         """
-        self.config = filters
+        self.config = {
+            "filters": filters,
+            "author": author,
+            "description": description,
+            "example_data_url": example_data_url,
+        }
 
     @classmethod
     def schema(cls):
-        return pyrsistent.m(type="array")
-
-    def copy(self):
-        """Create a copy of this pipeline"""
-        return Pipeline(filters=self.config)
-
-    def as_profile(self, author=None, description=None, example_data_url=None):
-        return Profile(
-            filters=self.config,
-            author=author,
-            description=description,
-            example_data_url=example_data_url,
-        )
+        with open(locate_schema("pipeline.json"), "r") as f:
+            return pyrsistent.freeze(json.load(f))
 
     def as_pipeline(self):
         return self
 
     def __add__(self, other):
-        return type(self)(filters=self.config + other.as_pipeline().config)
+        return type(self)(
+            filters=self.config["filters"] + other.as_pipeline().config["filters"]
+        )
 
     def __iadd__(self, other):
-        return Pipeline(filters=self.config + other.as_pipeline().config)
+        return self.copy(
+            filters=self.config["filters"] + other.as_pipeline().config["filters"]
+        )
 
     def widget_form(self):
         # Collect the list of available backend implementations
@@ -220,69 +205,42 @@ class Pipeline(Filter, identifier="pipeline", backend=False):
                 backends.append(class_.schema())
 
         # Construct a widget that let's you select the backend
-        return WidgetForm(
-            pyrsistent.freeze(
-                {
-                    "type": "array",
-                    "items": {"oneOf": backends},
-                }
-            )
-        )
+        schema = pyrsistent.thaw(self.schema())
+        schema["properties"]["filters"] = {
+            "type": "array",
+            "items": {"oneOf": backends, "title": "Filtering Backend"},
+        }
+
+        return WidgetForm(pyrsistent.freeze(schema))
 
     def _serialize(self):
-        return {"filters": [serialize_filter(f) for f in self.config]}
+        data = pyrsistent.thaw(self.config)
+        data["filters"] = [serialize_filter(f) for f in self.config["filters"]]
+        return data
 
     @classmethod
     def _deserialize(cls, data):
-        return cls(filters=[deserialize_filter(f) for f in data["filters"]])
-
-
-class Profile(Pipeline, identifier="profile", backend=False):
-    def __init__(self, author=None, description=None, example_data_url=None, **kwargs):
-        """A filter pipeline with additional metadata to share with other users
-
-        :param author:
-            The author of this profile.
-        :type author: str
-        :param description:
-            A description of the usage scenarios for this profile.
-        :type description: str
-        :param example_data_url:
-            A link to a data set that this profile excels at filtering.
-        :type example_data_url: str
-        """
-        super(Profile, self).__init__(**kwargs)
-        self._author = author
-        self._description = description
-        self._example_data_url = example_data_url
+        data["filters"] = [deserialize_filter(f) for f in data["filters"]]
+        return cls(**data)
 
     @property
     def author(self):
         """The author of this profile"""
-        return self._author
+        return self.config["author"]
 
     @property
     def description(self):
         """A description of the usage scenarios for this profile."""
-        return self._description
+        return self.config["description"]
 
     @property
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
-        return self._example_data_url
+        return self.config["example_data_url"]
 
-    def _serialize(self):
-        return {
-            "filters": [serialize_filter(f) for f in self.config],
-            "author": self.author,
-            "description": self.description,
-            "example_data_url": self.example_data_url,
-        }
 
-    @classmethod
-    def _deserialize(cls, data):
-        filters = [deserialize_filter(f) for f in data.pop("filters")]
-        return cls(filters=filters, **data)
+class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
+    pass
 
 
 def serialize_filter(filter_):

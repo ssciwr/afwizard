@@ -2,72 +2,63 @@ from adaptivefiltering.filter import *
 from adaptivefiltering.pdal import PDALFilter
 
 import jsonschema
+import pyrsistent
 import pytest
 
 
 # A list of simple no-op filters for test parametrization
-filters = [PDALFilter(config={"type": "filters.crop"}), Filter(config={})]
-filters.append(filters[0] + filters[0])
-filters.append(filters[0].as_profile())
+filters = [PDALFilter(type="filters.crop"), Filter()]
+pipelines = [filters[0] + filters[0], filters[0].as_pipeline()]
 
 
 def test_pdal_filter():
-    # Filters cannot be constructed without a configuration
-    with pytest.raises(FilterError):
+    # A configuration without type is not a valid PDAL filter
+    with pytest.raises(jsonschema.ValidationError):
         PDALFilter()
 
-    # An empty configuration is not a valid PDAL filter
-    with pytest.raises(jsonschema.ValidationError):
-        PDALFilter(config={})
-
     # Instantiate a filter for testing
-    f = PDALFilter(config={"type": "filters.crop"})
+    f = PDALFilter(type="filters.crop")
 
     # Make sure that the filter widget can be displayed
     widget = f.widget_form()
 
     # And that the filter can be reconstructed using the form data
-    f2 = f.copy(**widget.data())
+    f2 = f.copy(**pyrsistent.thaw(widget.data()))
+
+
+def test_pdal_pipeline():
+    f = PDALFilter(type="filters.crop")
+    p = f.as_pipeline()
+
+    # widget = p.widget_form()
+    # p2 = p.copy(**pyrsistent.thaw(widget.data()))
 
 
 def test_baseclass_conversions():
     # An example filter
-    f = PDALFilter(config={"type": "filters.crop"})
+    f = PDALFilter(type="filters.crop")
 
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
-    assert isinstance(pipeline, Pipeline)
-    assert len(pipeline.config) == 1
+    assert isinstance(pipeline, PipelineMixin)
+    assert len(pipeline.config["filters"]) == 1
 
     # Filter creation is idempotent
     pipeline = pipeline.as_pipeline()
-    assert isinstance(pipeline, Pipeline)
-    assert len(pipeline.config) == 1
-
-    # Filters and pipelines can be turned into profiles
-    profile = f.as_profile()
-    assert isinstance(profile, Profile)
-    assert len(profile.config) == 1
-    profile = pipeline.as_profile()
-    assert isinstance(profile, Profile)
-    assert len(profile.config) == 1
+    assert isinstance(pipeline, PipelineMixin)
+    assert len(pipeline.config["filters"]) == 1
 
     # Test addition operators
     def test_add(a, b):
         add = a + b
-        assert isinstance(add, Pipeline)
-        assert len(add.config) == 2
+        assert isinstance(add, PipelineMixin)
+        assert len(add.config["filters"]) == 2
 
     # Test all combinations of types for operator +
     test_add(f, f)
     test_add(pipeline, f)
     test_add(f, pipeline)
     test_add(pipeline, pipeline)
-    test_add(profile, f)
-    test_add(f, profile)
-    test_add(profile, profile)
-    test_add(profile, pipeline)
-    test_add(pipeline, profile)
 
     # operator += is not available for filters
     def unavailable_iadd(a, b):
@@ -77,22 +68,17 @@ def test_baseclass_conversions():
     # Against test all combinations
     unavailable_iadd(f, f)
     unavailable_iadd(f, pipeline)
-    unavailable_iadd(f, profile)
 
-    # Test operator += for pipelines and profile
+    # Test operator += for pipelines
     def test_iadd(a, b):
         a2 = a.copy()
         a2 += b
-        assert isinstance(a2, Pipeline)
-        assert len(a2.config) == 2
+        assert isinstance(a2, PipelineMixin)
+        assert len(a2.config["filters"]) == 2
 
     # Combinations
     test_iadd(pipeline, f)
     test_iadd(pipeline, pipeline)
-    test_iadd(pipeline, profile)
-    test_iadd(profile, f)
-    test_iadd(profile, pipeline)
-    test_iadd(profile, profile)
 
 
 def test_custom_filter_backend():
@@ -109,7 +95,7 @@ def test_custom_filter_backend():
             pass
 
 
-@pytest.mark.parametrize("f", filters)
+@pytest.mark.parametrize("f", filters + pipelines)
 def test_serialization(f, tmp_path):
     # Test pure serialization
     f2 = deserialize_filter(serialize_filter(f))
@@ -124,18 +110,19 @@ def test_serialization(f, tmp_path):
     assert type(f) == type(f2)
 
 
-@pytest.mark.parametrize(
-    "f", (PDALFilter(config={"type": "filters.crop"}), Filter(config={}))
-)
-def test_profile(f):
+@pytest.mark.parametrize("p", pipelines)
+def test_pipeline(p):
     author = "Dominic Kempf"
-    description = "This is a test profile"
+    description = "This is a test pipeline with metadata"
     example_data_url = "https://github.com/ssciwr"
 
-    p = f.as_profile(
+    p = p.copy(
         author=author, description=description, example_data_url=example_data_url
     )
 
     assert p.author == author
     assert p.description == description
     assert p.example_data_url == example_data_url
+
+    form = p.widget_form()
+    p2 = p.copy(**form.data())

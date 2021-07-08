@@ -1,5 +1,5 @@
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter
+from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import locate_schema
 from adaptivefiltering.widgets import WidgetForm
 
@@ -32,6 +32,22 @@ class PDALFilter(Filter, identifier="pdal"):
                 cls._schema = pyrsistent.freeze(json.load(f))
 
         return cls._schema
+
+    def as_pipeline(self):
+        return PDALPipeline(filters=[self])
+
+
+class PDALPipeline(
+    PipelineMixin, PDALFilter, identifier="pdal_pipeline", backend=False
+):
+    def widget_form(self):
+        # Provide a widget that is restricted to the PDAL backend
+        schema = pyrsistent.thaw(self.schema())
+        schema["properties"]["filters"] = {
+            "type": "array",
+            "items": Filter._filter_impls["pdal"].schema(),
+        }
+        return WidgetForm(pyrsistent.freeze(schema))
 
 
 class PDALWidgetForm(WidgetForm):
