@@ -230,11 +230,11 @@ class Pipeline(Filter, identifier="pipeline", backend=False):
         )
 
     def _serialize(self):
-        return [serialize_filter(f) for f in self.config]
+        return {"filters": [serialize_filter(f) for f in self.config]}
 
     @classmethod
     def _deserialize(cls, data):
-        return cls([deserialize_filter(f) for f in data])
+        return cls(filters=[deserialize_filter(f) for f in data["filters"]])
 
 
 class Profile(Pipeline, identifier="profile", backend=False):
@@ -270,6 +270,19 @@ class Profile(Pipeline, identifier="profile", backend=False):
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
         return self._example_data_url
+
+    def _serialize(self):
+        return {
+            "filters": [serialize_filter(f) for f in self.config],
+            "author": self.author,
+            "description": self.description,
+            "example_data_url": self.example_data_url,
+        }
+
+    @classmethod
+    def _deserialize(cls, data):
+        filters = [deserialize_filter(f) for f in data.pop("filters")]
+        return cls(filters=filters, **data)
 
 
 def serialize_filter(filter_):

@@ -8,6 +8,7 @@ import pytest
 # A list of simple no-op filters for test parametrization
 filters = [PDALFilter(config={"type": "filters.crop"}), Filter(config={})]
 filters.append(filters[0] + filters[0])
+filters.append(filters[0].as_profile())
 
 
 def test_pdal_filter():

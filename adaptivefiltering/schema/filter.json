@@ -1,10 +1,7 @@
 {
   "properties": {
     "filter_data": {
-      "type": [
-        "object",
-        "array"
-      ]
+      "type": "object"
     },
     "filter_type": {
       "type": "string"
