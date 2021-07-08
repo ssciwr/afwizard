@@ -1,4 +1,4 @@
-from adaptivefiltering.filter import Filter, FilterError, Pipeline, Profile
+from adaptivefiltering.filter import *
 from adaptivefiltering.pdal import PDALFilter
 
 import jsonschema
@@ -20,11 +20,11 @@ def test_pdal_filter():
     # Make sure that the filter widget can be displayed
     widget = f.widget_form()
 
-    # And that the filter can be restructed using the form data
+    # And that the filter can be reconstructed using the form data
     f2 = f.copy(**widget.data())
 
 
-def test_filterclass_conversions():
+def test_baseclass_conversions():
     # An example filter
     f = PDALFilter(config={"type": "filters.crop"})
 
@@ -101,3 +101,18 @@ def test_custom_filter_backend():
 
         class CustomBackend(Filter, identifier="pdal"):
             pass
+
+
+@pytest.mark.parametrize(
+    "f", (PDALFilter(config={"type": "filters.crop"}), Filter(config={}))
+)
+def test_serialization(f, tmp_path):
+    # Test pure serialization
+    f2 = deserialize_filter(serialize_filter(f))
+    assert f.config == f2.config
+
+    # Test file saving and loading
+    filename = os.path.join(tmp_path, "test.json")
+    save_filter(f, filename)
+    f2 = load_filter(filename)
+    assert f.config == f2.config

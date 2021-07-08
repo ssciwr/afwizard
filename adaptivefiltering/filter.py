@@ -13,7 +13,7 @@ class FilterError(AdaptiveFilteringError):
 
 
 class Filter:
-    def __init__(self, config=None, filename=None):
+    def __init__(self, config=None):
         """The base class for a filter in adaptivefiltering
 
         A filter can either be constructed from a configuration or be deserialized
@@ -23,23 +23,11 @@ class Filter:
             The dictionary of configuration values that conforms to the schema
             defined by the schema property.
         :type config: dict
-        :param filename:
-            A filename to load the filter settings from. You can either specify an absolute path
-            or a relative path. Relative paths are interpreted w.r.t. the current
-            working directory.
-        :type filename: str
         """
-        if config is None and filename is None:
-            raise FilterError(
-                "Filters need to be constructed with either a configuration or a filename"
-            )
+        if config is None:
+            raise FilterError("Filters need to be constructed with a configuration")
 
-        if config is not None:
-            self.config = config
-
-        if filename is not None:
-            with open(os.path.abspath(filename)) as f:
-                self.deserialize(f.read())
+        self.config = config
 
     # Store a registry of filter implementations derived from this base class
     _filter_impls = {}
@@ -116,21 +104,6 @@ class Filter:
         """
         return cls(config=data)
 
-    def save(self, filename):
-        """Save this filter with its configuration to a file
-
-        The resulting file can be read with the :func:`~adaptivefiltering.filter.Filter.load`
-        method to restore this filter object.
-
-        :param filename:
-            The filename to save the filter to. You can either specify an absolute path
-            or a relative path. Relative paths are interpreted w.r.t. the current
-            working directory.
-        :type filename: str
-        """
-        with open(os.path.abspath(filename)) as f:
-            f.write(serialize(self))
-
     @property
     def schema(self):
         """Define the configuration schema for this filter
@@ -180,6 +153,7 @@ class Filter:
 
 # Register the base class itself
 Filter._filter_impls["base"] = Filter
+Filter._identifier = "base"
 
 
 class Pipeline(Filter, identifier="pipeline"):
@@ -255,7 +229,7 @@ class Profile(Pipeline, identifier="profile"):
         return self._example_data_url
 
 
-def serialize(filter_):
+def serialize_filter(filter_):
     """Serialize a given filter.
 
     This relies on :func:`~adaptivefilter.filter.Filter._serialize` to do the
@@ -270,7 +244,7 @@ def serialize(filter_):
     return data
 
 
-def deserialize(data):
+def deserialize_filter(data):
     """Deserialize a filter.
 
     This relies on :func:`~adaptivefilter.filter.Filter._deserialize` to do the
@@ -283,4 +257,33 @@ def deserialize(data):
 
     # Find the correct type and do the deserialization
     type_ = Filter._filter_impls[data["filter_type"]]
-    return type_.deserialize(data["filter_data"])
+    return type_._deserialize(data["filter_data"])
+
+
+def save_filter(filter_, filename):
+    """Save a filter to a file
+
+    Filters saved to disk with this function can be reconstructed with the
+    :func:`~adaptivefiltering.load_filter` method.
+
+    :param filter_:
+        The filter object to write to disk
+    :type filter_: Filter
+    :param filename:
+        The filename where to write the filter. Relative paths are interpreted
+        w.r.t. the current working directory.
+    """
+    filename = os.path.abspath(filename)
+    with open(filename, "w") as f:
+        json.dump(serialize_filter(filter_), f)
+
+
+def load_filter(filename):
+    """Load a filter from a file
+
+    This function restores filters that were previously saved to disk using the
+    :func:`~adaptivefiltering.save_filter` function.
+    """
+    filename = os.path.abspath(filename)
+    with open(filename, "r") as f:
+        return deserialize_filter(json.load(f))
