@@ -116,3 +116,20 @@ def test_serialization(f, tmp_path):
     save_filter(f, filename)
     f2 = load_filter(filename)
     assert f.config == f2.config
+
+
+@pytest.mark.parametrize(
+    "f", (PDALFilter(config={"type": "filters.crop"}), Filter(config={}))
+)
+def test_profile(f):
+    author = "Dominic Kempf"
+    description = "This is a test profile"
+    example_data_url = "https://github.com/ssciwr"
+
+    p = f.as_profile(
+        author=author, description=description, example_data_url=example_data_url
+    )
+
+    assert p.author == author
+    assert p.description == description
+    assert p.example_data_url == example_data_url
