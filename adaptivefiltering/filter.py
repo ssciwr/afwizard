@@ -157,6 +157,15 @@ class Filter:
     def __iadd__(self, other):
         raise FilterError("Cannot add filters in place. Use operator + instead")
 
+    def __repr__(self):
+        return f"{type(self).__name__}(config={repr(self.config)})"
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
     def widget_form(self):
         return WidgetForm(self.schema())
 
@@ -219,6 +228,13 @@ class Pipeline(Filter, identifier="pipeline", backend=False):
                 }
             )
         )
+
+    def _serialize(self):
+        return [serialize_filter(f) for f in self.config]
+
+    @classmethod
+    def _deserialize(cls, data):
+        return cls([deserialize_filter(f) for f in data])
 
 
 class Profile(Pipeline, identifier="profile", backend=False):

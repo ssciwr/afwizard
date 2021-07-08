@@ -5,6 +5,11 @@ import jsonschema
 import pytest
 
 
+# A list of simple no-op filters for test parametrization
+filters = [PDALFilter(config={"type": "filters.crop"}), Filter(config={})]
+filters.append(filters[0] + filters[0])
+
+
 def test_pdal_filter():
     # Filters cannot be constructed without a configuration
     with pytest.raises(FilterError):
@@ -103,9 +108,7 @@ def test_custom_filter_backend():
             pass
 
 
-@pytest.mark.parametrize(
-    "f", (PDALFilter(config={"type": "filters.crop"}), Filter(config={}))
-)
+@pytest.mark.parametrize("f", filters)
 def test_serialization(f, tmp_path):
     # Test pure serialization
     f2 = deserialize_filter(serialize_filter(f))
