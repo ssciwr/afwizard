@@ -104,7 +104,6 @@ class DataSet:
             # the temporary file is not removed automatically. Manual removal will be implemented
             with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
-                os.remove(str(tmp_file.name) + ".tif")
 
         # use the number of x and y points to generate a grid.
         x = np.arange(0, self._geo_tif_data.RasterXSize)
