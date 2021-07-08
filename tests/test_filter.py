@@ -8,7 +8,7 @@ import pytest
 
 # A list of simple no-op filters for test parametrization
 filters = [PDALFilter(type="filters.crop"), Filter()]
-pipelines = [filters[0] + filters[0], filters[0].as_pipeline()]
+pipelines = [filters[0] + filters[0], filters[1].as_pipeline()]
 
 
 def test_pdal_filter():
@@ -30,8 +30,8 @@ def test_pdal_pipeline():
     f = PDALFilter(type="filters.crop")
     p = f.as_pipeline()
 
-    # widget = p.widget_form()
-    # p2 = p.copy(**pyrsistent.thaw(widget.data()))
+    widget = p.widget_form()
+    p2 = p.copy(**pyrsistent.thaw(widget.data()))
 
 
 def test_baseclass_conversions():
@@ -117,7 +117,9 @@ def test_pipeline(p):
     example_data_url = "https://github.com/ssciwr"
 
     p = p.copy(
-        author=author, description=description, example_data_url=example_data_url
+        metadata=dict(
+            author=author, description=description, example_data_url=example_data_url
+        )
     )
 
     assert p.author == author

@@ -1,16 +1,23 @@
 {
   "properties": {
-    "author": {
-      "type": "string"
-    },
-    "description": {
-      "type": "string"
-    },
-    "example_data_url": {
-      "type": "string"
-    },
     "filters": {
+      "title": "Pipeline stages",
       "type": "array"
+    },
+    "metadata": {
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "example_data_url": {
+          "type": "string"
+        }
+      },
+      "title": "Pipeline Metadata",
+      "type": "object"
     }
   },
   "type": "object"

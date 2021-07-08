@@ -148,10 +148,7 @@ class Filter:
         raise FilterError("Cannot add filters in place. Use operator + instead")
 
     def __repr__(self):
-        return f"{type(self).__name__}({repr(self.config)})"
-
-    def __hash__(self):
-        return hash(repr(self))
+        return f"{type(self).__name__}(**{{{repr(self.config)}}})"
 
     def __eq__(self, other):
         return repr(self) == repr(other)
@@ -164,7 +161,7 @@ Filter._identifier = "base"
 
 
 class PipelineMixin:
-    def __init__(self, filters=[], author="", description="", example_data_url=""):
+    def __init__(self, **kwargs):
         """A filter pipeline consisting of several steps
 
         :param filters:
@@ -172,12 +169,7 @@ class PipelineMixin:
             of :class:`~adapativefiltering.filter.Filter`.
         :type filters: list
         """
-        self.config = {
-            "filters": filters,
-            "author": author,
-            "description": description,
-            "example_data_url": example_data_url,
-        }
+        self.config = kwargs
 
     @classmethod
     def schema(cls):
@@ -226,17 +218,17 @@ class PipelineMixin:
     @property
     def author(self):
         """The author of this profile"""
-        return self.config["author"]
+        return self.config["metadata"]["author"]
 
     @property
     def description(self):
         """A description of the usage scenarios for this profile."""
-        return self.config["description"]
+        return self.config["metadata"]["description"]
 
     @property
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
-        return self.config["example_data_url"]
+        return self.config["metadata"]["example_data_url"]
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
