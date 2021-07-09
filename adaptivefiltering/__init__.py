@@ -1,4 +1,5 @@
 # Make sure to import modules that register filter backends
+import adaptivefiltering.opals
 import adaptivefiltering.pdal
 
 # Import those functions and objects that we consider the package user API
