@@ -73,7 +73,7 @@ def locate_file(filename):
 
 
 def locate_schema(schema):
-    """Locate a schema JSON file by inspecting the Python installation
+    """Locate a schema JSON file by inspecting the Python package installation
 
     :arg schema:
         The relative path of the schema in the schema directory.

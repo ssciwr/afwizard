@@ -17,7 +17,7 @@ class Filter:
         """The base class for a filter in adaptivefiltering
 
         A filter can either be constructed from a configuration or be deserialized
-        from a file.
+        from a file using the :func:`~adaptivefiltering.load_filter` function.
 
         :param config:
             The dictionary of configuration values that conforms to the schema
@@ -70,8 +70,7 @@ class Filter:
             The data set to apply the filter to.
         :type dataset: adaptivefiltering.DataSet
         :return:
-            A modified data set instance. This is the same object as the input data
-            set if and only if the inplace parameter is true.
+            A modified data set instance with the filter applied.
         """
         raise NotImplementedError  # pragma: no cover
 
@@ -119,7 +118,7 @@ class Filter:
         return pyrsistent.m(type="object")
 
     def copy(self, **kwargs):
-        """Create a copy of this filter with update configuration parameters
+        """Create a copy of this filter with updated configuration parameters
 
         :param kwargs:
             A number of key/value pairs that should be changed on the newly
@@ -133,7 +132,11 @@ class Filter:
         return Pipeline(filters=[self])
 
     def widget_form(self):
-        """Create a widget form for this filter"""
+        """Create a widget form for this filter
+
+        :return: The widget form
+        :rtype: :class:`~adaptivefiltering.widgets.WidgetForm`
+        """
         return WidgetForm(self.schema())
 
     def __add__(self, other):
@@ -285,6 +288,11 @@ def load_filter(filename):
 
     This function restores filters that were previously saved to disk using the
     :func:`~adaptivefiltering.save_filter` function.
+
+    :param filename:
+        The filename to load the filter from. Relative paths are interpreted
+        w.r.t. the current working directory.
+    :type filename: str
     """
     filename = os.path.abspath(filename)
     with open(filename, "r") as f:
