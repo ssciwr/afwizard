@@ -1,9 +1,6 @@
 from adaptivefiltering.paths import locate_file
 from adaptivefiltering.visualization import vis_pointcloud, vis_mesh
 
-import json
-import laspy
-import pdal
 import tempfile
 import numpy as np
 from osgeo import gdal
@@ -12,7 +9,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename, warning_threshold=750000):
+    def __init__(self, data=None, filename=None, warning_threshold=750000):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -23,24 +20,30 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
+        :param data:
+        :type data: numpy.array
         """
         # initilizise self._geo_tif_data_resolution as 0
         self._geo_tif_data_resolution = 0
         # initilize warning threshold to warn the user that show() is not available
         self.warning_threshold = warning_threshold
 
-        self.filename = locate_file(filename)
-        # old laspy style
-        # self.data = laspy.file.File(filename, mode="r")
+        # Store the data array
+        self.data = data
 
-        # new laspy style
-        # test = laspy.read(test, l)
-        self.data = laspy.read(self.filename)
+        # Load the file from the given filename
+        if filename is not None:
+            from adaptivefiltering.pdal import execute_pdal_pipeline
 
-        if len(self.data.x) >= self.warning_threshold:
+            filename = locate_file(filename)
+            self.data = execute_pdal_pipeline(
+                config={"type": "readers.las", "filename": filename}
+            )
+
+        if len(self.data["X"]) >= self.warning_threshold:
             print(
                 "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
-                    len(self.data.x), self.warning_threshold
+                    len(self.data["X"]), self.warning_threshold
                 )
             )
 
@@ -70,20 +73,22 @@ class DataSet:
         # if .tif is already in the filename it will be removed to avoid double file extension
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
-        # configure the geotif pipeline
-        geotif_pipeline_json = [
-            self.filename,
-            {
+
+        # Execute a PDAL pipeline
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        execute_pdal_pipeline(
+            dataset=self,
+            config={
                 "filename": filename + ".tif",
                 "gdaldriver": "GTiff",
                 "output_type": "all",
                 "resolution": resolution,
                 "type": "writers.gdal",
             },
-        ]
-        # setup and execute the geotif pipeline
-        pipeline = pdal.Pipeline(json.dumps(geotif_pipeline_json))
-        geotif_pipeline = pipeline.execute()
+        )
+
+        # Read the result
         self._geo_tif_data = gdal.Open(filename + ".tif", gdal.GA_ReadOnly)
         self._geo_tif_data_resolution = resolution
 
@@ -132,13 +137,13 @@ class DataSet:
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
         """
-        if len(self.data.x) >= self.warning_threshold:
+        if len(self.data["X"]) >= self.warning_threshold:
             error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data.x), self.warning_threshold
+                len(self.data["X"]), self.warning_threshold
             )
             raise ValueError(error_text)
 
-        return vis_pointcloud(self.data.x, self.data.y, self.data.z)
+        return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file

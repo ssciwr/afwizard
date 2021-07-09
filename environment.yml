@@ -7,7 +7,6 @@ dependencies:
   - ipyvolume
   - ipywidgets<8
   - jupyterlab
-  - laspy[laszip]
   - pdal=2.3.0
   - python-pdal=2.4.2
   - pip

@@ -13,7 +13,6 @@ setup(
         "ipyvolume",
         "ipywidgets<8",
         "jsonschema",
-        "laspy[laszip]",
         "matplotlib",
         "numpy",
         "pyrsistent",
