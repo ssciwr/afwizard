@@ -9,7 +9,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, data=None, filename=None, warning_threshold=750000):
+    def __init__(self, data=None, filename=None):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -25,8 +25,6 @@ class DataSet:
         """
         # initilizise self._geo_tif_data_resolution as 0
         self._geo_tif_data_resolution = 0
-        # initilize warning threshold to warn the user that show() is not available
-        self.warning_threshold = warning_threshold
 
         # Store the data array
         self.data = data
@@ -38,13 +36,6 @@ class DataSet:
             filename = locate_file(filename)
             self.data = execute_pdal_pipeline(
                 config={"type": "readers.las", "filename": filename}
-            )
-
-        if len(self.data["X"]) >= self.warning_threshold:
-            print(
-                "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
-                    len(self.data["X"]), self.warning_threshold
-                )
             )
 
     def save_mesh(
@@ -132,14 +123,14 @@ class DataSet:
         z = band.ReadAsArray()
         return vis_mesh(x, y, z)
 
-    def show_points(self):
+    def show_points(self, threshold=750000):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
         """
-        if len(self.data["X"]) >= self.warning_threshold:
+        if len(self.data["X"]) >= threshold:
             error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data["X"]), self.warning_threshold
+                len(self.data["X"]), threshold
             )
             raise ValueError(error_text)
 

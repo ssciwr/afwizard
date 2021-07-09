@@ -14,11 +14,11 @@ def test_adaptivefiltering():
 def test_adaptivefiltering_threshold():
     # Load a dataset and set threshold to 500
     dataset = adaptivefiltering.DataSet(
-        filename="data/500k_NZ20_Westport.laz", warning_threshold=500
+        filename="data/500k_NZ20_Westport.laz",
     )
     # The given Dataset has more than 500 points, this a ValueError is raised.
     with pytest.raises(ValueError):
-        dataset.show_points()
+        dataset.show_points(threshold=500)
 
 
 def test_adaptivefiltering_show_mesh():
