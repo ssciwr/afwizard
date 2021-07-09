@@ -1,0 +1,8 @@
+{
+  "properties": {
+    "profile": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}

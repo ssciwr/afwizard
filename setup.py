@@ -10,6 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "gdal",
+        "geojson",
         "ipyvolume",
         "ipywidgets<8",
         "jsonschema",
