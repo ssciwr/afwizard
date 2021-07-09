@@ -110,8 +110,8 @@ class DataSet:
                 )
             )
 
-            # the temporary file is not removed automatically. Manual removal will be implemented
-            with tempfile.NamedTemporaryFile(dir=os.getcwd()) as tmp_file:
+            # Write a temporary file
+            with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
 
         # use the number of x and y points to generate a grid.
