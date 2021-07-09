@@ -58,7 +58,7 @@ class PDALFilter(Filter, identifier="pdal"):
         self._schema = None
         super(PDALFilter, self).__init__(*args, **kwargs)
 
-    def execute(self, dataset, inplace=False):
+    def execute(self, dataset):
         return DataSet(
             data=execute_pdal_pipeline(dataset=dataset, config=self._serialize())
         )
@@ -82,7 +82,7 @@ class PDALFilter(Filter, identifier="pdal"):
 class PDALPipeline(
     PipelineMixin, PDALFilter, identifier="pdal_pipeline", backend=False
 ):
-    def execute(self, dataset, inplace=False):
+    def execute(self, dataset):
         pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
         return execute_pdal_pipeline(dataset=dataset, config=pipeline_json)
 

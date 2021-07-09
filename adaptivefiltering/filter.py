@@ -63,17 +63,12 @@ class Filter:
         )
         self._config = pyrsistent.freeze(_config)
 
-    def execute(self, dataset, inplace=False):
+    def execute(self, dataset):
         """Apply the filter to a given data set
 
         :param dataset:
             The data set to apply the filter to.
         :type dataset: adaptivefiltering.DataSet
-        :param inplace:
-            Whether the filter application should be done in-place on the given
-            data set. Defaults to False to allow an interactive filter application
-            procedure.
-        :type inplace: bool
         :return:
             A modified data set instance. This is the same object as the input data
             set if and only if the inplace parameter is true.
