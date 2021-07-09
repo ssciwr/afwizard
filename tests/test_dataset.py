@@ -8,7 +8,7 @@ def test_adaptivefiltering():
 
     # Test visualization - this is not actually very good in the absence of a display
     # But it helps in measuring coverage of the test suite.
-    dataset.show()
+    dataset.show_points()
 
 
 def test_adaptivefiltering_threshold():
@@ -18,7 +18,7 @@ def test_adaptivefiltering_threshold():
     )
     # The given Dataset has more than 500 points, this a ValueError is raised.
     with pytest.raises(ValueError):
-        dataset.show()
+        dataset.show_points()
 
 
 def test_adaptivefiltering_show_mesh():

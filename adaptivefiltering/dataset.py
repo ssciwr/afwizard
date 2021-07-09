@@ -132,7 +132,7 @@ class DataSet:
         z = band.ReadAsArray()
         return vis_mesh(x, y, z)
 
-    def show(self):
+    def show_points(self):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
