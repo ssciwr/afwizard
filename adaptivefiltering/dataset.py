@@ -34,14 +34,6 @@ class DataSet:
 
         # new laspy style
         # test = laspy.read(test, l)
-        self.data = laspy.read(self.filename)
-
-        if len(self.data.x) >= self.warning_threshold:
-            print(
-                "This is a warning: {} points are loaded, but only {} can be displayed via the show() function".format(
-                    len(self.data.x), self.warning_threshold
-                )
-            )
 
     def save_mesh(
         self,
@@ -124,10 +116,17 @@ class DataSet:
 
         Non-operational if called outside of Jupyter Notebook.
         """
-        if len(self.data.x) >= self.warning_threshold:
+        data = laspy.read(self.filename)
+
+        if len(data.x) >= self.warning_threshold:
             error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data.x), self.warning_threshold
+                len(data.x), self.warning_threshold
             )
             raise ValueError(error_text)
 
-        return vis_pointcloud(self.data.x, self.data.y, self.data.z)
+        return vis_pointcloud(data.x, data.y, data.z)
+
+    def get_map(self):
+        """Calculates the center and edges of the dataset and calculates map coordinates and zoom level."""
+
+        hexbin_json = [self.filename, {"type": "filters.hexbin"}]
