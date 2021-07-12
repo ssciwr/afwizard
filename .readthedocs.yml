@@ -4,7 +4,8 @@ sphinx:
   builder: singlehtml
   configuration: doc/source/conf.py
 
-formats: all
+formats:
+  - htmlzip
 
 conda:
   environment: doc/environment-rtd.yml

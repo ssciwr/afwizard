@@ -50,6 +50,7 @@ jobs:
   coverage:
     name: Coverage Testing
     runs-on: ubuntu-20.04
+    if: ${{ false }} # Disabled until codecov fixes our repository
 
     steps:
     - name: Checkout repository

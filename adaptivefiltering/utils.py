@@ -1,0 +1,2 @@
+class AdaptiveFilteringError(Exception):
+    pass
