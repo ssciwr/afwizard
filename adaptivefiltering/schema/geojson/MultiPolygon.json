@@ -1,0 +1,42 @@
+{
+  "$id": "https://geojson.org/schema/MultiPolygon.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "bbox": {
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "type": "array"
+    },
+    "coordinates": {
+      "items": {
+        "items": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "type": "array"
+          },
+          "minItems": 4,
+          "type": "array"
+        },
+        "type": "array"
+      },
+      "type": "array"
+    },
+    "type": {
+      "enum": [
+        "MultiPolygon"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "coordinates"
+  ],
+  "title": "GeoJSON MultiPolygon",
+  "type": "object"
+}

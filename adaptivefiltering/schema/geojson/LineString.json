@@ -1,0 +1,36 @@
+{
+  "$id": "https://geojson.org/schema/LineString.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "bbox": {
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "type": "array"
+    },
+    "coordinates": {
+      "items": {
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "type": "array"
+      },
+      "minItems": 2,
+      "type": "array"
+    },
+    "type": {
+      "enum": [
+        "LineString"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "coordinates"
+  ],
+  "title": "GeoJSON LineString",
+  "type": "object"
+}

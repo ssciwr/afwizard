@@ -1,3 +1,5 @@
+from adaptivefiltering.utils import AdaptiveFilteringError
+
 from IPython.display import display
 
 import ipywidgets
@@ -7,7 +9,7 @@ import os
 import pyrsistent
 
 
-class WidgetFormError(Exception):
+class WidgetFormError(AdaptiveFilteringError):
     pass
 
 
@@ -33,7 +35,7 @@ class WidgetForm:
         with open(filename, "r") as f:
             meta_schema = json.load(f)
         meta_schema["additionalProperties"] = False
-        jsonschema.validate(instance=schema, schema=meta_schema)
+        jsonschema.validate(instance=pyrsistent.thaw(schema), schema=meta_schema)
 
         # Store the given data members
         self.on_change = on_change
@@ -60,7 +62,9 @@ class WidgetForm:
         data = self._data_creator()
 
         # Validate the resulting document just to be sure
-        jsonschema.validate(instance=pyrsistent.thaw(data), schema=self.schema)
+        jsonschema.validate(
+            instance=pyrsistent.thaw(data), schema=pyrsistent.thaw(self.schema)
+        )
 
         return data
 
@@ -68,6 +72,18 @@ class WidgetForm:
         # Enumerations are handled a dropdowns
         if "enum" in schema:
             return self._construct_enum(schema, label=label)
+
+        # anyOf rules are handled with dropdown selections
+        if "anyOf" in schema:
+            return self._construct_anyof(schema, label=label)
+
+        # We use the same code for oneOf and allOf - if the data cannot be validated,
+        # a validation error will be thrown when accessing the data. There is no
+        # upfront checking in the form.
+        if "oneOf" in schema:
+            return self._construct_anyof(schema, label=label, key="oneOf")
+        if "allOf" in schema:
+            return self._construct_anyof(schema, label=label, key="allOf")
 
         # Handle other input based on the input type
         type_ = schema.get("type", None)
@@ -198,3 +214,32 @@ class WidgetForm:
         return self._construct_simple(
             schema, ipywidgets.Dropdown(options=schema["enum"]), label=label
         )
+
+    def _construct_anyof(self, schema, label=None, key="anyOf"):
+        names = []
+        handlers = []
+        subwidgets = []
+
+        # Iterate over the given subschema
+        for s in schema[key]:
+            if "title" in s:
+                names.append(s["title"])
+                handler, widget = self._construct(s)
+                handlers.append(handler)
+                subwidgets.append(widget)
+            else:
+                raise WidgetFormError(
+                    "Schemas within anyOf/oneOf/allOf need to set the title field"
+                )
+
+        # Create the selector and subschema widget
+        selector = ipywidgets.Dropdown(options=names, value=names[0])
+        widget = ipywidgets.VBox([selector] + subwidgets[0])
+
+        # Whenever there is a change, we switch the subschema widget
+        def _select(change):
+            widget.children = [selector] + subwidgets[names.index(selector.value)]
+
+        selector.observe(_select)
+
+        return lambda: handlers[names.index(selector.value)](), [widget]
