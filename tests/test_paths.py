@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import locate_file, locate_schema, set_data_directory
+from adaptivefiltering.paths import *
 
 from . import mock_environment
 
@@ -42,10 +42,10 @@ def test_set_data_directory(tmp_path):
     assert abspath == locate_file("somefile.txt")
 
 
-def test_locate_schema():
+def test_load_schema():
     # Accessing non-existent schemas raises
     with pytest.raises(FileNotFoundError):
-        locate_schema("nonexistentone.json")
+        load_schema("nonexistentone.json")
 
     # Returned paths are always absolute
-    assert os.path.isabs(locate_schema("filter.json"))
+    assert isinstance(load_schema("filter.json"), dict)

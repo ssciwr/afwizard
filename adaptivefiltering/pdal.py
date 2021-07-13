@@ -1,6 +1,6 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
-from adaptivefiltering.paths import locate_schema
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.widgets import WidgetForm
 
 import json
@@ -54,10 +54,6 @@ def execute_pdal_pipeline(dataset=None, config=None):
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
-    def __init__(self, *args, **kwargs):
-        self._schema = None
-        super(PDALFilter, self).__init__(*args, **kwargs)
-
     def execute(self, dataset):
         return DataSet(
             data=execute_pdal_pipeline(dataset=dataset, config=self._serialize())
@@ -68,12 +64,7 @@ class PDALFilter(Filter, identifier="pdal"):
 
     @classmethod
     def schema(cls):
-        # If the schema has not been loaded, we do it now
-        if getattr(cls, "_schema", None) is None:
-            with open(locate_schema("pdal.json"), "r") as f:
-                cls._schema = pyrsistent.freeze(json.load(f))
-
-        return cls._schema
+        return load_schema("pdal.json")
 
     def as_pipeline(self):
         return PDALPipeline(filters=[self])
