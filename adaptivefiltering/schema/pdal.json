@@ -2,6 +2,31 @@
   "anyOf": [
     {
       "properties": {
+        "cell": {
+          "default": 10.0,
+          "title": "Cell size",
+          "type": "number"
+        },
+        "class": {
+          "default": 7,
+          "title": "Classification value to apply to noise points",
+          "type": "integer"
+        },
+        "threshold": {
+          "default": 1.0,
+          "title": "Threshold value to identify low noise points",
+          "type": "number"
+        },
+        "type": {
+          "const": "filters.elm",
+          "type": "string"
+        }
+      },
+      "title": "Extended Local Minimum filter (PDAL)",
+      "type": "object"
+    },
+    {
+      "properties": {
         "class": {
           "default": 7,
           "title": "The classification value to apply to outliers",
