@@ -1,3 +1,4 @@
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 from IPython.display import display
@@ -69,6 +70,10 @@ class WidgetForm:
         return data
 
     def _construct(self, schema, label=None, root=False):
+        # If this references another schema, we jump into that schema
+        if "$ref" in schema:
+            return self._construct(load_schema(schema["$ref"]), label=label, root=root)
+
         # Enumerations are handled a dropdowns
         if "enum" in schema:
             return self._construct_enum(schema, label=label)
@@ -123,10 +128,9 @@ class WidgetForm:
         if "default" in schema:
             widget.value = schema["default"]
 
-        # Apply potential constant values
+        # Apply potential constant values without generating a widget
         if "const" in schema:
-            widget.value = schema["const"]
-            widget.disabled = True
+            return lambda: schema["const"], []
 
         # Register a change handler that triggers the forms change handler
         def _fire_on_change(change):
@@ -142,6 +146,9 @@ class WidgetForm:
 
     def _construct_number(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.FloatText(), label=label)
+
+    def _construct_integer(self, schema, label=None, root=False):
+        return self._construct_simple(schema, ipywidgets.IntText(), label=label)
 
     def _construct_boolean(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
@@ -159,6 +166,11 @@ class WidgetForm:
         data_handlers = []
 
         def add_entry(_):
+            # if we are at the specified maximum, add should be ignored
+            if "maxItems" in schema:
+                if len(vbox.children) == schema["maxItems"]:
+                    return
+
             handler, item = self._construct(schema["items"], label=None)
             data_handlers.insert(0, handler)
             item = item[0]
@@ -167,6 +179,11 @@ class WidgetForm:
             down = ipywidgets.Button(icon="arrow-down")
 
             def remove_entry(b):
+                # If we are at the specified minimum, remove should be ignored
+                if "minItems" in schema:
+                    if len(vbox.children) == schema["minItems"]:
+                        return
+
                 # Identify the current list index of the entry
                 for index, child in enumerate(vbox.children):
                     if b in child.children:
@@ -203,6 +220,10 @@ class WidgetForm:
 
         button.on_click(add_entry)
 
+        # Initialize the widget with the minimal number of subwidgets
+        for _ in range(schema.get("minItems", 0)):
+            add_entry(_)
+
         # If this is not the root document, we wrap this in an Accordion widget
         wrapped_vbox = [vbox]
         if not root:
@@ -211,6 +232,11 @@ class WidgetForm:
         return lambda: pyrsistent.pvector(h() for h in data_handlers), wrapped_vbox
 
     def _construct_enum(self, schema, label=None, root=False):
+        # We omit trivial enums, but make sure that they end up in the result
+        if len(schema["enum"]) == 1:
+            return lambda: schema["enum"][0], []
+
+        # Otherwise, we use a dropdown menu
         return self._construct_simple(
             schema, ipywidgets.Dropdown(options=schema["enum"]), label=label
         )

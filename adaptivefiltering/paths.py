@@ -1,3 +1,5 @@
+import functools
+import json
 import os
 import platform
 import xdg
@@ -72,20 +74,31 @@ def locate_file(filename):
     )
 
 
-def locate_schema(schema):
-    """Locate a schema JSON file by inspecting the Python package installation
+@functools.lru_cache
+def load_schema(schema):
+    """Load a schema JSON file by inspecting the Python package installation
 
     :arg schema:
         The relative path of the schema in the schema directory.
     :type schema: str
     :return:
-        The absolute path of the schema
+        The schema dictionary
     """
     # Resolve the relative path with respect to the package installation directory
-    path = os.path.join(os.path.split(__file__)[0], "schema", schema)
+    schema_store = os.path.join(os.path.split(__file__)[0], "schema")
+    path = os.path.join(schema_store, schema)
 
     # Check for existence of the file
     if not os.path.exists(path):
         raise FileNotFoundError(f"Requested schema '{schema}' was not found!")
 
-    return path
+    # Read the file
+    with open(path, "r") as f:
+        schema = json.load(f)
+
+    # Inject the base URI to allow referencing of other schemas in our
+    # schema store directory directly
+    schema["$id"] = f"file://{schema_store}/"
+
+    # Return the schema and memoize it for later requests of the same schema
+    return schema

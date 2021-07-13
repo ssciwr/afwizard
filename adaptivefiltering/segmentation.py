@@ -1,7 +1,6 @@
-from adaptivefiltering.paths import locate_schema
+from adaptivefiltering.paths import load_schema
 
 import geojson
-import json
 import jsonschema
 
 
@@ -17,8 +16,8 @@ class Segment:
     @metadata.setter
     def metadata(self, _metadata):
         # Validate against our segment metadata schema
-        with open(locate_schema("segment_metadata.json"), "r") as f:
-            jsonschema.validate(instance=_metadata, schema=json.load(f))
+        schema = load_schema("segment_metadata.json")
+        jsonschema.validate(instance=_metadata, schema=schema)
         self._metadata = _metadata
 
     @property
