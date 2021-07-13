@@ -2,6 +2,7 @@ from adaptivefiltering import DataSet
 from adaptivefiltering.pdal import *
 
 import jsonschema
+import os
 import pyrsistent
 import pytest
 
@@ -40,10 +41,17 @@ def test_pdal_pipeline():
 
 
 @pytest.mark.parametrize("f", _pdal_filter_list)
-def test_filter_default_settings(f):
+def test_filter_default_settings(f, tmp_path):
+    # We run this test from within a temporary directory.
+    # This is better because some PDAL filter produce spurious
+    # intermediate files.
+    os.chdir(tmp_path)
+
+    # Create a dummy data set
     dataset = DataSet(
         filename="data/500k_NZ20_Westport.laz",
     )
 
+    # And execute the filter in default configuration on it
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(dataset)
