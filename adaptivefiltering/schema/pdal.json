@@ -1,5 +1,69 @@
 {
-  "oneOf": [
+  "anyOf": [
+    {
+      "properties": {
+        "class": {
+          "default": 7,
+          "title": "The classification value to apply to outliers",
+          "type": "integer"
+        },
+        "mean_k": {
+          "default": 8,
+          "title": "Mean number of neighbors",
+          "type": "integer"
+        },
+        "method": {
+          "const": "statistical",
+          "type": "string"
+        },
+        "multiplier": {
+          "default": 2.0,
+          "title": "Standard deviation threshold",
+          "type": "number"
+        },
+        "type": {
+          "const": "filters.outlier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Statistical Outlier Filter (PDAL)",
+      "type": "object"
+    },
+    {
+      "properties": {
+        "class": {
+          "default": 7,
+          "title": "The classification value to apply to outliers",
+          "type": "integer"
+        },
+        "method": {
+          "const": "radius",
+          "type": "string"
+        },
+        "min_k": {
+          "default": 2,
+          "title": "Minimum number of neighbors in radius",
+          "type": "integer"
+        },
+        "radius": {
+          "default": 1.0,
+          "title": "Radius",
+          "type": "number"
+        },
+        "type": {
+          "const": "filters.outlier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Radius Outlier Filter (PDAL)",
+      "type": "object"
+    },
     {
       "properties": {
         "type": {
