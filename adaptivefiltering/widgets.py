@@ -1,3 +1,4 @@
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 from IPython.display import display
@@ -69,6 +70,10 @@ class WidgetForm:
         return data
 
     def _construct(self, schema, label=None, root=False):
+        # If this references another schema, we jump into that schema
+        if "$ref" in schema:
+            return self._construct(load_schema(schema["$ref"]), label=label, root=root)
+
         # Enumerations are handled a dropdowns
         if "enum" in schema:
             return self._construct_enum(schema, label=label)
