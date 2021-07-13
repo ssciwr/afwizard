@@ -148,6 +148,9 @@ class WidgetForm:
     def _construct_number(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.FloatText(), label=label)
 
+    def _construct_integer(self, schema, label=None, root=False):
+        return self._construct_simple(schema, ipywidgets.IntText(), label=label)
+
     def _construct_boolean(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 

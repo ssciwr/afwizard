@@ -7,7 +7,7 @@ import pytest
 
 
 # A list of simple no-op filters for test parametrization
-filters = [PDALFilter(type="filters.crop"), Filter()]
+filters = [PDALFilter(type="filters.smrf"), Filter()]
 pipelines = [filters[0] + filters[0], filters[1].as_pipeline()]
 
 
@@ -17,7 +17,7 @@ def test_pdal_filter():
         PDALFilter()
 
     # Instantiate a filter for testing
-    f = PDALFilter(type="filters.crop")
+    f = PDALFilter(type="filters.smrf")
 
     # Make sure that the filter widget can be displayed
     widget = f.widget_form()
@@ -27,7 +27,7 @@ def test_pdal_filter():
 
 
 def test_pdal_pipeline():
-    f = PDALFilter(type="filters.crop")
+    f = PDALFilter(type="filters.smrf")
     p = f.as_pipeline()
 
     widget = p.widget_form()
@@ -36,7 +36,7 @@ def test_pdal_pipeline():
 
 def test_baseclass_conversions():
     # An example filter
-    f = PDALFilter(type="filters.crop")
+    f = PDALFilter(type="filters.smrf")
 
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()

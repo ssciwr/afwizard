@@ -2,25 +2,102 @@
   "oneOf": [
     {
       "properties": {
-        "distance": {
+        "cell": {
+          "default": 1.0,
+          "title": "Cell size",
           "type": "number"
         },
-        "point": {
+        "classbits": {
+          "default": "",
+          "title": "Selectively ignore points marked as \u201csynthetic\u201d, \u201ckeypoint\u201d, or \u201cwithheld\u201d.",
           "type": "string"
         },
-        "type": {
-          "const": "filters.crop",
+        "cut": {
+          "default": 0.0,
+          "title": "Cut net size",
+          "type": "number"
+        },
+        "ignore": {
+          "title": "A range of values of a dimension to ignore",
           "type": "string"
+        },
+        "returns": {
+          "default": "last,only",
+          "title": "Retrun types to include in output",
+          "type": "string"
+        },
+        "scalar": {
+          "default": 1.25,
+          "title": "Elevation scalar",
+          "type": "number"
+        },
+        "slope": {
+          "default": 0.15,
+          "title": "Slope (rise over run)",
+          "type": "number"
+        },
+        "threshold": {
+          "default": 0.5,
+          "title": "Elevation Threshold",
+          "type": "number"
+        },
+        "type": {
+          "const": "filters.smrf",
+          "type": "string"
+        },
+        "window": {
+          "default": 18.0,
+          "title": "Max Window size",
+          "type": "number"
         }
       },
       "required": [
         "type"
       ],
-      "title": "Crop (PDAL)",
+      "title": "Simple Morphological Filter (SMRF) (PDAL)",
       "type": "object"
     },
     {
       "properties": {
+        "ignore": {
+          "title": "A range of values of a dimension to ignore",
+          "type": "string"
+        },
+        "iterations": {
+          "default": 500,
+          "title": "Maximum number of iterations",
+          "type": "integer"
+        },
+        "resolution": {
+          "default": 1.0,
+          "title": "Cloth Resolution",
+          "type": "number"
+        },
+        "returns": {
+          "default": "last,only",
+          "title": "Return types to include in output",
+          "type": "string"
+        },
+        "rigidness": {
+          "default": 3.0,
+          "title": "Rigidness",
+          "type": "number"
+        },
+        "smooth": {
+          "default": true,
+          "title": "Perform slope post-processing?",
+          "type": "boolean"
+        },
+        "step": {
+          "default": 0.65,
+          "title": "Time step",
+          "type": "number"
+        },
+        "threshold": {
+          "default": 0.5,
+          "title": "Classification threshold",
+          "type": "number"
+        },
         "type": {
           "const": "filters.csf",
           "type": "string"
