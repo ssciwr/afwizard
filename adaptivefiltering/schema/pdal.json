@@ -22,6 +22,9 @@
           "type": "string"
         }
       },
+      "required": [
+        "type"
+      ],
       "title": "Extended Local Minimum filter (PDAL)",
       "type": "object"
     },
