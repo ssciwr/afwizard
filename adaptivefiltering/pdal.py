@@ -59,9 +59,6 @@ class PDALFilter(Filter, identifier="pdal"):
             data=execute_pdal_pipeline(dataset=dataset, config=self._serialize())
         )
 
-    def widget_form(self):
-        return PDALWidgetForm(self.schema())
-
     @classmethod
     def schema(cls):
         return load_schema("pdal.json")
@@ -85,7 +82,3 @@ class PDALPipeline(
             "items": Filter._filter_impls["pdal"].schema(),
         }
         return WidgetForm(pyrsistent.freeze(schema))
-
-
-class PDALWidgetForm(WidgetForm):
-    pass
