@@ -8,4 +8,3 @@ For information on the license, see LICENSE.md.
 Note that the following subdirectories of this repository have their own licensing and copyright information:
 
 * `adaptivefiltering/data`
-* `adaptivefiltering/schema/geojson`
