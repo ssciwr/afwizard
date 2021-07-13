@@ -164,6 +164,11 @@ class WidgetForm:
         data_handlers = []
 
         def add_entry(_):
+            # if we are at the specified maximum, add should be ignored
+            if "maxItems" in schema:
+                if len(vbox.children) == schema["maxItems"]:
+                    return
+
             handler, item = self._construct(schema["items"], label=None)
             data_handlers.insert(0, handler)
             item = item[0]
@@ -172,6 +177,11 @@ class WidgetForm:
             down = ipywidgets.Button(icon="arrow-down")
 
             def remove_entry(b):
+                # If we are at the specified minimum, remove should be ignored
+                if "minItems" in schema:
+                    if len(vbox.children) == schema["minItems"]:
+                        return
+
                 # Identify the current list index of the entry
                 for index, child in enumerate(vbox.children):
                     if b in child.children:
@@ -207,6 +217,10 @@ class WidgetForm:
             vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
 
         button.on_click(add_entry)
+
+        # Initialize the widget with the minimal number of subwidgets
+        for _ in range(schema.get("minItems", 0)):
+            add_entry(_)
 
         # If this is not the root document, we wrap this in an Accordion widget
         wrapped_vbox = [vbox]
