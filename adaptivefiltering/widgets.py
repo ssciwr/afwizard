@@ -128,10 +128,9 @@ class WidgetForm:
         if "default" in schema:
             widget.value = schema["default"]
 
-        # Apply potential constant values
+        # Apply potential constant values without generating a widget
         if "const" in schema:
-            widget.value = schema["const"]
-            widget.disabled = True
+            return lambda: schema["const"], []
 
         # Register a change handler that triggers the forms change handler
         def _fire_on_change(change):
