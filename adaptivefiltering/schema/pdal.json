@@ -145,6 +145,10 @@
           "default": 1.0,
           "title": "Slope",
           "type": "number"
+        },
+        "type": {
+          "const": "filters.pmf",
+          "type": "string"
         }
       },
       "required": [
