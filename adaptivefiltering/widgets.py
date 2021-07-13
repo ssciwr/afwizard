@@ -230,6 +230,11 @@ class WidgetForm:
         return lambda: pyrsistent.pvector(h() for h in data_handlers), wrapped_vbox
 
     def _construct_enum(self, schema, label=None, root=False):
+        # We omit trivial enums, but make sure that they end up in the result
+        if len(schema["enum"]) == 1:
+            return lambda: schema["enum"][0], []
+
+        # Otherwise, we use a dropdown menu
         return self._construct_simple(
             schema, ipywidgets.Dropdown(options=schema["enum"]), label=label
         )
