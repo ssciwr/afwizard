@@ -3,15 +3,24 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 
 from IPython.display import display
 
+import dataclasses
 import ipywidgets
 import jsonschema
 import json
 import os
 import pyrsistent
+import typing
 
 
 class WidgetFormError(AdaptiveFilteringError):
     pass
+
+
+@dataclasses.dataclass
+class WidgetFormElement:
+    getter: typing.Callable
+    setter: typing.Callable
+    widgets: list
 
 
 class WidgetForm:
@@ -43,13 +52,11 @@ class WidgetForm:
         self.schema = schema
 
         # Construct the widgets
-        self._data_creator, self.widget_list = self._construct(
-            schema, root=True, label=None
-        )
+        self._form_element = self._construct(schema, root=True, label=None)
 
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
-        w = ipywidgets.VBox(self.widget_list)
+        w = ipywidgets.VBox(self._form_element.widgets)
         display(w)
 
     def data(self):
@@ -60,7 +67,7 @@ class WidgetForm:
             conforms to the given schema.
         """
         # Construct the data by calling all the data handlers on an empty dictionary
-        data = self._data_creator()
+        data = self._form_element.getter()
 
         # Validate the resulting document just to be sure
         jsonschema.validate(
@@ -105,18 +112,22 @@ class WidgetForm:
         return [accordion]
 
     def _construct_object(self, schema, label=None, root=False):
-        update_list = []
+        getter_list = []
         widget_list = []
         for prop, subschema in schema["properties"].items():
-            u, w = self._construct(subschema, label=prop)
-            update_list.append((prop, u))
-            widget_list.extend(w)
+            subelement = self._construct(subschema, label=prop)
+            getter_list.append((prop, subelement.getter))
+            widget_list.extend(subelement.widgets)
 
         # If this is not the root document, we wrap this in an Accordion widget
         if not root:
             widget_list = self._wrap_accordion(widget_list, schema, label=label)
 
-        return lambda: pyrsistent.m(**{p: f() for p, f in update_list}), widget_list
+        return WidgetFormElement(
+            getter=lambda: pyrsistent.m(**{p: f() for p, f in getter_list}),
+            setter=lambda: None,
+            widgets=widget_list,
+        )
 
     def _construct_simple(self, schema, widget, label=None, root=False):
         # Construct the label widget that describes the input
@@ -130,7 +141,9 @@ class WidgetForm:
 
         # Apply potential constant values without generating a widget
         if "const" in schema:
-            return lambda: schema["const"], []
+            return WidgetFormElement(
+                getter=lambda: schema["const"], setter=lambda: None, widgets=[]
+            )
 
         # Register a change handler that triggers the forms change handler
         def _fire_on_change(change):
@@ -139,7 +152,11 @@ class WidgetForm:
 
         widget.observe(_fire_on_change)
 
-        return lambda: widget.value, [ipywidgets.Box(box)]
+        return WidgetFormElement(
+            getter=lambda: widget.value,
+            setter=lambda: None,
+            widgets=[ipywidgets.Box(box)],
+        )
 
     def _construct_string(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Text(), label=label)
@@ -154,7 +171,7 @@ class WidgetForm:
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 
     def _construct_null(self, schema, label=None, root=False):
-        return lambda: None, []
+        return WidgetFormElement(getter=lambda: None, setter=lambda: None, widgets=[])
 
     def _construct_array(self, schema, label=None, root=False):
         if "items" not in schema:
@@ -171,9 +188,9 @@ class WidgetForm:
                 if len(vbox.children) == schema["maxItems"]:
                     return
 
-            handler, item = self._construct(schema["items"], label=None)
-            data_handlers.insert(0, handler)
-            item = item[0]
+            subelement = self._construct(schema["items"], label=None)
+            data_handlers.insert(0, subelement.getter)
+            item = subelement.widgets[0]
             trash = ipywidgets.Button(icon="trash")
             up = ipywidgets.Button(icon="arrow-up")
             down = ipywidgets.Button(icon="arrow-down")
@@ -229,12 +246,18 @@ class WidgetForm:
         if not root:
             wrapped_vbox = self._wrap_accordion(wrapped_vbox, schema, label=label)
 
-        return lambda: pyrsistent.pvector(h() for h in data_handlers), wrapped_vbox
+        return WidgetFormElement(
+            getter=lambda: pyrsistent.pvector(h() for h in data_handlers),
+            setter=lambda: None,
+            widgets=wrapped_vbox,
+        )
 
     def _construct_enum(self, schema, label=None, root=False):
         # We omit trivial enums, but make sure that they end up in the result
         if len(schema["enum"]) == 1:
-            return lambda: schema["enum"][0], []
+            return WidgetFormElement(
+                getter=lambda: schema["enum"][0], setter=lambda: None, widgets=[]
+            )
 
         # Otherwise, we use a dropdown menu
         return self._construct_simple(
@@ -250,9 +273,9 @@ class WidgetForm:
         for s in schema[key]:
             if "title" in s:
                 names.append(s["title"])
-                handler, widget = self._construct(s)
-                handlers.append(handler)
-                subwidgets.append(widget)
+                subelement = self._construct(s)
+                handlers.append(subelement.getter)
+                subwidgets.append(subelement.widgets)
             else:
                 raise WidgetFormError(
                     "Schemas within anyOf/oneOf/allOf need to set the title field"
@@ -268,4 +291,8 @@ class WidgetForm:
 
         selector.observe(_select)
 
-        return lambda: handlers[names.index(selector.value)](), [widget]
+        return WidgetFormElement(
+            getter=lambda: handlers[names.index(selector.value)](),
+            setter=lambda: None,
+            widgets=[widget],
+        )
