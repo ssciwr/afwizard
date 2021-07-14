@@ -1,5 +1,7 @@
 from adaptivefiltering.paths import locate_file
 from adaptivefiltering.visualization import vis_pointcloud, vis_mesh
+from adaptivefiltering.utils import AdaptiveFilteringError
+
 
 import tempfile
 import numpy as np
@@ -157,7 +159,27 @@ class DataSet:
             of valueable data files.
         :type overwrite: bool
         """
-        raise NotImplementedError  # pragma: no cover
+
+        # Check if we would overwrite an input file
+        if not overwrite and os.path.exists(filename):
+            raise AdaptiveFilteringError(
+                f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
+            )
+
+        # Form the correct configuration string for compression
+        compress = "laszip" if compress else "none"
+
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        # Exectute writer pipeline
+        execute_pdal_pipeline(
+            dataset=self,
+            config={
+                "filename": filename,
+                "type": "writers.las",
+                "compress": compress,
+            },
+        )
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset
