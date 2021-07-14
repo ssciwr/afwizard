@@ -59,6 +59,7 @@ class WidgetForm:
         w = ipywidgets.VBox(self._form_element.widgets)
         display(w)
 
+    @property
     def data(self):
         """Get a (non-updating) snapshot of the current form data
 
@@ -75,6 +76,10 @@ class WidgetForm:
         )
 
         return data
+
+    @data.setter
+    def data(self, _data):
+        self._form_element.setter(_data)
 
     def _construct(self, schema, label=None, root=False):
         # If this references another schema, we jump into that schema

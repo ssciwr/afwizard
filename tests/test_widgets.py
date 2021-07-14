@@ -31,4 +31,4 @@ _example_schema = [
 def test_widget_form(schema):
     widget = WidgetForm(schema)
     widget.show()
-    jsonschema.validate(instance=pyrsistent.thaw(widget.data()), schema=schema)
+    jsonschema.validate(instance=pyrsistent.thaw(widget.data), schema=schema)

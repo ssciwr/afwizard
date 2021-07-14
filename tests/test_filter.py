@@ -102,4 +102,4 @@ def test_pipeline(p):
     assert p.example_data_url == example_data_url
 
     form = p.widget_form()
-    p2 = p.copy(**form.data())
+    p2 = p.copy(**form.data)
