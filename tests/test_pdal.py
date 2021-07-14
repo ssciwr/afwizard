@@ -29,7 +29,7 @@ def test_pdal_filter():
     widget = f.widget_form()
 
     # And that the filter can be reconstructed using the form data
-    f2 = f.copy(**pyrsistent.thaw(widget.data()))
+    f2 = f.copy(**pyrsistent.thaw(widget.data))
 
 
 def test_pdal_pipeline():
@@ -37,7 +37,7 @@ def test_pdal_pipeline():
     p = f.as_pipeline()
 
     widget = p.widget_form()
-    p2 = p.copy(**pyrsistent.thaw(widget.data()))
+    p2 = p.copy(**pyrsistent.thaw(widget.data))
 
 
 @pytest.mark.parametrize("f", _pdal_filter_list)
