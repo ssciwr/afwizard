@@ -32,3 +32,9 @@ def test_widget_form(schema):
     widget = WidgetForm(schema)
     widget.show()
     jsonschema.validate(instance=pyrsistent.thaw(widget.data), schema=schema)
+
+    # Get data, set it, get it again and compare the resulting document
+    data = widget.data
+    widget.data = data
+    data2 = widget.data
+    assert data == data2
