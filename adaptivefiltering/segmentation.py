@@ -6,7 +6,7 @@ import jsonschema
 
 class Segment:
     def __init__(self, polygon, metadata={}):
-        self.polygon = geojson.MultiPolygon(polygon)
+        self.polygon = geojson.Polygon(polygon)
         self.metadata = metadata
 
     @property

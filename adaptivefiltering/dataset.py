@@ -1,4 +1,5 @@
 from adaptivefiltering.paths import locate_file
+from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.visualization import vis_pointcloud, vis_mesh
 from adaptivefiltering.utils import AdaptiveFilteringError
 
@@ -8,6 +9,7 @@ import numpy as np
 from osgeo import gdal
 import os
 import sys
+import geodaisy.converters as convert
 
 
 class DataSet:
@@ -23,6 +25,8 @@ class DataSet:
             Will give a warning if too many data points are present.
         :type filename: str
         :param data:
+            The numpy representation of the data set. This argument is used by e.g. filters that
+            already have the dataset in memory.
         :type data: numpy.array
         """
         # initilizise self._geo_tif_data_resolution as 0
@@ -187,7 +191,21 @@ class DataSet:
         :param segmentation:
         :type: adaptivefiltering.segmentation.Segmentation
         """
-        raise NotImplementedError  # pragma: no cover
+        # If a single Segment is given, we convert it to a segmentation
+        if isinstance(segmentation, Segment):
+            segmentation = Segmentation([segmentation])
+
+        # Construct an array of WKT Polygons for the clipping
+        polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
+
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        # Apply the cropping filter with all polygons
+        newdata = execute_pdal_pipeline(
+            dataset=self, config={"type": "filters.crop", "polygon": polygons}
+        )
+
+        return DataSet(data=newdata)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
