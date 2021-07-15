@@ -1,0 +1,15 @@
+{
+  "anyOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "RobFilter",
+          "type": "string"
+        }
+      },
+      "title": "RobFilter (OPALS)",
+      "type": "object"
+    }
+  ],
+  "title": "OPALS Filter"
+}
