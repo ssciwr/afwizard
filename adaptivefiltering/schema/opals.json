@@ -2,6 +2,45 @@
   "anyOf": [
     {
       "properties": {
+        "interpolation": {
+          "enum": [
+            "plane",
+            "paraboloid",
+            "adapting"
+          ],
+          "title": "Robust Interpolation method",
+          "type": "string"
+        },
+        "maxIter": {
+          "default": 100,
+          "title": "Maximum number of iterations",
+          "type": "integer"
+        },
+        "maxSigma": {
+          "default": 0.5,
+          "title": "Maximum allowed sigma of interpolation",
+          "type": "number"
+        },
+        "penetration": {
+          "default": 20,
+          "title": "Estimated penetration rate [%]",
+          "type": "integer"
+        },
+        "robustWFAdaption": {
+          "default": "adapting",
+          "title": "Adaption of the robust weight function",
+          "type": "string"
+        },
+        "searchRadius": {
+          "default": 3.0,
+          "title": "Search Radius for point selection",
+          "type": "number"
+        },
+        "sigmaApriori": {
+          "default": "0.15",
+          "title": "A-priori sigma of points",
+          "type": "string"
+        },
         "type": {
           "const": "RobFilter",
           "type": "string"
