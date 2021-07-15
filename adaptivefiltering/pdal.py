@@ -55,8 +55,11 @@ class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
     def execute(self, dataset):
+        config = self._serialize()
         return DataSet(
-            data=execute_pdal_pipeline(dataset=dataset, config=self._serialize())
+            data=execute_pdal_pipeline(dataset=dataset, config=config),
+            provenance=dataset._provenance
+            + [f"Applying PDAL filter with the following configuration:\n{config}"],
         )
 
     @classmethod
@@ -72,7 +75,13 @@ class PDALPipeline(
 ):
     def execute(self, dataset):
         pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
-        return execute_pdal_pipeline(dataset=dataset, config=pipeline_json)
+        return DataSet(
+            data=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
+            provenance=dataset._provenance
+            + [
+                f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
+            ],
+        )
 
     def widget_form(self):
         # Provide a widget that is restricted to the PDAL backend

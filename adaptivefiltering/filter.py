@@ -67,6 +67,11 @@ class Filter:
     def execute(self, dataset):
         """Apply the filter to a given data set
 
+        This method needs to be implemented by all filter backends. It is expected
+        to return a new data set instance that contains the filter result and have
+        no side effects on the input data set. It also needs to record the data provenance
+        on the newly created data set.
+
         :param dataset:
             The data set to apply the filter to.
         :type dataset: adaptivefiltering.DataSet
