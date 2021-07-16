@@ -17,3 +17,4 @@ dependencies:
     - matplotlib
     - pyrsistent
     - xdg
+    - xmltodict

@@ -19,6 +19,7 @@ setup(
         "numpy",
         "pyrsistent",
         "xdg",
+        "xmltodict",
     ],
     include_package_data=True,
     package_data={"": ["data/*", "schema/*", "schema/*/*"]},
