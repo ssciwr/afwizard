@@ -158,6 +158,10 @@ class Filter:
     def __eq__(self, other):
         return repr(self) == repr(other)
 
+    @classmethod
+    def enabled(cls):
+        return True
+
 
 # Register the base class itself
 Filter._filter_impls["base"] = Filter
@@ -198,7 +202,8 @@ class PipelineMixin:
         backends = []
         for ident, class_ in Filter._filter_impls.items():
             if Filter._filter_is_backend[ident]:
-                backends.append(class_.schema())
+                if class_.enabled():
+                    backends.append(class_.schema())
 
         # Construct a widget that let's you select the backend
         schema = pyrsistent.thaw(self.schema())

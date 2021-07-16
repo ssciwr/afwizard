@@ -35,6 +35,20 @@ def set_opals_directory(dir):
     _opals_directory = dir
 
 
+def get_opals_directory():
+    """Find the OPALS directory specified by the user"""
+    dir = _opals_directory
+    if dir is None:
+        dir = os.environ.get("OPALS_DIR", None)
+    return dir
+
+
+def opals_is_present():
+    """Whether OPALS is present on the system"""
+    dir = get_opals_directory()
+    return dir is not None
+
+
 def get_opals_module_executable(module):
     """Find an OPALS executable by inspecting the OPALS installation
 
@@ -44,19 +58,12 @@ def get_opals_module_executable(module):
         OPALS documentation.
     :type name: str
     """
-    # Find the OPALS directory specified by the user
-    dir = _opals_directory
-    if dir is None:
-        dir = os.environ.get("OPALS_DIR", None)
-
-    # If we could not find it so far, we error out
-    if dir is None:
-        raise AdaptiveFilteringError(
-            "OPALS directory not set! Use environment variable OPALS_DIR or set_opals_directory"
-        )
+    base = get_opals_directory()
+    if base is None:
+        raise AdaptiveFilteringError("OPALS not found")
 
     # Construct the path and double-check its existence
-    path = os.path.join(dir, "opals", f"opals{module}")
+    path = os.path.join(get_opals_directory(), "opals", f"opals{module}")
     if not os.path.exists(path):
         raise AdaptiveFilteringError("Executable f{path} not found!")
 
@@ -193,3 +200,7 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
     @classmethod
     def schema(cls):
         return assemble_opals_schema()
+
+    @classmethod
+    def enabled(cls):
+        return opals_is_present()
