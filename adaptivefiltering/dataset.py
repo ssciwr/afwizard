@@ -1,3 +1,4 @@
+from adaptivefiltering.paths import locate_file
 import shutil
 import sys
 
@@ -21,6 +22,10 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
+
+        # Make the path absolute
+        if self.filename is not None:
+            self.filename = locate_file(self.filename)
 
     def save_mesh(
         self,
@@ -132,3 +137,11 @@ class DataSet:
         for i, entry in self._provenance:
             stream.write(f"Item #{i}:\n")
             stream.write(f"{entry}\n\n")
+
+    @classmethod
+    def convert(cls, dataset):
+        """Convert this dataset to an instance of DataSet"""
+
+        filename = "fixme.las"
+        dataset.save(filename, compress=False, overwrite=False)
+        return DataSet(filename=filename, provenance=dataset._provenance)

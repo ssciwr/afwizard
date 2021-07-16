@@ -1,12 +1,11 @@
+from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter
-from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 import functools
 import os
 import re
 import subprocess
-import sys
 import xmltodict
 
 
@@ -181,21 +180,26 @@ def assemble_opals_schema():
     return result
 
 
-def execute_opals_module(dataset=None, config=None):
+def execute_opals_module(dataset=None, config=None, outputfile=None):
     # Create the command line
     module = config.pop("type")
     executable = get_opals_module_executable(module)
+    fileargs = ["-inFile", dataset.filename]
+    if outputfile:
+        fileargs.extend(["-outFile", outputfile])
     args = sum(([f"--{k}", v] for k, v in config.items()), [])
 
     # Execute the module
-    result = subprocess.run([executable] + args)
+    result = subprocess.run([executable] + fileargs + args)
 
 
 class OPALSFilter(Filter, identifier="OPALS", backend=True):
     """A filter implementation based on OPALS"""
 
     def execute(self, dataset):
-        execute_opals_module(dataset=dataset, config=self.config)
+        dataset = OPALSDataManagerObject.convert(dataset)
+        outputfile = f"new_{dataset.filename}"
+        execute_opals_module(dataset=dataset, config=self.config, outputfile=outputfile)
 
     @classmethod
     def schema(cls):
@@ -204,3 +208,30 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
     @classmethod
     def enabled(cls):
         return opals_is_present()
+
+
+class OPALSDataManagerObject(DataSet):
+    @classmethod
+    def convert(cls, dataset):
+        # Idempotency of the conversion
+        if isinstance(dataset, OPALSDataManagerObject):
+            return dataset
+
+        # Construct the new ODM filename
+        dm_filename = f"{os.path.splitext(dataset.filename)[0]}.odm"
+
+        # Run the opalsImport utility
+        subprocess.run(
+            [
+                get_opals_module_executable("Import"),
+                "-inFile",
+                dataset.filename,
+                "-outFile",
+                dm_filename,
+            ]
+        )
+
+        # Wrap the result in a new data set object
+        return OPALSDataManagerObject(
+            filename=dm_filename, provenance=dataset.provenance
+        )
