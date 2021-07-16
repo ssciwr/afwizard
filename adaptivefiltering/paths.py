@@ -30,11 +30,11 @@ def get_temporary_filename(extension=""):
     and it is ensured, that its directory is correctly created.
     """
     # Make sure that the temporary workspace exists
-    global _data_dir
-    if _data_dir is None:
-        _data_dir = tempfile.TemporaryDirectory()
+    global _tmp_dir
+    if _tmp_dir is None:
+        _tmp_dir = tempfile.TemporaryDirectory()
 
-    return os.path.join(_data_dir, f"{uuid.uuid4()}.{extension}")
+    return os.path.join(_tmp_dir, f"{uuid.uuid4()}.{extension}")
 
 
 def locate_file(filename):
