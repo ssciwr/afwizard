@@ -241,7 +241,10 @@ class PipelineMixin:
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
-    pass
+    def execute(self, dataset):
+        for f in self.config["filters"]:
+            dataset = f.execute(dataset)
+        return dataset
 
 
 def serialize_filter(filter_):

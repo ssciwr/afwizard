@@ -151,9 +151,9 @@ def _xmlparam_to_jsonschema(xmldoc, modname, blacklist=[]):
     # Add the type identifier
     result["properties"]["type"] = {"type": "string", "const": modname}
 
-    # Maybe add required fields
-    if required:
-        result["required"] = required
+    # Add required fields
+    required.append("type")
+    result["required"] = required
 
     return result
 
@@ -174,7 +174,9 @@ def assemble_opals_schema():
         )
         xmldoc = xmltodict.parse(xmloutput.stderr)
         result["anyOf"].append(
-            _xmlparam_to_jsonschema(xmldoc, mod, blacklist=["debugOutFile", "inFile"])
+            _xmlparam_to_jsonschema(
+                xmldoc, mod, blacklist=["oFormat", "outFile", "debugOutFile", "inFile"]
+            )
         )
 
     return result

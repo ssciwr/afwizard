@@ -115,6 +115,9 @@ class WidgetForm:
         accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
         if label is not None or "title" in schema:
             accordion.set_title(0, schema.get("title", label))
+
+        # This folds the accordion
+        accordion.selected_index = None
         return [accordion]
 
     def _construct_object(self, schema, label=None, root=False):
