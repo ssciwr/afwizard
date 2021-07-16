@@ -2,7 +2,12 @@ import functools
 import json
 import os
 import platform
+import tempfile
+import uuid
 import xdg
+
+# Storage for the temporary workspace directory
+_tmp_dir = None
 
 # Storage for the data directory that will be used to resolve relative paths
 _data_dir = None
@@ -16,6 +21,20 @@ def set_data_directory(directory):
     """
     global _data_dir
     _data_dir = directory
+
+
+def get_temporary_filename(extension=""):
+    """Create a filename for a temporary file
+
+    Note, the file is not generated, but only a random filename is generated
+    and it is ensured, that its directory is correctly created.
+    """
+    # Make sure that the temporary workspace exists
+    global _data_dir
+    if _data_dir is None:
+        _data_dir = tempfile.TemporaryDirectory()
+
+    return os.path.join(_data_dir, f"{uuid.uuid4()}.{extension}")
 
 
 def locate_file(filename):

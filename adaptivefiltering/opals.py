@@ -1,5 +1,6 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter
+from adaptivefiltering.paths import get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 import functools
@@ -200,8 +201,15 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
 
     def execute(self, dataset):
         dataset = OPALSDataManagerObject.convert(dataset)
-        outputfile = f"new_{dataset.filename}"
+        outputfile = get_temporary_filename(extension="odm")
         execute_opals_module(dataset=dataset, config=self.config, outputfile=outputfile)
+        return OPALSDataManagerObject(
+            filename=outputfile,
+            provenance=dataset._provenance
+            + [
+                f"Applying OPALS module with the following configuration: {self._serialize()}"
+            ],
+        )
 
     @classmethod
     def schema(cls):
@@ -220,7 +228,7 @@ class OPALSDataManagerObject(DataSet):
             return dataset
 
         # Construct the new ODM filename
-        dm_filename = f"{os.path.splitext(dataset.filename)[0]}.odm"
+        dm_filename = get_temporary_filename(extension="odm")
 
         # Run the opalsImport utility
         subprocess.run(

@@ -1,4 +1,5 @@
-from adaptivefiltering.paths import locate_file
+from adaptivefiltering.paths import locate_file, get_temporary_filename
+
 import shutil
 import sys
 
@@ -142,7 +143,7 @@ class DataSet:
     def convert(cls, dataset):
         """Convert this dataset to an instance of DataSet"""
         if type(dataset) == cls:
-            filename = "fixme.las"
+            filename = get_temporary_filename(extension="las")
             dataset.save(filename, compress=False, overwrite=False)
             return DataSet(filename=filename, provenance=dataset._provenance)
         else:
