@@ -5,6 +5,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 
 import functools
 import os
+import pyrsistent
 import re
 import subprocess
 import xmltodict
@@ -153,6 +154,11 @@ def _xmlparam_to_jsonschema(xmldoc, modname, blacklist=[]):
     result["properties"]["type"] = {"type": "string", "const": modname}
 
     # Add required fields
+
+    # TODO: This is currently restricted to "type", because the schemas
+    #       exported by OPALS have some inconsistencies.
+    required = []
+
     required.append("type")
     result["required"] = required
 
@@ -185,6 +191,7 @@ def assemble_opals_schema():
 
 def execute_opals_module(dataset=None, config=None, outputfile=None):
     # Create the command line
+    config = pyrsistent.thaw(config)
     module = config.pop("type")
     executable = get_opals_module_executable(module)
     fileargs = ["-inFile", dataset.filename]
@@ -243,5 +250,5 @@ class OPALSDataManagerObject(DataSet):
 
         # Wrap the result in a new data set object
         return OPALSDataManagerObject(
-            filename=dm_filename, provenance=dataset.provenance
+            filename=dm_filename, provenance=dataset._provenance
         )

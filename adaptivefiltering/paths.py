@@ -34,7 +34,7 @@ def get_temporary_filename(extension=""):
     if _tmp_dir is None:
         _tmp_dir = tempfile.TemporaryDirectory()
 
-    return os.path.join(_tmp_dir, f"{uuid.uuid4()}.{extension}")
+    return os.path.join(_tmp_dir.name, f"{uuid.uuid4()}.{extension}")
 
 
 def locate_file(filename):
