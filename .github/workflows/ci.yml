@@ -61,7 +61,7 @@ jobs:
       if: runner.os == 'Windows'
       working-directory: ${{ runner.workspace }}
       run: |
-        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
+        c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
         ${{ runner.workspace }}\opals_nightly_win64-setup.exe /S /D=${{ runner.workspace }}
         echo "OPALS_DIR=${{ runner.workspace }}" >> $GITHUB_ENV
 
