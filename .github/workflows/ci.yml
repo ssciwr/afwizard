@@ -46,14 +46,14 @@ jobs:
         python -m pip install -r requirements-dev.txt
 
     - name: Install OPALS (Linux)
-      if: runner.os == "Linux"
+      if: runner.os == 'Linux'
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
         tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
         echo "OPALS_DIR=${{ runner.workspace }}/opals_2.3.2" >> $GITHUB_ENV
 
     - name: Install OPALS (Windows)
-      if: runner.os == "Windows"
+      if: runner.os == 'Windows'
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
         ./opals_nightly_win64-setup.exe /S /D=${{ runner.workspace }}
@@ -91,7 +91,7 @@ jobs:
         conda env update -n base --file environment.yml
 
     - name: Install OPALS (Linux)
-      if: runner.os == "Linux"
+      if: runner.os == 'Linux'
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
         tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
