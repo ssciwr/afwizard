@@ -66,7 +66,7 @@ def get_opals_module_executable(module):
     # Construct the path and double-check its existence
     path = os.path.join(get_opals_directory(), "opals", f"opals{module}")
     if not os.path.exists(path):
-        raise AdaptiveFilteringError("Executable f{path} not found!")
+        raise AdaptiveFilteringError(f"Executable {path} not found!")
 
     return path
 

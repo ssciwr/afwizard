@@ -7,8 +7,9 @@ import pytest
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
 @pytest.mark.parametrize("mod", ["Grid", "Cell", "RobFilter"])
-def test_hello_world(mod):
+def test_opals_schema_cli(mod):
     runner = CliRunner()
-    result = runner.invoke(_automated_opals_schema, [mod])
+    result = runner.invoke(_automated_opals_schema, mod)
     assert result.exit_code == 0
-    json.loads(result.stdout)
+    schema = json.loads(result.stdout)
+    assert len(schema) > 0
