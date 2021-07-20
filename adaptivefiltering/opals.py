@@ -202,13 +202,14 @@ def execute_opals_module(dataset=None, config=None, outputfile=None):
     # Execute the module
     result = subprocess.run(
         [executable] + fileargs + args,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         cwd=get_temporary_workspace(),
     )
 
     # If the OPALS run was not successful, we raise an error
     if result.returncode != 0:
-        raise AdaptiveFilteringError(f"OPALS error: {result.stderr.decode()}")
+        raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
 
 
 class OPALSFilter(Filter, identifier="OPALS", backend=True):
@@ -246,15 +247,21 @@ class OPALSDataManagerObject(DataSet):
         dm_filename = get_temporary_filename(extension="odm")
 
         # Run the opalsImport utility
-        subprocess.run(
+        result = subprocess.run(
             [
                 get_opals_module_executable("Import"),
                 "-inFile",
                 dataset.filename,
                 "-outFile",
                 dm_filename,
-            ]
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
+
+        # If the OPALS run was not successful, we raise an error
+        if result.returncode != 0:
+            raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
 
         # Wrap the result in a new data set object
         return OPALSDataManagerObject(
