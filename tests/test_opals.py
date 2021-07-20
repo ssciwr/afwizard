@@ -27,6 +27,7 @@ def test_opals():
 
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
+@pytest.mark.slow
 @pytest.mark.parametrize("mod", _availableOpalsModules)
 def test_default_filter_settings(mod, dataset):
     f = OPALSFilter(type=mod)

@@ -41,6 +41,7 @@ def test_pdal_pipeline():
     p2 = p.copy(**pyrsistent.thaw(widget.data))
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("f", _pdal_filter_list)
 def test_filter_default_settings(f, tmp_path, dataset):
     # We run this test from within a temporary directory.
