@@ -1,5 +1,7 @@
 from adaptivefiltering.opals import *
 
+from . import dataset
+
 import jsonschema
 import pyrsistent
 import pytest
@@ -26,12 +28,7 @@ def test_opals():
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
 @pytest.mark.parametrize("mod", _availableOpalsModules)
-def test_default_filter_settings(mod):
+def test_default_filter_settings(mod, dataset):
     f = OPALSFilter(type=mod)
-
-    # Create a dummy data set
-    dataset = DataSet(
-        filename="data/500k_NZ20_Westport.laz",
-    )
 
     dataset = f.execute(dataset)
