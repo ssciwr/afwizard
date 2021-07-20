@@ -3,7 +3,9 @@ from adaptivefiltering.filter import Filter
 from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
 from adaptivefiltering.utils import AdaptiveFilteringError
 
+import collections
 import functools
+import jsonschema
 import os
 import pyrsistent
 import re
@@ -102,20 +104,19 @@ def _opals_to_jsonschema_typemapping(_type, schema):
     schema["type"] = "string"
 
 
-def _xmlparam_to_jsonschema(xmldoc, modname, blacklist=[]):
+def _xmlparam_to_jsonschema(xmldoc, modname):
     """Transform an OPALS XML module specification to a JSON schema"""
-    result = {"type": "object", "title": f"{modname} Module (OPALS)"}
+    result = {
+        "type": "object",
+        "title": f"{modname} Module (OPALS)",
+        "additionalProperties": False,
+    }
     props = {}
     required = []
     for param in xmldoc["Parameters"]["Specific"]["Parameter"]:
         # Extract the name and add a corresponding dictionary
         name = param["@Name"]
-
-        # If this parameter name was blacklisted, we skip it
-        if name in blacklist:
-            continue
-        else:
-            props[name] = {}
+        props[name] = {}
 
         # Map the specified types from OPALS XML to JSON schema
         _opals_to_jsonschema_typemapping(param["@Type"], props[name])
@@ -180,24 +181,25 @@ def assemble_opals_schema():
             stderr=subprocess.PIPE,
         )
         xmldoc = xmltodict.parse(xmloutput.stderr)
-        result["anyOf"].append(
-            _xmlparam_to_jsonschema(
-                xmldoc, mod, blacklist=["oFormat", "outFile", "debugOutFile", "inFile"]
-            )
-        )
+        result["anyOf"].append(_xmlparam_to_jsonschema(xmldoc, mod))
 
     return result
 
 
-def execute_opals_module(dataset=None, config=None, outputfile=None):
+def _stringify_value(value):
+    if isinstance(value, collections.abc.Iterable):
+        return " ".join(value)
+
+    return str(value)
+
+
+def execute_opals_module(dataset=None, config=None):
     # Create the command line
     config = pyrsistent.thaw(config)
     module = config.pop("type")
     executable = get_opals_module_executable(module)
     fileargs = ["-inFile", dataset.filename]
-    if outputfile:
-        fileargs.extend(["-outFile", outputfile])
-    args = sum(([f"--{k}", v] for k, v in config.items()), [])
+    args = sum(([f"--{k}", _stringify_value(v)] for k, v in config.items()), [])
 
     # Execute the module
     result = subprocess.run(
@@ -216,11 +218,30 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
     """A filter implementation based on OPALS"""
 
     def execute(self, dataset):
+        """Execution of an OPALS module
+
+        This interfaces with OPALS using its CLI.
+        """
+
+        # Make sure that the dataset is available in the OPALS format
         dataset = OPALSDataManagerObject.convert(dataset)
-        outputfile = get_temporary_filename(extension="odm")
-        execute_opals_module(dataset=dataset, config=self.config, outputfile=outputfile)
+
+        # Sneak the outFile parameter into the configuration for those filters
+        # that require it. For all others, make a copy of the data to prevent
+        # any harm from OPALS implicit in-place operation.
+        final_filter = self
+        outFile = get_temporary_filename(extension="odm")
+        try:
+            final_filter = self.copy(outFile=outFile)
+        except jsonschema.ValidationError:
+            dataset.save(filename=outFile)
+            dataset = OPALSDataManagerObject(filename=outFile)
+
+        # Actually run the CLI
+        execute_opals_module(dataset=dataset, config=final_filter.config)
+
         return OPALSDataManagerObject(
-            filename=outputfile,
+            filename=outFile,
             provenance=dataset._provenance
             + [
                 f"Applying OPALS module with the following configuration: {self._serialize()}"
@@ -230,6 +251,15 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
     @classmethod
     def schema(cls):
         return assemble_opals_schema()
+
+    @classmethod
+    def form_schema(cls):
+        schema = cls.schema()
+        for param in schema.get("properties", {}):
+            if param in ["oFormat", "outFile", "debugOutFile", "inFile"]:
+                del schema["properties"][param]
+
+        return schema
 
     @classmethod
     def enabled(cls):
