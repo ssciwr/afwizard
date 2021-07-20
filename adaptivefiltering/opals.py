@@ -167,7 +167,7 @@ def _automated_opals_schema(mod):
     result["properties"] = props
 
     # Add the type identifier
-    result["properties"]["type"] = {"type": "string", "const": modname}
+    result["properties"]["type"] = {"type": "string", "const": mod}
 
     # Add required fields
 
