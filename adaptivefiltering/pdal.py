@@ -95,10 +95,10 @@ class PDALPipeline(
 
     def widget_form(self):
         # Provide a widget that is restricted to the PDAL backend
-        schema = pyrsistent.thaw(self.schema())
+        schema = pyrsistent.thaw(self.form_schema())
         schema["properties"]["filters"] = {
             "type": "array",
-            "items": Filter._filter_impls["pdal"].schema(),
+            "items": Filter._filter_impls["pdal"].form_schema(),
         }
         return WidgetForm(pyrsistent.freeze(schema))
 
