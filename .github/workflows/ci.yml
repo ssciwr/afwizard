@@ -39,7 +39,7 @@ jobs:
 
     - name: Add known host
       run: |
-        echo "root@ssc-jupyterhub-sshd ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxKIKypYivEc8TXpKM0CTc6kHRC3LrzxQEt7n/RvVwL" >> ~/.ssh/known_hosts
+        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxKIKypYivEc8TXpKM0CTc6kHRC3LrzxQEt7n/RvVwL root@ssc-jupyterhub-sshd" >> ~/.ssh/known_hosts
 
     - name: Install conda dependencies
       run: |
@@ -89,7 +89,7 @@ jobs:
 
     - name: Add known host
       run: |
-        echo "root@ssc-jupyterhub-sshd ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxKIKypYivEc8TXpKM0CTc6kHRC3LrzxQEt7n/RvVwL" >> ~/.ssh/known_hosts
+        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxKIKypYivEc8TXpKM0CTc6kHRC3LrzxQEt7n/RvVwL root@ssc-jupyterhub-sshd" >> ~/.ssh/known_hosts
 
     - name: Set up Conda with Python ${{ matrix.python-version }}
       uses: s-weigand/setup-conda@v1
