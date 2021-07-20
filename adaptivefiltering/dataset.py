@@ -49,6 +49,7 @@ class DataSet:
             self._provenance.append(
                 f"Loaded {self.data.shape[0]} points from {filename}"
             )
+        self.filename = filename
 
     def save_mesh(
         self,
