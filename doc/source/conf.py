@@ -61,8 +61,5 @@ html_static_path = []
 # Make sure that classes are documented by their init method
 autoclass_content = "init"
 
-# The path from this conf.py to the git root
-lfs_content_path_to_git_root = "../.."
-
 # A command that resolves our chicken-egg situation
 lfs_content_post_commands = ["python -m pip install ../.."]

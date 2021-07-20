@@ -1,6 +1,6 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
-from adaptivefiltering.paths import locate_schema
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.widgets import WidgetForm
 
 import json
@@ -54,26 +54,17 @@ def execute_pdal_pipeline(dataset=None, config=None):
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
-    def __init__(self, *args, **kwargs):
-        self._schema = None
-        super(PDALFilter, self).__init__(*args, **kwargs)
-
     def execute(self, dataset):
+        config = self._serialize()
         return DataSet(
-            data=execute_pdal_pipeline(dataset=dataset, config=self._serialize())
+            data=execute_pdal_pipeline(dataset=dataset, config=config),
+            provenance=dataset._provenance
+            + [f"Applying PDAL filter with the following configuration:\n{config}"],
         )
-
-    def widget_form(self):
-        return PDALWidgetForm(self.schema())
 
     @classmethod
     def schema(cls):
-        # If the schema has not been loaded, we do it now
-        if getattr(cls, "_schema", None) is None:
-            with open(locate_schema("pdal.json"), "r") as f:
-                cls._schema = pyrsistent.freeze(json.load(f))
-
-        return cls._schema
+        return load_schema("pdal.json")
 
     def as_pipeline(self):
         return PDALPipeline(filters=[self])
@@ -84,7 +75,13 @@ class PDALPipeline(
 ):
     def execute(self, dataset):
         pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
-        return execute_pdal_pipeline(dataset=dataset, config=pipeline_json)
+        return DataSet(
+            data=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
+            provenance=dataset._provenance
+            + [
+                f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
+            ],
+        )
 
     def widget_form(self):
         # Provide a widget that is restricted to the PDAL backend
@@ -94,7 +91,3 @@ class PDALPipeline(
             "items": Filter._filter_impls["pdal"].schema(),
         }
         return WidgetForm(pyrsistent.freeze(schema))
-
-
-class PDALWidgetForm(WidgetForm):
-    pass

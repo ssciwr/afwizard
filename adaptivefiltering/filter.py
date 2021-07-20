@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import locate_schema
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetForm
 
@@ -58,13 +58,19 @@ class Filter:
 
     @config.setter
     def config(self, _config):
+        _config = pyrsistent.freeze(_config)
         jsonschema.validate(
             instance=pyrsistent.thaw(_config), schema=pyrsistent.thaw(self.schema())
         )
-        self._config = pyrsistent.freeze(_config)
+        self._config = _config
 
     def execute(self, dataset):
         """Apply the filter to a given data set
+
+        This method needs to be implemented by all filter backends. It is expected
+        to return a new data set instance that contains the filter result and have
+        no side effects on the input data set. It also needs to record the data provenance
+        on the newly created data set.
 
         :param dataset:
             The data set to apply the filter to.
@@ -172,8 +178,7 @@ class PipelineMixin:
 
     @classmethod
     def schema(cls):
-        with open(locate_schema("pipeline.json"), "r") as f:
-            return pyrsistent.freeze(json.load(f))
+        return pyrsistent.freeze(load_schema("pipeline.json"))
 
     def as_pipeline(self):
         return self
@@ -257,7 +262,7 @@ def deserialize_filter(data):
     filter class to construct.
     """
     # Validate the data against our filter meta schema
-    schema = json.load(open(locate_schema("filter.json"), "r"))
+    schema = load_schema("filter.json")
     jsonschema.validate(instance=data, schema=schema)
 
     # Find the correct type and do the deserialization

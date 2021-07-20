@@ -1,42 +1,17 @@
 from adaptivefiltering.filter import *
 from adaptivefiltering.pdal import PDALFilter
 
-import jsonschema
-import pyrsistent
 import pytest
 
 
 # A list of simple no-op filters for test parametrization
-filters = [PDALFilter(type="filters.crop"), Filter()]
+filters = [PDALFilter(type="filters.smrf"), Filter()]
 pipelines = [filters[0] + filters[0], filters[1].as_pipeline()]
-
-
-def test_pdal_filter():
-    # A configuration without type is not a valid PDAL filter
-    with pytest.raises(jsonschema.ValidationError):
-        PDALFilter()
-
-    # Instantiate a filter for testing
-    f = PDALFilter(type="filters.crop")
-
-    # Make sure that the filter widget can be displayed
-    widget = f.widget_form()
-
-    # And that the filter can be reconstructed using the form data
-    f2 = f.copy(**pyrsistent.thaw(widget.data()))
-
-
-def test_pdal_pipeline():
-    f = PDALFilter(type="filters.crop")
-    p = f.as_pipeline()
-
-    widget = p.widget_form()
-    p2 = p.copy(**pyrsistent.thaw(widget.data()))
 
 
 def test_baseclass_conversions():
     # An example filter
-    f = PDALFilter(type="filters.crop")
+    f = PDALFilter(type="filters.smrf")
 
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
@@ -127,4 +102,4 @@ def test_pipeline(p):
     assert p.example_data_url == example_data_url
 
     form = p.widget_form()
-    p2 = p.copy(**form.data())
+    p2 = p.copy(**form.data)

@@ -1,13 +1,13 @@
-from adaptivefiltering.paths import locate_schema
+from adaptivefiltering.paths import load_schema
+from adaptivefiltering.utils import AdaptiveFilteringError
 
 import geojson
-import json
 import jsonschema
 
 
 class Segment:
     def __init__(self, polygon, metadata={}):
-        self.polygon = geojson.MultiPolygon(polygon)
+        self.polygon = geojson.Polygon(polygon)
         self.metadata = metadata
 
     @property
@@ -17,8 +17,8 @@ class Segment:
     @metadata.setter
     def metadata(self, _metadata):
         # Validate against our segment metadata schema
-        with open(locate_schema("segment_metadata.json"), "r") as f:
-            jsonschema.validate(instance=_metadata, schema=json.load(f))
+        schema = load_schema("segment_metadata.json")
+        jsonschema.validate(instance=_metadata, schema=schema)
         self._metadata = _metadata
 
     @property
@@ -40,7 +40,8 @@ class Segmentation(geojson.FeatureCollection):
             w.r.t. the current working directory.
         :type filename: str
         """
-        raise NotImplementedError
+        with open(filename, "r") as f:
+            return Segmentation(geojson.load(f))
 
     def save(self, filename):
         """Save the segmentation to disk
@@ -50,4 +51,12 @@ class Segmentation(geojson.FeatureCollection):
             w.r.t. the current working directory.
         :type filename: str
         """
-        raise NotImplementedError
+        with open(filename, "w") as f:
+            geojson.dump(self, f)
+
+    @property
+    def __geo_interface__(self):
+        return {
+            "type": "FeatureCollection",
+            "features": self.features,
+        }
