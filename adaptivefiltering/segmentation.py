@@ -210,7 +210,7 @@ class interactive_map:
         :return:
             :param segmentation:
                 All current polygons in one segmentation object
-            :type coordinates_mena: Segmentation
+            :type segmentation: Segmentation
 
 
         """
@@ -219,7 +219,15 @@ class interactive_map:
         return segmentation
 
     def load_polygon(self, segmentation):
+        """imports a segmentation object onto the map.
+        The function also checks for doubles.
 
+        :param segmentation:
+            A segmentation object which is to be loaded.
+        :type segmentation: Segmentation
+
+
+        """
         # imports the segmentation with a basic style to avoid issus after multiple savings and loadings.
         # This should preserve the json structure indefinedtly as long as only our segmentations are loaded.
         draw_control_data_json = []
