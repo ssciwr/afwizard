@@ -51,6 +51,7 @@ jobs:
 
     - name: Install OPALS (Linux)
       if: runner.os == 'Linux'
+      working-directory: ${{ runner.workspace }}
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
         tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
@@ -58,6 +59,7 @@ jobs:
 
     - name: Install OPALS (Windows)
       if: runner.os == 'Windows'
+      working-directory: ${{ runner.workspace }}
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
         ./opals_nightly_win64-setup.exe /S /D=${{ runner.workspace }}
@@ -100,6 +102,7 @@ jobs:
 
     - name: Install OPALS (Linux)
       if: runner.os == 'Linux'
+      working-directory: ${{ runner.workspace }}
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
         tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
