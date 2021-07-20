@@ -200,7 +200,11 @@ def execute_opals_module(dataset=None, config=None, outputfile=None):
     args = sum(([f"--{k}", v] for k, v in config.items()), [])
 
     # Execute the module
-    result = subprocess.run([executable] + fileargs + args)
+    result = subprocess.run([executable] + fileargs + args, capture_output=True)
+
+    # If the OPALS run was not successful, we raise an error
+    if result.returncode != 0:
+        raise AdaptiveFilteringError(f"OPALS error: {result.stderr.decode()}")
 
 
 class OPALSFilter(Filter, identifier="OPALS", backend=True):
