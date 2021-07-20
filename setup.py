@@ -9,6 +9,7 @@ setup(
     long_description="*This library is currently under development.*",
     packages=find_packages(),
     install_requires=[
+        "Click",
         "gdal",
         "geodaisy",
         "geojson",
@@ -21,6 +22,10 @@ setup(
         "xdg",
         "xmltodict",
     ],
+    entry_points="""
+        [console_scripts]
+        extract_opals_schema=adaptivefiltering.opals:_automated_opals_schema
+    """,
     include_package_data=True,
     package_data={"": ["data/*", "schema/*", "schema/*/*"]},
     classifiers=[

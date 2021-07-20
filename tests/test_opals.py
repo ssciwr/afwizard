@@ -6,8 +6,13 @@ import jsonschema
 import pyrsistent
 import pytest
 
-# We can reuse the list of implemented modules in testing
-from adaptivefiltering.opals import _availableOpalsModules
+
+# The list of implemented modules
+_availableOpalsModules = [
+    # "Cell",
+    # "Grid",
+    "RobFilter",
+]
 
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")

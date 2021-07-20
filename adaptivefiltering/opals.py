@@ -1,10 +1,15 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter
-from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
+from adaptivefiltering.paths import (
+    get_temporary_filename,
+    get_temporary_workspace,
+    load_schema,
+)
 from adaptivefiltering.utils import AdaptiveFilteringError
 
+import click
 import collections
-import functools
+import json
 import jsonschema
 import os
 import pyrsistent
@@ -14,13 +19,6 @@ import xmltodict
 
 
 _opals_directory = None
-
-
-_availableOpalsModules = [
-    "Cell",
-    "Grid",
-    "RobFilter",
-]
 
 
 def set_opals_directory(dir):
@@ -104,11 +102,28 @@ def _opals_to_jsonschema_typemapping(_type, schema):
     schema["type"] = "string"
 
 
-def _xmlparam_to_jsonschema(xmldoc, modname):
-    """Transform an OPALS XML module specification to a JSON schema"""
+@click.command()
+@click.argument("mod")
+def _automated_opals_schema(mod):
+    """Automatically extract the JSON schema for a given module
+
+    This can be used as a great basis to add a new module MOD to adaptivefiltering,
+    but it might need some manual adaption to be fully functional.
+    """
+    xmloutput = subprocess.run(
+        [
+            get_opals_module_executable(mod),
+            "--options",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    xmldoc = xmltodict.parse(xmloutput.stderr)
+
+    # The resulting schema object
     result = {
         "type": "object",
-        "title": f"{modname} Module (OPALS)",
+        "title": f"{mod} Module (OPALS)",
         "additionalProperties": False,
     }
     props = {}
@@ -163,27 +178,8 @@ def _xmlparam_to_jsonschema(xmldoc, modname):
     required.append("type")
     result["required"] = required
 
-    return result
-
-
-@functools.lru_cache
-def assemble_opals_schema():
-    """Assemble the schema for all OPALS filters"""
-    result = {"anyOf": [], "title": "OPALS Filter"}
-
-    for mod in _availableOpalsModules:
-        xmloutput = subprocess.run(
-            [
-                get_opals_module_executable(mod),
-                "--options",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        xmldoc = xmltodict.parse(xmloutput.stderr)
-        result["anyOf"].append(_xmlparam_to_jsonschema(xmldoc, mod))
-
-    return result
+    # Print the result on the command line
+    print(json.dumps(result))
 
 
 def _stringify_value(value):
@@ -250,7 +246,7 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
 
     @classmethod
     def schema(cls):
-        return assemble_opals_schema()
+        return load_schema("opals.json")
 
     @classmethod
     def form_schema(cls):
