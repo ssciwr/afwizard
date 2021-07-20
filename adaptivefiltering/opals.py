@@ -1,6 +1,6 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter
-from adaptivefiltering.paths import get_temporary_filename
+from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 import functools
@@ -200,7 +200,11 @@ def execute_opals_module(dataset=None, config=None, outputfile=None):
     args = sum(([f"--{k}", v] for k, v in config.items()), [])
 
     # Execute the module
-    result = subprocess.run([executable] + fileargs + args, capture_output=True)
+    result = subprocess.run(
+        [executable] + fileargs + args,
+        capture_output=True,
+        cwd=get_temporary_workspace(),
+    )
 
     # If the OPALS run was not successful, we raise an error
     if result.returncode != 0:

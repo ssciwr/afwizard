@@ -23,18 +23,30 @@ def set_data_directory(directory):
     _data_dir = directory
 
 
+def get_temporary_workspace():
+    """Return a temporary directory that persists across the session
+
+    This should be used as the working directory of any filter workflows
+    or other operations that might produce spurious file outputs.
+    """
+    global _tmp_dir
+    if _tmp_dir is None:
+        _tmp_dir = tempfile.TemporaryDirectory()
+
+    return _tmp_dir.name
+
+
 def get_temporary_filename(extension=""):
     """Create a filename for a temporary file
 
     Note, the file is not generated, but only a random filename is generated
     and it is ensured, that its directory is correctly created.
-    """
-    # Make sure that the temporary workspace exists
-    global _tmp_dir
-    if _tmp_dir is None:
-        _tmp_dir = tempfile.TemporaryDirectory()
 
-    return os.path.join(_tmp_dir.name, f"{uuid.uuid4()}.{extension}")
+    :param extension:
+        A file extension that should be appended to the generated filename.
+    :type extension: str
+    """
+    return os.path.join(get_temporary_workspace(), f"{uuid.uuid4()}.{extension}")
 
 
 def locate_file(filename):
