@@ -64,6 +64,8 @@ jobs:
         c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
         ${{ runner.workspace }}\opals_nightly_win64-setup.exe /S /TYPE=typical /DATA= /D=${{ runner.workspace }}\opalsInstallation
         echo "OPALS_DIR=${{ runner.workspace }}\opalsInstallation" >> $env:GITHUB_ENV
+        ls ${{ runner.workspace }}\opalsInstallation
+        ls ${{ runner.workspace }}\opalsInstallation\opals
 
     - name: Install the adaptivefiltering Python package
       run: |
