@@ -12,6 +12,7 @@ import collections
 import json
 import jsonschema
 import os
+import platform
 import pyrsistent
 import re
 import subprocess
@@ -64,7 +65,13 @@ def get_opals_module_executable(module):
         raise AdaptiveFilteringError("OPALS not found")
 
     # Construct the path and double-check its existence
-    path = os.path.join(get_opals_directory(), "opals", f"opals{module}")
+    execname = f"opals{module}"
+
+    # On Windows, executables end on .exe
+    if platform.system() == "Windows":
+        execname = f"{execname}.exe"
+
+    path = os.path.join(get_opals_directory(), "opals", execname)
     if not os.path.exists(path):
         raise AdaptiveFilteringError(f"Executable {path} not found!")
 
