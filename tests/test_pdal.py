@@ -1,4 +1,5 @@
 from adaptivefiltering.pdal import *
+from adaptivefiltering.paths import get_temporary_filename
 
 from . import dataset, minimal_dataset
 
@@ -77,4 +78,14 @@ def test_pdal_inmemory_dataset(minimal_dataset):
 
     # Check idempotency
     dataset2 = PDALInMemoryDataSet.convert(dataset)
-    assert (dataset2.data == dataset.data).all()
+    assert dataset2.data.shape == dataset.data.shape
+
+    # Dataset saving and reloading as LAS
+    saved = dataset.save(get_temporary_filename("las"))
+    reloaded = PDALInMemoryDataSet.convert(saved)
+    assert dataset.data.shape == reloaded.data.shape
+
+    # Dataset saving and reloading as LAZ
+    saved = dataset.save(get_temporary_filename("laz"), compress=True)
+    reloaded = PDALInMemoryDataSet.convert(saved)
+    assert dataset.data.shape == reloaded.data.shape

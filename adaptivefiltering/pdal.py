@@ -219,9 +219,12 @@ class PDALInMemoryDataSet(DataSet):
             config={
                 "filename": filename,
                 "type": "writers.las",
-                "compress": compress,
+                "compression": compress,
             },
         )
+
+        # Wrap the result in a DataSet instance
+        return DataSet(filename=filename)
 
     def restrict(self, segmentation):
         # If a single Segment is given, we convert it to a segmentation
