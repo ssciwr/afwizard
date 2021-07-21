@@ -1,5 +1,7 @@
 from adaptivefiltering.paths import locate_file, get_temporary_filename
+from adaptivefiltering.utils import AdaptiveFilteringError
 
+import os
 import shutil
 import sys
 
@@ -105,10 +107,26 @@ class DataSet:
             an error is thrown. This is done in order to prevent accidental corruption
             of valueable data files.
         :type overwrite: bool
+        :return:
+            A dataset object wrapping the written file
+        :rtype: adaptivefiltering.DataSet
         """
-        # This dataset has not been touched so far
-        if filename != self.filename:
-            shutil.copy(self.filename, filename)
+        # If the filenames match, this is a no-op operation
+        if filename == self.filename:
+            return
+
+        # Otherwise, we can simply copy the file to the new location
+        # after checking that we are not accidentally overriding something
+        if not overwrite and os.path.exists(filename):
+            raise AdaptiveFilteringError(
+                f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
+            )
+
+        # Do the copy operation
+        shutil.copy(self.filename, filename)
+
+        # And return a DataSet instance
+        return DataSet(filename=filename)
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset

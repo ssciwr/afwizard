@@ -251,9 +251,12 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
     @classmethod
     def form_schema(cls):
         schema = cls.schema()
-        for param in schema.get("properties", {}):
-            if param in ["oFormat", "outFile", "debugOutFile", "inFile"]:
-                del schema["properties"][param]
+        for subschema in schema.get("anyOf", []):
+            newprops = {}
+            for param, val in subschema.get("properties").items():
+                if param not in ["oFormat", "outFile", "debugOutFile", "inFile"]:
+                    newprops[param] = val
+            subschema["properties"] = newprops
 
         return schema
 

@@ -52,6 +52,10 @@ def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(minimal_dataset)
 
+    # Treating the filter as a pipeline should work as well
+    pipeline = filter_.as_pipeline()
+    dataset = pipeline.execute(minimal_dataset)
+
 
 @pytest.mark.slow
 @pytest.mark.parametrize("f", _pdal_filter_list)
@@ -64,3 +68,13 @@ def test_filter_default_settings(f, tmp_path, dataset):
     # And execute the filter in default configuration on it
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(dataset)
+
+
+def test_pdal_inmemory_dataset(minimal_dataset):
+    # Check conversion
+    dataset = PDALInMemoryDataSet.convert(minimal_dataset)
+    assert dataset.data is not None
+
+    # Check idempotency
+    dataset2 = PDALInMemoryDataSet.convert(dataset)
+    assert (dataset2.data == dataset.data).all()
