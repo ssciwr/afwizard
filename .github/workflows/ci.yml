@@ -60,6 +60,7 @@ jobs:
     - name: Install OPALS (Windows)
       if: runner.os == 'Windows'
       working-directory: ${{ runner.workspace }}
+      shell: powershell
       run: |
         c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
         Start-Process -FilePath ${{ runner.workspace }}\opals_nightly_win64-setup.exe -ArgumentList /S,/TYPE=typical,/DATA=,/D=${{ runner.workspace }}\opalsInstallation -Wait
