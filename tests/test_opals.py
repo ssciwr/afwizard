@@ -1,6 +1,6 @@
 from adaptivefiltering.opals import *
 
-from . import dataset
+from . import dataset, minimal_dataset
 
 import jsonschema
 import pyrsistent
@@ -29,6 +29,14 @@ def test_opals():
 
     # And that the filter can be reconstructed using the form data
     f2 = f.copy(**pyrsistent.thaw(widget.data))
+
+
+@pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
+@pytest.mark.parametrize("mod", _availableOpalsModules)
+def test_minimal_default_filter_settings(mod, minimal_dataset):
+    f = OPALSFilter(type=mod)
+
+    dataset = f.execute(minimal_dataset)
 
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")

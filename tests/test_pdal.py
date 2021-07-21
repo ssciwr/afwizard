@@ -1,6 +1,6 @@
 from adaptivefiltering.pdal import *
 
-from . import dataset
+from . import dataset, minimal_dataset
 
 import jsonschema
 import os
@@ -39,6 +39,18 @@ def test_pdal_pipeline():
 
     widget = p.widget_form()
     p2 = p.copy(**pyrsistent.thaw(widget.data))
+
+
+@pytest.mark.parametrize("f", _pdal_filter_list)
+def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
+    # We run this test from within a temporary directory.
+    # This is better because some PDAL filter produce spurious
+    # intermediate files.
+    os.chdir(tmp_path)
+
+    # And execute the filter in default configuration on it
+    filter_ = PDALFilter(type=f)
+    dataset = filter_.execute(minimal_dataset)
 
 
 @pytest.mark.slow

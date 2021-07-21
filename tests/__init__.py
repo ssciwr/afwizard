@@ -21,3 +21,8 @@ def mock_environment(**env):
 @pytest.fixture
 def dataset():
     return adaptivefiltering.DataSet(filename="data/500k_NZ20_Westport.laz")
+
+
+@pytest.fixture
+def minimal_dataset():
+    return adaptivefiltering.DataSet(filename="data/minimal.las")
