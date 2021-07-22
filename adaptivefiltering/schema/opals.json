@@ -11,17 +11,22 @@
         },
         "cellSize": {
           "default": [
-            "10",
-            "10"
+            10,
+            10
           ],
           "description": "Size of the rectangular grid cell in x- and y-direction. If only one value is passed, quadratic cells are used.",
           "items": {
             "type": "number"
           },
+          "maxItems": 2,
+          "minItems": 2,
           "title": "cellwidth x/y",
           "type": "array"
         },
         "feature": {
+          "default": [
+            "mean"
+          ],
           "description": "One or more feature(s) of the set [min,max,diff,nmin:n,nmax:n,mean,median,sum,variance,rms,pdens,pcount,quantile:p,minority,majority,entropy] which shall be derived from the attribute. For features nmin:n and nmax:n, n (>0) and for feature quantile p ([0,1]) must be specified",
           "items": {
             "type": "string"
@@ -48,13 +53,13 @@
           "type": "string"
         },
         "multiBand": {
-          "default": 0,
+          "default": false,
           "description": "When using multiband grid features  will be stored in multiple bands instead of multiple files.Features will be saved in the same order as user input.For example if -feature sigma0 slope then Band1=sigma0 and Band2=slope",
           "title": "if multiband set to true then multiple bands will be used instead of multiple files.",
           "type": "boolean"
         },
         "noData": {
-          "default": "9999",
+          "default": 9999,
           "description": "Value representing an undefined value in the output raster model.",
           "title": "Nodata value",
           "type": "number"
@@ -78,7 +83,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "feature"
       ],
       "title": "Cell Module (OPALS)",
       "type": "object"
@@ -93,7 +99,7 @@
           "type": "string"
         },
         "extrapolationCheck": {
-          "default": 1,
+          "default": true,
           "description": "Unfavorable point distributions can lead to extrapolations, where the interpolated value clearly exceeds the local data values. Using the local data range extended by a buffer factory, such extrapolation are detected and rejected if this option is enabled.",
           "title": "avoid extrapolation flag",
           "type": "boolean"
@@ -133,7 +139,7 @@
           "type": "string"
         },
         "gridSize": {
-          "default": "1",
+          "default": 1,
           "description": "Size of the rectangular grid cell in x- and y-direction. If only one value is passed, quadratic cells are used.",
           "title": "grid width x/y",
           "type": "number"
@@ -168,19 +174,19 @@
           "type": "string"
         },
         "multiBand": {
-          "default": 0,
+          "default": false,
           "description": "When using multiband grid features  will be stored in multiple bands instead of multiple files.Features will be saved in the same order as user input.For example if -feature sigma0 slope then Band1=sigma0 and Band2=slope",
           "title": "if multiband set to true then multiple bands will be used instead of multiple files.",
           "type": "boolean"
         },
         "neighbours": {
-          "default": "8",
+          "default": 8,
           "description": "This parameter is only considered for moving average, planes and parabola interpolation.",
           "title": "nr of nearest neighbours used for grid point interpolation",
           "type": "integer"
         },
         "noData": {
-          "default": "9999",
+          "default": 9999,
           "description": "Value representing an undefined value in the output raster model.",
           "title": "Nodata value",
           "type": "number"
@@ -214,7 +220,7 @@
           "type": "string"
         },
         "tileSize": {
-          "default": "64",
+          "default": 64,
           "description": "The internal processing is organized in rectangular tiles. The size of these computing units(number of grid lines per tile) can be specified allowing control of the memory consumption of the module. Recommended values are in the range of 64 (default) if the average point distance approximately matches the grid size. In case coarser of finer grids are to be derived, the tile size may need to be adapted. Finer grids allow for larger tile sizes (and vice versa).",
           "title": "tile (block) size",
           "type": "integer"
@@ -265,19 +271,19 @@
           "type": "string"
         },
         "maxIter": {
-          "default": "100",
+          "default": 100,
           "description": "Robust interpolation is performed iteratively. In each iteration the individual point weights are adapted based on the residuals (i.e. vertical distance between point and intermediate surface. The process of surface interpolation and re-weighting is repeated until the surface changes are below a threshold or the maximum number of iterations is reached.",
           "title": "maximum number of iterations",
           "type": "integer"
         },
         "maxSigma": {
-          "default": "0.5",
+          "default": 0.5,
           "description": "If the standard deviation of a unit observation of the robust interpolation (i.e. sigma_0 ) exceeds the specified value, the classification of the affected points remains unchanged.",
           "title": "maximum allowed sigma of interpolation",
           "type": "number"
         },
         "penetration": {
-          "default": "20",
+          "default": 20,
           "description": "The laser signal is partly or totally reflected at semi-transparent objects like vegetation. Therefore, not all laser pulses reach the ground. The penetration rate is used in the course of the robust interpolation for apriori estimating a reasonable initial course of the local surfaces",
           "title": "estimated penetration rate [%]",
           "type": "integer"
@@ -289,7 +295,7 @@
           "type": "string"
         },
         "searchRadius": {
-          "default": "3",
+          "default": 3,
           "description": "Only points within the given search radius are considered for the local robust interpolation.If the search area contains too few points for successful interpolation, the classification of the respective points remains unchanged.",
           "title": "search radius for point selection",
           "type": "number"

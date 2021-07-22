@@ -200,7 +200,7 @@ class WidgetForm:
         def add_entry(_):
             # if we are at the specified maximum, add should be ignored
             if "maxItems" in schema:
-                if len(vbox.children) == schema["maxItems"]:
+                if len(vbox.children) == schema["maxItems"] + 1:
                     return
 
             elements.insert(0, self._construct(schema["items"], label=None))
@@ -266,6 +266,10 @@ class WidgetForm:
             for item in reversed(_d):
                 add_entry(None)
                 elements[0].setter(item)
+
+        # If a default was specified, we now set it
+        if "default" in schema:
+            _setter(schema["default"])
 
         return WidgetFormElement(
             getter=lambda: pyrsistent.pvector(h.getter() for h in elements),
