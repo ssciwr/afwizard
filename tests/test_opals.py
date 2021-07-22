@@ -11,8 +11,8 @@ import pytest
 
 # The list of implemented modules
 _availableOpalsModules = [
-    # "Cell",
-    # "Grid",
+    "Cell",
+    "Grid",
     "RobFilter",
 ]
 
@@ -68,7 +68,14 @@ def test_opals():
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
 @pytest.mark.parametrize("mod", _availableOpalsModules)
 def test_minimal_default_filter_settings(mod, minimal_dataset):
-    f = OPALSFilter(type=mod)
+    # TODO: The following is a temporary workaround until we properly
+    #       normalize the configuration values according to the schema's
+    #       default definition. My first attempt did not get through the
+    #       schema's anyOf field and added erroneous fields.
+    try:
+        f = OPALSFilter(type=mod)
+    except jsonschema.ValidationError:
+        f = OPALSFilter(type=mod, feature=["mean"])
 
     dataset = f.execute(minimal_dataset)
 
@@ -77,7 +84,14 @@ def test_minimal_default_filter_settings(mod, minimal_dataset):
 @pytest.mark.slow
 @pytest.mark.parametrize("mod", _availableOpalsModules)
 def test_default_filter_settings(mod, dataset):
-    f = OPALSFilter(type=mod)
+    # TODO: The following is a temporary workaround until we properly
+    #       normalize the configuration values according to the schema's
+    #       default definition. My first attempt did not get through the
+    #       schema's anyOf field and added erroneous fields.
+    try:
+        f = OPALSFilter(type=mod)
+    except jsonschema.ValidationError:
+        f = OPALSFilter(type=mod, feature=["mean"])
 
     dataset = f.execute(dataset)
 
