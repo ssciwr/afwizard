@@ -1,5 +1,7 @@
+import adaptivefiltering
 import contextlib
 import os
+import pytest
 
 
 @contextlib.contextmanager
@@ -14,3 +16,13 @@ def mock_environment(**env):
     finally:
         os.environ.clear()
         os.environ.update(old_env)
+
+
+@pytest.fixture
+def dataset():
+    return adaptivefiltering.DataSet(filename="data/500k_NZ20_Westport.laz")
+
+
+@pytest.fixture
+def minimal_dataset():
+    return adaptivefiltering.DataSet(filename="data/minimal.las")

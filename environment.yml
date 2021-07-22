@@ -11,9 +11,11 @@ dependencies:
   - python-pdal=2.4.2
   - pip
   - pip:
+    - Click
     - geodaisy
     - geojson
     - jsonschema
     - matplotlib
     - pyrsistent
     - xdg
+    - xmltodict
