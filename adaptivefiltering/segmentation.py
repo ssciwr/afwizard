@@ -67,7 +67,7 @@ class Segmentation(geojson.FeatureCollection):
         }
 
 
-class interactive_map:
+class Interactive_Map:
     def __init__(self, dataset):
         """This class manages the interactive map on which one can choose the segmentation.
 
@@ -130,7 +130,9 @@ class interactive_map:
         return coordinates_mean, polygon_boundary
 
     def add_zoom_slider(self):
-        """Adds the zoom slider to the interactive map. Also sets the default zoom"""
+        """Adds the zoom slider to the interactive map.
+        Also sets the default zoom
+        """
 
         self.zoom_slider = ipywidgets.IntSlider(
             description="Zoom level:", min=0, max=20, value=16
@@ -174,7 +176,9 @@ class interactive_map:
         return self.color_picker
 
     def setup_grid(self, objects):
-        """Setup the grid layout to allow the color bar and more on the right side of the map."""
+        """Setup the grid layout to allow the color bar and
+        more on the right side of the map.
+        """
         self.grid = ipywidgets.GridBox(
             children=objects,
             layout=ipywidgets.Layout(
@@ -233,41 +237,16 @@ class interactive_map:
         # imports the segmentation with a basic style to avoid issus after multiple savings and loadings.
         # This should preserve the json structure indefinedtly as long as only our segmentations are loaded.
         # draw_control_data_json = []
-        print(type(segmentation))
-        print((segmentation))
 
-        draw_control_data_json = segmentation
-
-        # for segment in segmentation["features"]:
-        #     draw_control_data_raw = {
-        #         "type": "Feature",
-        #         "properties": {
-        #             "style": {
-        #                 "stroke": True,
-        #                 "color": "black",
-        #                 "weight": 4,
-        #                 "opacity": 0.5,
-        #                 "fill": True,
-        #                 "fillColor": "black",
-        #                 "fillOpacity": 0.1,
-        #                 "clickable": True,
-        #             }
-        #         },
-        #         "geometry": segment,
-        #     }
-        #     draw_control_data_json.append(draw_control_data_raw)
+        # draw_control_data_json = segmentation
 
         # compare current data to new segmentation
         current_data = self.draw_control.data
-        print(current_data)
-        if len(current_data) > 0:
-            if type(current_data[0]) is list:
-                current_data = current_data[0]
 
         # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
         new_polygons = [
             new_poligon
-            for new_poligon in draw_control_data_json
+            for new_poligon in segmentation["features"]
             if not new_poligon["geometry"]
             in [data["geometry"] for data in current_data]
         ]
@@ -276,4 +255,9 @@ class interactive_map:
         self.draw_control.data = new_data
 
     def show(self):
+        """This functions returns the grid object and makes the map visible.
+        :param grid:
+            The grid object which holds the map and the right side interface
+        :type grid: ipyleaflet.grid
+        """
         return self.grid
