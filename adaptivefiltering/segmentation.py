@@ -214,8 +214,10 @@ class interactive_map:
 
 
         """
-        polygon_list = [data["geometry"] for data in self.draw_control.data]
-        segmentation = Segmentation(polygon_list)
+        # polygon_list = [data["geometry"] for data in self.draw_control.data]
+        # polygon_list = [data for data in self.draw_control.data]
+
+        segmentation = Segmentation(self.draw_control.data)
         return segmentation
 
     def load_polygon(self, segmentation):
@@ -230,30 +232,34 @@ class interactive_map:
         """
         # imports the segmentation with a basic style to avoid issus after multiple savings and loadings.
         # This should preserve the json structure indefinedtly as long as only our segmentations are loaded.
-        draw_control_data_json = []
+        # draw_control_data_json = []
+        print(type(segmentation))
+        print((segmentation))
 
-        for segment in segmentation["features"]:
-            draw_control_data_raw = {
-                "type": "Feature",
-                "properties": {
-                    "style": {
-                        "stroke": True,
-                        "color": "black",
-                        "weight": 4,
-                        "opacity": 0.5,
-                        "fill": True,
-                        "fillColor": "black",
-                        "fillOpacity": 0.1,
-                        "clickable": True,
-                    }
-                },
-                "geometry": segment,
-            }
-            draw_control_data_json.append(draw_control_data_raw)
+        draw_control_data_json = segmentation
+
+        # for segment in segmentation["features"]:
+        #     draw_control_data_raw = {
+        #         "type": "Feature",
+        #         "properties": {
+        #             "style": {
+        #                 "stroke": True,
+        #                 "color": "black",
+        #                 "weight": 4,
+        #                 "opacity": 0.5,
+        #                 "fill": True,
+        #                 "fillColor": "black",
+        #                 "fillOpacity": 0.1,
+        #                 "clickable": True,
+        #             }
+        #         },
+        #         "geometry": segment,
+        #     }
+        #     draw_control_data_json.append(draw_control_data_raw)
 
         # compare current data to new segmentation
         current_data = self.draw_control.data
-
+        print(current_data)
         if len(current_data) > 0:
             if type(current_data[0]) is list:
                 current_data = current_data[0]
