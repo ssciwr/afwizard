@@ -123,6 +123,16 @@ class Filter:
         """
         return pyrsistent.m(type="object")
 
+    @classmethod
+    def form_schema(cls):
+        """Define the part of the configuration schema that should be exposed to the user
+
+        Backend's inheriting from the :class:`~adaptivefiltering.filter.Filter` interface class can use that to
+        implicitly handle some parameters. These would still be part of the
+        schema, but they are automatically added in the :func:`~adaptivefiltering.filter.Filter.execute` part.
+        """
+        return cls.schema()
+
     def copy(self, **kwargs):
         """Create a copy of this filter with updated configuration parameters
 
@@ -143,7 +153,7 @@ class Filter:
         :return: The widget form
         :rtype: :class:`~adaptivefiltering.widgets.WidgetForm`
         """
-        return WidgetForm(self.schema())
+        return WidgetForm(self.form_schema())
 
     def __add__(self, other):
         """Adding filters composes a pipeline"""
@@ -157,6 +167,10 @@ class Filter:
 
     def __eq__(self, other):
         return repr(self) == repr(other)
+
+    @classmethod
+    def enabled(cls):
+        return True
 
 
 # Register the base class itself
@@ -198,7 +212,8 @@ class PipelineMixin:
         backends = []
         for ident, class_ in Filter._filter_impls.items():
             if Filter._filter_is_backend[ident]:
-                backends.append(class_.schema())
+                if class_.enabled():
+                    backends.append(class_.form_schema())
 
         # Construct a widget that let's you select the backend
         schema = pyrsistent.thaw(self.schema())
@@ -236,7 +251,10 @@ class PipelineMixin:
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
-    pass
+    def execute(self, dataset):
+        for f in self.config["filters"]:
+            dataset = f.execute(dataset)
+        return dataset
 
 
 def serialize_filter(filter_):
