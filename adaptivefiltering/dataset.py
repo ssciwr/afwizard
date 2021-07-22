@@ -160,9 +160,4 @@ class DataSet:
     @classmethod
     def convert(cls, dataset):
         """Convert this dataset to an instance of DataSet"""
-        if type(dataset) == cls:
-            filename = get_temporary_filename(extension="las")
-            dataset.save(filename, compress=False, overwrite=False)
-            return DataSet(filename=filename, provenance=dataset._provenance)
-        else:
-            return dataset
+        return dataset.save(get_temporary_filename(extension="las"))

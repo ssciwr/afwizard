@@ -1,6 +1,6 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
-from adaptivefiltering.paths import load_schema, locate_file
+from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.visualization import vis_mesh, vis_pointcloud
 from adaptivefiltering.utils import AdaptiveFilteringError
@@ -129,6 +129,9 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(dataset, PDALInMemoryDataSet):
             return dataset
 
+        # If dataset is of unknown type, we should first dump it to disk
+        dataset = dataset.save(get_temporary_filename("las"))
+
         # Load the file from the given filename
         assert dataset.filename is not None
 
@@ -210,8 +213,6 @@ class PDALInMemoryDataSet(DataSet):
 
         # Form the correct configuration string for compression
         compress = "laszip" if compress else "none"
-
-        from adaptivefiltering.pdal import execute_pdal_pipeline
 
         # Exectute writer pipeline
         execute_pdal_pipeline(

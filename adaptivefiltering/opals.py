@@ -15,6 +15,7 @@ import os
 import platform
 import pyrsistent
 import re
+import shutil
 import subprocess
 import xmltodict
 
@@ -237,7 +238,7 @@ class OPALSFilter(Filter, identifier="OPALS", backend=True):
         try:
             final_filter = self.copy(outFile=outFile)
         except jsonschema.ValidationError:
-            dataset.save(filename=outFile)
+            shutil.copy(dataset.filename, outFile)
             dataset = OPALSDataManagerObject(filename=outFile)
 
         # Actually run the CLI
@@ -279,6 +280,9 @@ class OPALSDataManagerObject(DataSet):
         if isinstance(dataset, OPALSDataManagerObject):
             return dataset
 
+        # If dataset is of unknown type, we should first dump it to disk
+        dataset = dataset.save(get_temporary_filename("las"))
+
         # Construct the new ODM filename
         dm_filename = get_temporary_filename(extension="odm")
 
@@ -301,5 +305,42 @@ class OPALSDataManagerObject(DataSet):
 
         # Wrap the result in a new data set object
         return OPALSDataManagerObject(
-            filename=dm_filename, provenance=dataset._provenance
+            filename=dm_filename,
+            provenance=dataset._provenance + [f"Converted file to ODM format"],
+        )
+
+    def save(self, filename, compress=False, overwrite=False):
+        # I cannot find LAZ export in the OPALS docs
+        if compress:
+            raise AdaptiveFilteringError("OPALS does not implement LAZ exporting")
+
+        # Check if we would overwrite an input file
+        if not overwrite and os.path.exists(filename):
+            raise AdaptiveFilteringError(
+                f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
+            )
+
+        # Run the opalsExport utility
+        result = subprocess.run(
+            [
+                get_opals_module_executable("Export"),
+                "-inFile",
+                self.filename,
+                "-outFile",
+                filename,
+                "-oFormat",
+                "las",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        # If the OPALS run was not successful, we raise an error
+        if result.returncode != 0:
+            raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
+
+        # Wrap the result in a new data set object
+        return DataSet(
+            filename=filename,
+            provenance=self._provenance + [f"Exported ODM file to {filename}"],
         )

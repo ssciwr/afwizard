@@ -1,4 +1,5 @@
 from adaptivefiltering.opals import *
+from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 from . import dataset, minimal_dataset, mock_environment
@@ -106,3 +107,8 @@ def test_opals_datamanager(minimal_dataset):
     # Check idempotency
     odm2 = OPALSDataManagerObject.convert(odm)
     assert old_file == odm2.filename
+
+    # Check conversion into PDAL object and back
+    pdal = PDALInMemoryDataSet.convert(odm)
+    assert pdal.data.shape[0] > 0
+    back = OPALSDataManagerObject.convert(pdal)
