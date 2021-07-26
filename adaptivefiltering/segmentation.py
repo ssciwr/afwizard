@@ -115,14 +115,24 @@ class InteractiveMap:
         from adaptivefiltering.pdal import execute_pdal_pipeline, PDALInMemoryDataSet
 
         # Execute PDAL filter
+        # print("Self.dataset", self.dataset)
         dataset = PDALInMemoryDataSet.convert(self.dataset)
+
+        # get spaciel_ref frome pipeline to specify this as in_srs in the pipeline
+        # unfortunatly I can't find a way to include this metadata in the pdal.Pipeline as it only has the config and an array as options.
+        dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
+            "readers.las"
+        ]["comp_spatialreference"]
         hexbin_pipeline = execute_pdal_pipeline(
             dataset=dataset,
             config=[
-                {"type": "filters.reprojection", "out_srs": "EPSG:4326"},
+                {
+                    "type": "filters.reprojection",
+                    "in_srs": dataset_spaciaL_ref,
+                    "out_srs": "EPSG:4326",
+                },
                 {"type": "filters.hexbin"},
             ],
-            return_pipeline_object=True,
         )
         hexbin_geojson = json.loads(hexbin_pipeline.metadata)["metadata"][
             "filters.hexbin"
