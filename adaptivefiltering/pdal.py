@@ -16,7 +16,7 @@ import pyrsistent
 import tempfile
 
 
-def execute_pdal_pipeline(dataset=None, config=None):
+def execute_pdal_pipeline(dataset=None, config=None, return_pipeline_object=False):
     """Execute a PDAL pipeline
 
     :param dataset:
@@ -29,6 +29,10 @@ def execute_pdal_pipeline(dataset=None, config=None):
     :return:
         A numpy array data structure containing the PDAL output.
     :rtype: numpy.array
+    :param return_pipeline_object:
+        Whether or not the full PDAL pipeline object including metadata should
+        be returned.
+    :type: bool
     """
     # Make sure that a correct combination of arguments is given
     if config is None:
@@ -55,8 +59,12 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # We are currently only handling situations with one output array
     assert len(pipeline.arrays) == 1
 
-    # Return the output array
-    return pipeline.arrays[0]
+    # Check whether we should return the full pipeline including e.g. metadata
+    if return_pipeline_object:
+        return pipeline
+    else:
+        # Return the output array
+        return pipeline.arrays[0]
 
 
 class PDALFilter(Filter, identifier="pdal"):
