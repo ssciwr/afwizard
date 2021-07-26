@@ -25,6 +25,14 @@ adaptivefiltering.pdal module
    :undoc-members:
    :show-inheritance:
 
+adaptivefiltering.opals module
+------------------------------
+
+.. automodule:: adaptivefiltering.opals
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 adaptivefiltering.segmentation module
 -------------------------------------
 

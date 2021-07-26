@@ -1,5 +1,7 @@
-from adaptivefiltering import DataSet
 from adaptivefiltering.pdal import *
+from adaptivefiltering.paths import get_temporary_filename
+
+from . import dataset, minimal_dataset
 
 import jsonschema
 import os
@@ -41,17 +43,49 @@ def test_pdal_pipeline():
 
 
 @pytest.mark.parametrize("f", _pdal_filter_list)
-def test_filter_default_settings(f, tmp_path):
+def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     # We run this test from within a temporary directory.
     # This is better because some PDAL filter produce spurious
     # intermediate files.
     os.chdir(tmp_path)
 
-    # Create a dummy data set
-    dataset = DataSet(
-        filename="data/500k_NZ20_Westport.laz",
-    )
+    # And execute the filter in default configuration on it
+    filter_ = PDALFilter(type=f)
+    dataset = filter_.execute(minimal_dataset)
+
+    # Treating the filter as a pipeline should work as well
+    pipeline = filter_.as_pipeline()
+    dataset = pipeline.execute(minimal_dataset)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("f", _pdal_filter_list)
+def test_filter_default_settings(f, tmp_path, dataset):
+    # We run this test from within a temporary directory.
+    # This is better because some PDAL filter produce spurious
+    # intermediate files.
+    os.chdir(tmp_path)
 
     # And execute the filter in default configuration on it
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(dataset)
+
+
+def test_pdal_inmemory_dataset(minimal_dataset):
+    # Check conversion
+    dataset = PDALInMemoryDataSet.convert(minimal_dataset)
+    assert dataset.data is not None
+
+    # Check idempotency
+    dataset2 = PDALInMemoryDataSet.convert(dataset)
+    assert dataset2.data.shape == dataset.data.shape
+
+    # Dataset saving and reloading as LAS
+    saved = dataset.save(get_temporary_filename("las"))
+    reloaded = PDALInMemoryDataSet.convert(saved)
+    assert dataset.data.shape == reloaded.data.shape
+
+    # Dataset saving and reloading as LAZ
+    saved = dataset.save(get_temporary_filename("laz"), compress=True)
+    reloaded = PDALInMemoryDataSet.convert(saved)
+    assert dataset.data.shape == reloaded.data.shape

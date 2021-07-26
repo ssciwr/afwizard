@@ -1,19 +1,13 @@
-from adaptivefiltering.paths import locate_file
-from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.visualization import vis_pointcloud, vis_mesh
+from adaptivefiltering.paths import locate_file, get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
 
-
-import tempfile
-import numpy as np
-from osgeo import gdal
 import os
+import shutil
 import sys
-import geodaisy.converters as convert
 
 
 class DataSet:
-    def __init__(self, data=None, filename=None, provenance=[]):
+    def __init__(self, filename=None, provenance=[]):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -24,32 +18,17 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
-        :param data:
-            The numpy representation of the data set. This argument is used by e.g. filters that
-            already have the dataset in memory.
-        :type data: numpy.array
         """
         # initilizise self._geo_tif_data_resolution as 0
         self._geo_tif_data_resolution = 0
 
-        # Store the given data and provenance array
-        self.data = data
+        # Store the given parameters
         self._provenance = provenance
-
-        # Load the file from the given filename
-        if filename is not None:
-            from adaptivefiltering.pdal import execute_pdal_pipeline
-
-            filename = locate_file(filename)
-            self.data = execute_pdal_pipeline(
-                config={"type": "readers.las", "filename": filename}
-            )
-
-            # Report this loading in provenance tracking
-            self._provenance.append(
-                f"Loaded {self.data.shape[0]} points from {filename}"
-            )
         self.filename = filename
+
+        # Make the path absolute
+        if self.filename is not None:
+            self.filename = locate_file(self.filename)
 
     def save_mesh(
         self,
@@ -74,27 +53,10 @@ class DataSet:
             Lidar data.
         :type resolution: float
         """
-        # if .tif is already in the filename it will be removed to avoid double file extension
-        if os.path.splitext(filename)[1] == ".tif":
-            filename = os.path.splitext(filename)[0]
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-        # Execute a PDAL pipeline
-        from adaptivefiltering.pdal import execute_pdal_pipeline
-
-        execute_pdal_pipeline(
-            dataset=self,
-            config={
-                "filename": filename + ".tif",
-                "gdaldriver": "GTiff",
-                "output_type": "all",
-                "resolution": resolution,
-                "type": "writers.gdal",
-            },
-        )
-
-        # Read the result
-        self._geo_tif_data = gdal.Open(filename + ".tif", gdal.GA_ReadOnly)
-        self._geo_tif_data_resolution = resolution
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.save_mesh(filename, resolution=resolution)
 
     def show_mesh(self, resolution=2.0):
         """Visualize the point cloud as a digital terrain model in JupyterLab
@@ -110,44 +72,20 @@ class DataSet:
             Lidar data.
         :type resolution: float
         """
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-        # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
-            # Write a temporary file
-            with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(str(tmp_file.name), resolution=resolution)
-
-        # use the number of x and y points to generate a grid.
-        x = np.arange(0, self._geo_tif_data.RasterXSize)
-        y = np.arange(0, self._geo_tif_data.RasterYSize)
-
-        # multiplay x and y with the given resolution for comparable plot.
-        x = x * self._geo_tif_data.GetGeoTransform()[1]
-        y = y * self._geo_tif_data.GetGeoTransform()[1]
-
-        # get height information from
-        band = self._geo_tif_data.GetRasterBand(1)
-        z = band.ReadAsArray()
-        return vis_mesh(x, y, z)
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.show_mesh(resolution=resolution)
 
     def show_points(self, threshold=750000):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
         """
-        if len(self.data["X"]) >= threshold:
-            error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data["X"]), threshold
-            )
-            raise ValueError(error_text)
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-        return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.show_points(threshold=threshold)
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
@@ -169,28 +107,26 @@ class DataSet:
             an error is thrown. This is done in order to prevent accidental corruption
             of valueable data files.
         :type overwrite: bool
+        :return:
+            A dataset object wrapping the written file
+        :rtype: adaptivefiltering.DataSet
         """
+        # If the filenames match, this is a no-op operation
+        if filename == self.filename:
+            return
 
-        # Check if we would overwrite an input file
+        # Otherwise, we can simply copy the file to the new location
+        # after checking that we are not accidentally overriding something
         if not overwrite and os.path.exists(filename):
             raise AdaptiveFilteringError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
-        # Form the correct configuration string for compression
-        compress = "laszip" if compress else "none"
+        # Do the copy operation
+        shutil.copy(self.filename, filename)
 
-        from adaptivefiltering.pdal import execute_pdal_pipeline
-
-        # Exectute writer pipeline
-        execute_pdal_pipeline(
-            dataset=self,
-            config={
-                "filename": filename,
-                "type": "writers.las",
-                "compress": compress,
-            },
-        )
+        # And return a DataSet instance
+        return DataSet(filename=filename)
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset
@@ -198,25 +134,10 @@ class DataSet:
         :param segmentation:
         :type: adaptivefiltering.segmentation.Segmentation
         """
-        # If a single Segment is given, we convert it to a segmentation
-        if isinstance(segmentation, Segment):
-            segmentation = Segmentation([segmentation])
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-        # Construct an array of WKT Polygons for the clipping
-        polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
-
-        from adaptivefiltering.pdal import execute_pdal_pipeline
-
-        # Apply the cropping filter with all polygons
-        newdata = execute_pdal_pipeline(
-            dataset=self, config={"type": "filters.crop", "polygon": polygons}
-        )
-
-        return DataSet(
-            data=newdata,
-            provenance=self._provenance
-            + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
-        )
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.restrict(segmentation)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
@@ -235,3 +156,8 @@ class DataSet:
         for i, entry in self._provenance:
             stream.write(f"Item #{i}:\n")
             stream.write(f"{entry}\n\n")
+
+    @classmethod
+    def convert(cls, dataset):
+        """Convert this dataset to an instance of DataSet"""
+        return dataset.save(get_temporary_filename(extension="las"))
