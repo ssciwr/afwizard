@@ -111,16 +111,22 @@ class Interactive_Map:
         :type polygon_boundary: ipyleaflet Polygon
 
         """
-        hexbin_json = [
-            self.dataset.filename,
-            {"type": "filters.reprojection", "out_srs": "EPSG:4326"},
-            {"type": "filters.hexbin"},
-        ]
-        hexbin_pipeline = pdal.Pipeline(json.dumps(hexbin_json))
-        hexbin_pipeline.execute()
+        from adaptivefiltering.pdal import execute_pdal_pipeline, PDALInMemoryDataSet
+
+        # Execute PDAL filter
+        dataset = PDALInMemoryDataSet.convert(self.dataset)
+        hexbin_pipeline = execute_pdal_pipeline(
+            dataset=dataset,
+            config=[
+                {"type": "filters.reprojection", "out_srs": "EPSG:4326"},
+                {"type": "filters.hexbin"},
+            ],
+            return_pipeline_object=True,
+        )
         hexbin_geojson = json.loads(hexbin_pipeline.metadata)["metadata"][
             "filters.hexbin"
         ]["boundary_json"]
+
         # get the previous coordinate representation
         boundary_coordinates = hexbin_geojson["coordinates"][0]
         coordinates_mean = np.mean(boundary_coordinates, axis=0)
