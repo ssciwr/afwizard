@@ -93,10 +93,8 @@ class InteractiveMap:
         self.add_zoom_slider()
         self.add_polygon_control()
 
-        # get a color picker to put on the right side of the map
-        self.color_pick = self.get_color_pick()
         # setup the grid with a list of widgets
-        self.setup_grid([self.m, self.color_pick])
+        self.setup_grid([self.m])
 
     def get_boundry(self):
         """takes the boundry coordinates of given dataset through the hexbin filter and returns them as a polygon
@@ -180,17 +178,6 @@ class InteractiveMap:
         }
 
         self.m.add_control(self.draw_control)
-
-    def get_color_pick(self):
-        """Adds the color picker widget"""
-
-        self.color_picker = ipywidgets.ColorPicker(
-            description="Pick a color:",
-            layout=ipywidgets.Layout(width="auto", grid_area="sidebar"),
-        )
-        self.color_picker.observe(self.update_draw_control_color)
-        # self.m.add_control(self.color_control)
-        return self.color_picker
 
     def setup_grid(self, objects):
         """Setup the grid layout to allow the color bar and
