@@ -1,7 +1,8 @@
-from adaptivefiltering.segmentation import Segment, Segmentation, Interactive_Map
+from adaptivefiltering.segmentation import Segment, Segmentation, InteractiveMap
 from adaptivefiltering.dataset import DataSet
 import geojson
 import os
+from . import dataset
 
 
 def test_segmentation():
@@ -33,16 +34,15 @@ def test_save_load_segmentation(tmpdir):
     assert geojson.dumps(s) == geojson.dumps(s2)
 
 
-def test_show_map():
-    ds = DataSet(filename="data/500k_NZ20_Westport.laz")
-    test_map = Interactive_Map(ds)
+def test_show_map(dataset):
+    # simple test to verify maps can be opened.
+    test_map = InteractiveMap(dataset)
     test_map.show()
 
 
-def test_save_load_map_polygons():
+def test_save_load_map_polygons(dataset):
     # initiate dataset and map
-    ds = DataSet(filename="data/500k_NZ20_Westport.laz")
-    test_map = Interactive_Map(ds)
+    test_map = InteractiveMap(dataset)
 
     # create two example polygons
     polygon_1 = [
@@ -116,7 +116,7 @@ def test_save_load_map_polygons():
     assert polygon_2[0] in returned_polygons["features"]
 
     # make a second test map
-    test_map_2 = Interactive_Map(ds)
+    test_map_2 = InteractiveMap(dataset)
     # load the previously exportet polygons into the new map
     test_map_2.load_polygon(returned_polygons)
     assert test_map_2.return_polygon() == test_map.return_polygon()

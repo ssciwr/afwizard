@@ -67,7 +67,7 @@ class Segmentation(geojson.FeatureCollection):
         }
 
 
-class Interactive_Map:
+class InteractiveMap:
     def __init__(self, dataset):
         """This class manages the interactive map on which one can choose the segmentation.
 
@@ -77,7 +77,7 @@ class Interactive_Map:
 
         """
         self.dataset = dataset
-        self.coordinates_mean, self.polygon_boundary = self.get_bounds()
+        self.coordinates_mean, self.polygon_boundary = self.get_boundry()
 
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
@@ -86,6 +86,7 @@ class Interactive_Map:
             scroll_wheel_zoom=True,
             max_zoom=20,
         )
+
         self.m.add_layer(self.polygon_boundary)
 
         # always add polygon draw tool and zoom slider
@@ -97,7 +98,7 @@ class Interactive_Map:
         # setup the grid with a list of widgets
         self.setup_grid([self.m, self.color_pick])
 
-    def get_bounds(self):
+    def get_boundry(self):
         """takes the boundry coordinates of given dataset through the hexbin filter and returns them as a polygon
 
         :return:
@@ -121,6 +122,7 @@ class Interactive_Map:
         hexbin_geojson = json.loads(hexbin_pipeline.metadata)["metadata"][
             "filters.hexbin"
         ]["boundary_json"]
+
         # get the previous coordinate representation
         boundary_coordinates = hexbin_geojson["coordinates"][0]
         coordinates_mean = np.mean(boundary_coordinates, axis=0)
@@ -193,18 +195,18 @@ class Interactive_Map:
             ),
         )
 
-    def draw_handler(target, action, geo_json):
-        """This can later be used to update the list of polygons on the side."""
-
     def update_draw_control_color(self, change, *args, **kwargs):
         """This is the automatic handler for detecting if a new color is selected."""
+
         self.m.remove_control(self.draw_control)
         self.draw_control.polygon = {
             "shapeOptions": {
                 "fillColor": self.color_picker.get_interact_value(),
                 "color": self.color_picker.get_interact_value(),
                 "fillOpacity": 0.1,
-            }
+            },
+            "drawError": {"color": "#dd253b", "message": "Oups!"},
+            "allowIntersection": False,
         }
         self.m.add_control(self.draw_control)
 
@@ -218,8 +220,6 @@ class Interactive_Map:
 
 
         """
-        # polygon_list = [data["geometry"] for data in self.draw_control.data]
-        # polygon_list = [data for data in self.draw_control.data]
 
         segmentation = Segmentation(self.draw_control.data)
         return segmentation
@@ -234,20 +234,17 @@ class Interactive_Map:
 
 
         """
-        # imports the segmentation with a basic style to avoid issus after multiple savings and loadings.
-        # This should preserve the json structure indefinedtly as long as only our segmentations are loaded.
-        # draw_control_data_json = []
-
-        # draw_control_data_json = segmentation
+        # imports the segmentation with a basic style to avoid issues after multiple savings and loadings.
+        # This should preserve the json structure indefinitely as long as only our segmentations are loaded.
 
         # compare current data to new segmentation
         current_data = self.draw_control.data
 
         # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
         new_polygons = [
-            new_poligon
-            for new_poligon in segmentation["features"]
-            if not new_poligon["geometry"]
+            new_polygon
+            for new_polygon in segmentation["features"]
+            if not new_polygon["geometry"]
             in [data["geometry"] for data in current_data]
         ]
         # adds the new polygons to the current data
