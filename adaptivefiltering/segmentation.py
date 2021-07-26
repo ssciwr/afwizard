@@ -68,14 +68,18 @@ class Segmentation(geojson.FeatureCollection):
 
 
 class InteractiveMap:
-    def __init__(self, dataset):
+    def __init__(self, dataset=None, segmentation=None):
         """This class manages the interactive map on which one can choose the segmentation.
 
         :param dataset:
             The dataset from which the map should be displayed. This needs to be in a valid georeferenced format. Eg.: EPSG:4326
         :type dataset: Dataset
+        :param segmentation:
+            A premade segmentation can can be loaded and shown on a map without the need to load a dataset.
+        :type segmentation: Segmentation
 
         """
+
         self.dataset = dataset
         self.coordinates_mean, self.polygon_boundary = self.get_boundry()
 
@@ -121,6 +125,7 @@ class InteractiveMap:
         dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
             "readers.las"
         ]["comp_spatialreference"]
+
         hexbin_pipeline = execute_pdal_pipeline(
             dataset=dataset,
             config=[
@@ -196,21 +201,6 @@ class InteractiveMap:
             """,
             ),
         )
-
-    def update_draw_control_color(self, change, *args, **kwargs):
-        """This is the automatic handler for detecting if a new color is selected."""
-
-        self.m.remove_control(self.draw_control)
-        self.draw_control.polygon = {
-            "shapeOptions": {
-                "fillColor": self.color_picker.get_interact_value(),
-                "color": self.color_picker.get_interact_value(),
-                "fillOpacity": 0.1,
-            },
-            "drawError": {"color": "#dd253b", "message": "Oups!"},
-            "allowIntersection": False,
-        }
-        self.m.add_control(self.draw_control)
 
     def return_polygon(self):
         """Exports the current polygon list as a Segmentation object
