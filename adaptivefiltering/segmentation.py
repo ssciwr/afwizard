@@ -84,44 +84,47 @@ class InteractiveMap:
 
         """
 
-        # this is super wierd. for some reason the map takes the x,y coordinates in a different order than the draw control.
-        # I know manually switch the coordinates when a segmentation is entered, but this could produce problems with different methods of constructing this segmentation.
+        # handle exeptions
+        if dataset and segmentation:
+            raise Exception(
+                "a dataset and a segmentation can't be loaded at the same time."
+            )
 
-        if dataset and not segmentation:
-            # initiluze the map for a given dataset
-            self.dataset = dataset
-            self.coordinates_mean, self.polygon_boundary = self.get_boundry()
-        elif segmentation and not dataset:
-            # initilize the map for a given segmentation
-            if segmentation["features"] != []:
+        if dataset is None and segmentation["features"] == []:
+            raise Exception("an empty segmention was given.")
 
-                boundary_coordinates = np.asarray(
-                    segmentation["features"][0]["geometry"]["coordinates"]
-                )
-
-                boundary_coordinates = np.flip(np.squeeze(boundary_coordinates))
-                self.coordinates_mean = np.mean(boundary_coordinates, axis=0)
-                self.polygon_boundary = ipyleaflet.Polygon(
-                    locations=boundary_coordinates.tolist(), color="gray", opacity=0.9
-                )
-            else:
-                # if an empty segmentation is given, the map will be centered at the SSC office
-                self.coordinates_mean = np.asarray([49.41745, 8.67529])
-                self.polygon_boundary = None
-        else:
-            # if an no segmentaiton or dataset is given, the map will be centered at the SSC office
+        if dataset is None and segmentation is None:
+            # if ano dataset or segmentation is given, the map will be centered at the SSC office
             self.coordinates_mean = np.asarray([49.41745, 8.67529])
-            self.polygon_boundary = None
+            self.segmentation = None
 
+        # prepare the map data
+        if dataset and segmentation is None:
+            self.segmentation, self.coordinates_mean = self.get_boundary(dataset)
+
+        elif dataset is None and segmentation:
+            print(segmentation)
+
+            boundary_coordinates = segmentation["features"][0]["geometry"][
+                "coordinates"
+            ]
+            self.coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
+            self.segmentation = segmentation
+
+        # setup ipyleaflet GeoJSON object
+
+        self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
+
+        # for ipleaflet we need to change the order of the center coordinates
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
-            center=(self.coordinates_mean[0], self.coordinates_mean[1]),
+            center=(self.coordinates_mean[1], self.coordinates_mean[0]),
             crs=ipyleaflet.projections.EPSG3857,
             scroll_wheel_zoom=True,
             max_zoom=20,
         )
-        if self.polygon_boundary:
-            self.m.add_layer(self.polygon_boundary)
+
+        self.m.add_layer(self.boundary_geoJSON)
 
         # always add polygon draw tool and zoom slider
         self.add_zoom_slider()
@@ -130,25 +133,25 @@ class InteractiveMap:
         # setup the grid with a list of widgets
         self.setup_grid([self.m])
 
-    def get_boundry(self):
+    def get_boundary(self, dataset):
         """takes the boundry coordinates of given dataset through the hexbin filter and returns them as a polygon
 
         :return:
+        :param hexbin_geojson:
+            The geojson of the area polygon
+        :type hexbin_geojson: geojson
+
+
         :param coordinates_mean:
-            the approximate center of the polygon, this is where the map will be centered
-        :type coordinates_mena: ndarray
-
-
-        :param polygon_boundary:
-            An ipyleaflet Polygon object which can be added to the map to mark the selected area.
-        :type polygon_boundary: ipyleaflet Polygon
+            Approximate center of the area.
+        :type coordinates_mean: ndarray
 
         """
         from adaptivefiltering.pdal import execute_pdal_pipeline, PDALInMemoryDataSet
 
         # Execute PDAL filter
         # print("Self.dataset", self.dataset)
-        dataset = PDALInMemoryDataSet.convert(self.dataset)
+        dataset = PDALInMemoryDataSet.convert(dataset)
 
         # get spaciel_ref frome pipeline to specify this as in_srs in the pipeline
         # unfortunatly I can't find a way to include this metadata in the pdal.Pipeline as it only has the config and an array as options.
@@ -167,17 +170,25 @@ class InteractiveMap:
                 {"type": "filters.hexbin"},
             ],
         )
+        # this gives us lat, lon but for geojson we need lon, lat
         hexbin_geojson = json.loads(hexbin_pipeline.metadata)["metadata"][
             "filters.hexbin"
         ]["boundary_json"]
+        # this flips the coordinates to reflext proper geojson format
+        hexbin_geojson["coordinates"] = np.flip(
+            np.asarray(hexbin_geojson["coordinates"])
+        ).tolist()
 
         # get the previous coordinate representation
         boundary_coordinates = hexbin_geojson["coordinates"][0]
         coordinates_mean = np.mean(boundary_coordinates, axis=0)
-        polygon_boundary = ipyleaflet.Polygon(
-            locations=boundary_coordinates, color="gray", opacity=0.9
-        )
-        return coordinates_mean, polygon_boundary
+        return hexbin_geojson, coordinates_mean
+
+        # polygon_boundary = ipyleaflet.Polygon(
+
+    #     locations=boundary_coordinates, color="gray", opacity=0.9
+    # )
+    #  return coordinates_mean, polygon_boundary
 
     def add_zoom_slider(self):
         """Adds the zoom slider to the interactive map.
