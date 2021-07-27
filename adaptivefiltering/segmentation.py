@@ -1,6 +1,6 @@
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
-
+from adaptivefiltering.dataset import DataSet
 import geojson
 import jsonschema
 import ipyleaflet
@@ -60,8 +60,20 @@ class Segmentation(geojson.FeatureCollection):
             geojson.dump(self, f)
 
     def show(self):
+        """This will create a new InteractiveMap with bounds from the segmentation.
+             use
+                 map = self.show()
+                 map
+             to show and access the data of the new map
+        :param grid:
+             The grid object which holds the map and the right side interface
+         :type grid: ipyleaflet.grid
+        """
+
         segmentation_map = InteractiveMap(segmentation=self)
-        return segmentation_map.show()
+        grid = segmentation_map.show()
+        return grid
+        # return segmentation_map
 
     @property
     def __geo_interface__(self):
@@ -85,6 +97,7 @@ class InteractiveMap:
         """
 
         # handle exeptions
+
         if dataset and segmentation:
             raise Exception(
                 "a dataset and a segmentation can't be loaded at the same time."
@@ -98,12 +111,16 @@ class InteractiveMap:
             self.coordinates_mean = np.asarray([49.41745, 8.67529])
             self.segmentation = None
 
+        if dataset is not None and type(dataset) is not DataSet:
+            raise TypeError(
+                "dataset must be of type DataSet, but is " + str(type(dataset))
+            )
+
         # prepare the map data
         if dataset and segmentation is None:
             self.segmentation, self.coordinates_mean = self.get_boundary(dataset)
 
         elif dataset is None and segmentation:
-            print(segmentation)
 
             boundary_coordinates = segmentation["features"][0]["geometry"][
                 "coordinates"
@@ -140,7 +157,6 @@ class InteractiveMap:
         :param hexbin_geojson:
             The geojson of the area polygon
         :type hexbin_geojson: geojson
-
 
         :param coordinates_mean:
             Approximate center of the area.
@@ -182,13 +198,8 @@ class InteractiveMap:
         # get the previous coordinate representation
         boundary_coordinates = hexbin_geojson["coordinates"][0]
         coordinates_mean = np.mean(boundary_coordinates, axis=0)
+
         return hexbin_geojson, coordinates_mean
-
-        # polygon_boundary = ipyleaflet.Polygon(
-
-    #     locations=boundary_coordinates, color="gray", opacity=0.9
-    # )
-    #  return coordinates_mean, polygon_boundary
 
     def add_zoom_slider(self):
         """Adds the zoom slider to the interactive map.

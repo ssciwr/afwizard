@@ -3,6 +3,7 @@ from adaptivefiltering.dataset import DataSet
 import geojson
 import os
 from . import dataset
+import pytest
 
 
 def test_segmentation():
@@ -36,8 +37,53 @@ def test_save_load_segmentation(tmpdir):
 
 def test_show_map(dataset):
     # simple test to verify maps can be opened.
+
+    segmentation_1 = Segmentation({"features": [], "type": "FeatureCollection"})
+    segmentation_2 = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {
+                    "style": {
+                        "stroke": True,
+                        "color": "black",
+                        "weight": 4,
+                        "opacity": 0.5,
+                        "fill": True,
+                        "fillColor": "black",
+                        "fillOpacity": 0.1,
+                        "clickable": True,
+                    }
+                },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [171.715394, -41.792157],
+                            [171.710101, -41.802235],
+                            [171.728054, -41.800635],
+                            [171.715394, -41.792157],
+                        ]
+                    ],
+                },
+            }
+        ]
+    )
+
     test_map = InteractiveMap(dataset)
     test_map.show()
+
+    test_map = InteractiveMap(segmentation=segmentation_2)
+    test_map.show()
+
+    with pytest.raises(TypeError):
+        test_map = InteractiveMap(segmentation_2)
+
+    with pytest.raises(Exception):
+        test_map = InteractiveMap()
+        test_map = InteractiveMap(segmentation_1)
+        test_map = InteractiveMap(dataset, segmentation_1)
+        test_map = InteractiveMap(dataset, segmentation_2)
 
 
 def test_save_load_map_polygons(dataset):
