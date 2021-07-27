@@ -120,3 +120,37 @@ def test_save_load_map_polygons(dataset):
     # load the previously exportet polygons into the new map
     test_map_2.load_polygon(returned_polygons)
     assert test_map_2.return_polygon() == test_map.return_polygon()
+
+
+def test_show_polygon_from_segmentation():
+    segmentation_1 = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {
+                    "style": {
+                        "stroke": True,
+                        "color": "black",
+                        "weight": 4,
+                        "opacity": 0.5,
+                        "fill": True,
+                        "fillColor": "black",
+                        "fillOpacity": 0.1,
+                        "clickable": True,
+                    }
+                },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [171.715394, -41.792157],
+                            [171.710101, -41.802235],
+                            [171.728054, -41.800635],
+                            [171.715394, -41.792157],
+                        ]
+                    ],
+                },
+            }
+        ]
+    )
+    segmentation_1.show()

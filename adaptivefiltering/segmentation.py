@@ -59,6 +59,10 @@ class Segmentation(geojson.FeatureCollection):
         with open(filename, "w") as f:
             geojson.dump(self, f)
 
+    def show(self):
+        segmentation_map = InteractiveMap(segmentation=self)
+        return segmentation_map.show()
+
     @property
     def __geo_interface__(self):
         return {
@@ -80,8 +84,34 @@ class InteractiveMap:
 
         """
 
-        self.dataset = dataset
-        self.coordinates_mean, self.polygon_boundary = self.get_boundry()
+        # this is super wierd. for some reason the map takes the x,y coordinates in a different order than the draw control.
+        # I know manually switch the coordinates when a segmentation is entered, but this could produce problems with different methods of constructing this segmentation.
+
+        if dataset and not segmentation:
+            # initiluze the map for a given dataset
+            self.dataset = dataset
+            self.coordinates_mean, self.polygon_boundary = self.get_boundry()
+        elif segmentation and not dataset:
+            # initilize the map for a given segmentation
+            if segmentation["features"] != []:
+
+                boundary_coordinates = np.asarray(
+                    segmentation["features"][0]["geometry"]["coordinates"]
+                )
+
+                boundary_coordinates = np.flip(np.squeeze(boundary_coordinates))
+                self.coordinates_mean = np.mean(boundary_coordinates, axis=0)
+                self.polygon_boundary = ipyleaflet.Polygon(
+                    locations=boundary_coordinates.tolist(), color="gray", opacity=0.9
+                )
+            else:
+                # if an empty segmentation is given, the map will be centered at the SSC office
+                self.coordinates_mean = np.asarray([49.41745, 8.67529])
+                self.polygon_boundary = None
+        else:
+            # if an no segmentaiton or dataset is given, the map will be centered at the SSC office
+            self.coordinates_mean = np.asarray([49.41745, 8.67529])
+            self.polygon_boundary = None
 
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
@@ -90,8 +120,8 @@ class InteractiveMap:
             scroll_wheel_zoom=True,
             max_zoom=20,
         )
-
-        self.m.add_layer(self.polygon_boundary)
+        if self.polygon_boundary:
+            self.m.add_layer(self.polygon_boundary)
 
         # always add polygon draw tool and zoom slider
         self.add_zoom_slider()
