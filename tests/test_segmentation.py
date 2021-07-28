@@ -75,7 +75,6 @@ def test_show_map(dataset):
     print("segmentation")
     test_map = InteractiveMap(segmentation=segmentation_2)
     test_map.show()
-    assert test_map == 5
     # test segmentation as datatype
     with pytest.raises(TypeError):
         test_map = InteractiveMap(segmentation_2)
