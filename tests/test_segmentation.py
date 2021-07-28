@@ -69,10 +69,8 @@ def test_show_map(dataset):
             }
         ]
     )
-    print("dataset")
     test_map = InteractiveMap(dataset)
     test_map.show()
-    print("segmentation")
     test_map = InteractiveMap(segmentation=segmentation_2)
     test_map.show()
     # test segmentation as datatype
