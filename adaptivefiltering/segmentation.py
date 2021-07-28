@@ -85,6 +85,10 @@ class Segmentation(geojson.FeatureCollection):
 class InteractiveMap:
     def __init__(self, dataset=None, segmentation=None):
         """This class manages the interactive map on which one can choose the segmentation.
+            It can be initilized with a dataset from which it will detect the boundaries and show them on the map.
+            Or it can be initilized with a segmentation which will also be visualized on the map.
+            There can be multiple polygons in the Segmentation and all will drawn. The
+
 
         :param dataset:
             The dataset from which the map should be displayed. This needs to be in a valid georeferenced format. Eg.: EPSG:4326
@@ -99,7 +103,7 @@ class InteractiveMap:
 
         if dataset and segmentation:
             raise Exception(
-                "a dataset and a segmentation can't be loaded at the same time."
+                "A dataset and a segmentation can't be loaded at the same time."
             )
 
         if dataset is None and segmentation["features"] == []:
@@ -112,7 +116,7 @@ class InteractiveMap:
 
         if dataset is not None and type(dataset) is not DataSet:
             raise TypeError(
-                "dataset must be of type DataSet, but is " + str(type(dataset))
+                "Dataset must be of type DataSet, but is " + str(type(dataset))
             )
 
         # prepare the map data
@@ -151,11 +155,12 @@ class InteractiveMap:
         self.setup_grid([self.m])
 
     def get_boundary(self, dataset):
-        """takes the boundry coordinates of the  given dataset
-            through the hexbin filter and returns them as a Segmentation.
+        """Takes the boundry coordinates of the  given dataset
+            through the pdal hexbin filter and returns them as a segmentation.
 
         :param dataset:
-            The dataset from which the map should be displayed. This needs to be in a valid georeferenced format. Eg.: EPSG:4326
+            The dataset from which the map should be displayed.
+            This needs to be in a valid georeferenced format. Eg.: EPSG:4326
         :type dataset: Dataset
 
         :return:
@@ -174,6 +179,7 @@ class InteractiveMap:
         dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
             "readers.las"
         ]["comp_spatialreference"]
+
         # execute the reprojection and hexbin filter.
         # this is nessesary for the map to function properly.
         hexbin_pipeline = execute_pdal_pipeline(
@@ -227,7 +233,7 @@ class InteractiveMap:
 
     def add_zoom_slider(self):
         """Adds the zoom slider to the interactive map.
-        Also sets the default zoom
+        Also sets the default zoom.
         """
 
         self.zoom_slider = ipywidgets.IntSlider(
@@ -261,7 +267,8 @@ class InteractiveMap:
         self.m.add_control(self.draw_control)
 
     def setup_grid(self, objects):
-        """Setup the grid layout to allow the color bar and
+        """
+        Setup the grid layout to allow the color bar and
         more on the right side of the map.
         """
         self.grid = ipywidgets.GridBox(
@@ -291,7 +298,7 @@ class InteractiveMap:
 
     def load_polygon(self, segmentation):
         """imports a segmentation object onto the map.
-        The function also checks for doubles.
+            The function also checks for doubles.
 
         :param segmentation:
             A segmentation object which is to be loaded.
