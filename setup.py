@@ -17,6 +17,7 @@ setup(
         "ipywidgets<8",
         "jsonschema",
         "matplotlib",
+        "mpld3",
         "numpy",
         "pyrsistent",
         "xdg",

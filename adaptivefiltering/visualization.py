@@ -1,5 +1,8 @@
 import ipyvolume.pylab as vis
+import matplotlib.pyplot as plt
+import mpld3
 import numpy as np
+
 from matplotlib import cm
 
 
@@ -63,3 +66,36 @@ def vis_mesh(x, y, z):
     fig.ylim = (np.min(y), np.max(y))
     fig.zlim = (np.min(z), np.max(z))
     vis.show()
+
+
+def vis_hillshade(z):
+    # Enable interactive elements on matplotlib plots. Ignoring the
+    # resulting errors if being called outside of notebooks.
+    try:
+        mpld3.enable_notebook()
+    except AttributeError:
+        pass
+
+    # For future reference: This is how several hillshades can share the
+    # zoom: https://stackoverflow.com/questions/4200586/matplotlib-pyplot-how-to-zoom-subplots-together
+
+    # These two values might be worth exposing
+    azimuth = 315
+    angle_altitude = 45
+
+    # Calculcate the hillshade values. Code taken from here
+    # http://rnovitsky.blogspot.com/2010/04/using-hillshade-image-as-intensity.html
+    x, y = np.gradient(z)
+    slope = 0.5 * np.pi - np.arctan(np.sqrt(x * x + y * y))
+    aspect = np.arctan2(-x, y)
+    azimuthrad = azimuth * np.pi / 180.0
+    altituderad = angle_altitude * np.pi / 180.0
+    shaded = np.sin(altituderad) * np.sin(slope) + np.cos(altituderad) * np.cos(
+        slope
+    ) * np.cos(azimuthrad - aspect)
+    hs_array = 255 * (shaded + 1) / 2
+
+    # Do the visualization with matplotlib. The interactive elements
+    # are automatically added by mpld3.
+    plt.imshow(hs_array, cmap=cm.gray)
+    plt.show()

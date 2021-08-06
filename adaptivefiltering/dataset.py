@@ -87,6 +87,13 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.show_points(threshold=threshold)
 
+    def show_hillshade(self, resolution=2.0):
+        """Visualize the point cloud as hillshade model in Jupyter notebook"""
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.show_hillshade(resolution=resolution)
+
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
 
