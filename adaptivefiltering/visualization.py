@@ -69,6 +69,13 @@ def vis_mesh(x, y, z):
 
 
 def vis_hillshade(z):
+    """Visualize a hillshade model in Jupyter Notebook
+
+    :param z:
+        The z-coordinates on a given raster produced by e.g.
+        GeoTiff export.
+    :type z: numpy.array
+    """
     # Enable interactive elements on matplotlib plots. Ignoring the
     # resulting errors if being called outside of notebooks.
     try:
