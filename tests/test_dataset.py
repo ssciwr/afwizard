@@ -25,6 +25,10 @@ def test_show_mesh(dataset):
     dataset.show_mesh(resolution=5)
 
 
+def test_show_hillshade(dataset):
+    dataset.show_hillshade()
+
+
 def test_restriction(dataset):
     segment = Segment([[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]])
     restricted = dataset.restrict(segment)

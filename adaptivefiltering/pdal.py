@@ -2,7 +2,7 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.visualization import vis_mesh, vis_pointcloud
+from adaptivefiltering.visualization import vis_hillshade, vis_mesh, vis_pointcloud
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetForm
 
@@ -203,6 +203,23 @@ class PDALInMemoryDataSet(DataSet):
             raise ValueError(error_text)
 
         return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
+
+    def show_hillshade(self, resolution=2.0):
+        # check if a filename is given, if not make a temporary tif file to view data
+        if self._geo_tif_data_resolution is not resolution:
+            print(
+                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
+                    resolution
+                )
+            )
+
+            # Write a temporary file
+            with tempfile.NamedTemporaryFile() as tmp_file:
+                self.save_mesh(str(tmp_file.name), resolution=resolution)
+
+        band = self._geo_tif_data.GetRasterBand(1)
+
+        return vis_hillshade(band.ReadAsArray())
 
     def save(self, filename, compress=False, overwrite=False):
         # Check if we would overwrite an input file
