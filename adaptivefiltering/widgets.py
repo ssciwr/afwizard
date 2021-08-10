@@ -55,10 +55,14 @@ class WidgetForm:
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
 
+    @property
+    def widget(self):
+        """Return the resulting widget for further use"""
+        return ipywidgets.VBox(self._form_element.widgets)
+
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
-        w = ipywidgets.VBox(self._form_element.widgets)
-        display(w)
+        display(self.widget)
 
     @property
     def data(self):

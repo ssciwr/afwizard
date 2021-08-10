@@ -13,6 +13,7 @@ setup(
         "gdal",
         "geodaisy",
         "geojson",
+        "IPython==7.21.0",
         "ipyvolume",
         "ipywidgets<8",
         "jsonschema",
