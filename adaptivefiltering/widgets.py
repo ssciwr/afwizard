@@ -251,7 +251,9 @@ class WidgetForm:
             up.on_click(move(-1))
             down.on_click(move(1))
 
-            vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
+            vbox.children = (
+                ipywidgets.VBox([item, ipywidgets.HBox([trash, up, down])]),
+            ) + vbox.children
 
         button.on_click(add_entry)
 
