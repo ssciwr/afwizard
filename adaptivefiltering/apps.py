@@ -49,8 +49,8 @@ def block_until_button_click(button):
 
 def flex_square_layout(widgets):
     # Arrange the widgets in a flexible square layout
-    grid_rows = math.ceil(math.sqrt(len(widgets)))
-    grid_cols = math.ceil(len(widgets) / grid_rows)
+    grid_cols = math.ceil(math.sqrt(len(widgets)))
+    grid_rows = math.ceil(len(widgets) / grid_cols)
 
     # Fill the given widgets into a GridspecLayout
     grid = ipywidgets.GridspecLayout(grid_rows, grid_cols)
@@ -93,6 +93,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         left_sidebar=form.widget,
         right_sidebar=flex_square_layout(widgets),
         footer=finalize,
+        pane_widths=[1, 0, 2],
     )
 
     # Show the app in Jupyter notebook
