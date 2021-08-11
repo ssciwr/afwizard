@@ -1,8 +1,11 @@
+from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
 
 import ipython_blocking
 import ipywidgets
 import IPython
+import itertools
+import math
 
 
 def sized_label(text, size=12):
@@ -44,10 +47,39 @@ def block_until_button_click(button):
             ctx.step()
 
 
+def flex_square_layout(widgets):
+    # Arrange the widgets in a flexible square layout
+    grid_rows = math.ceil(math.sqrt(len(widgets)))
+    grid_cols = math.ceil(len(widgets) / grid_rows)
+
+    # Fill the given widgets into a GridspecLayout
+    grid = ipywidgets.GridspecLayout(grid_rows, grid_cols)
+    for i, xy in enumerate(itertools.product(range(grid_rows), range(grid_cols))):
+        if i < len(widgets):
+            grid[xy] = widgets[i]
+
+    return grid
+
+
 def pipeline_tuning(datasets=[], pipeline=None):
     # Instantiate a new pipeline object if we are not modifying an existing one.
     if pipeline is None:
         pipeline = Pipeline()
+
+    # If a single dataset was given, transform it into a list
+    if isinstance(datasets, DataSet):
+        datasets = [datasets]
+
+    # Create widgets from the datasets
+    widgets = [ds.show_hillshade().canvas for ds in datasets]
+
+    # If no datasets were given, we add a dummy widget that explains the situation
+    if not widgets:
+        widgets = [
+            sized_label(
+                "Please call with datasets for interactive visualization", size=18
+            )
+        ]
 
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
@@ -57,9 +89,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Create the app layout
     app = ipywidgets.AppLayout(
-        header=sized_label("Interactively tuning filter pipeline:", size=24),
-        center=form.widget,
-        right_sidebar=ipywidgets.Text("Rechts"),
+        header=None,
+        left_sidebar=form.widget,
+        right_sidebar=flex_square_layout(widgets),
         footer=finalize,
     )
 
