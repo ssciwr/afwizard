@@ -172,12 +172,6 @@ class PDALInMemoryDataSet(DataSet):
     def show_mesh(self, resolution=2.0):
         # check if a filename is given, if not make a temporary tif file to view data
         if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
@@ -207,12 +201,6 @@ class PDALInMemoryDataSet(DataSet):
     def show_hillshade(self, resolution=2.0):
         # check if a filename is given, if not make a temporary tif file to view data
         if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
