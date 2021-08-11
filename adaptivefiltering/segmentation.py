@@ -68,7 +68,7 @@ class Segmentation(geojson.FeatureCollection):
                 self.show() to show the map without interacting with it.
         :param grid:
              The grid object which holds the map and the right side interface
-         :type grid: ipyleaflet.grid
+        :type grid: ipyleaflet.grid
         """
 
         segmentation_map = InteractiveMap(segmentation=self)
@@ -114,14 +114,13 @@ class InteractiveMap:
             self.coordinates_mean = np.asarray([49.41745, 8.67529])
             self.segmentation = None
 
-        if dataset is not None and type(dataset) is not DataSet:
+        if dataset is not None and not isinstance(dataset, DataSet):
             raise TypeError(
                 "Dataset must be of type DataSet, but is " + str(type(dataset))
             )
-
         # prepare the map data
 
-        # if a dataset is given the boundry of the data set is calculated via the hexbin function
+        # if a dataset is given the boundary of the data set is calculated via the hexbin function
         # and the in memory dataset is converted into EPSG:4326.
         if dataset and segmentation is None:
             self.segmentation = self.get_boundary(dataset)
@@ -155,7 +154,7 @@ class InteractiveMap:
         self.setup_grid([self.m])
 
     def get_boundary(self, dataset):
-        """Takes the boundry coordinates of the  given dataset
+        """Takes the boundary coordinates of the  given dataset
             through the pdal hexbin filter and returns them as a segmentation.
 
         :param dataset:
@@ -164,7 +163,7 @@ class InteractiveMap:
         :type dataset: Dataset
 
         :return:
-        :param hexbin_segmentation:
+            hexbin_segmentation:
             The Segmentation of the area from the dataset
         :type hexbin_segmentation: Segmentation
 
@@ -200,7 +199,7 @@ class InteractiveMap:
             "filters.hexbin"
         ]["boundary_json"]["coordinates"]
 
-        # set up the segnemtation object to later load into the map
+        # set up the segmentation object to later load into the map
         hexbin_segmentation = Segmentation(
             [
                 {

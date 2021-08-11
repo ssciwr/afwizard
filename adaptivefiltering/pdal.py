@@ -28,7 +28,6 @@ def execute_pdal_pipeline(dataset=None, config=None):
     :type config: dict
     :return:
         The full pdal pipeline object
-    :rtype: pipeline
 
     """
     # Make sure that a correct combination of arguments is given
@@ -56,11 +55,8 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # We are currently only handling situations with one output array
     assert len(pipeline.arrays) == 1
 
-    # Check whether we should return the full pipeline including e.g. metadata
     # Return the output pipeline
     return pipeline
-    # old
-    # return pipeline.arrays[0]
 
 
 class PDALFilter(Filter, identifier="pdal"):
@@ -251,7 +247,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         return PDALInMemoryDataSet(
-            data=newdata,
+            pipeline=newdata,
             provenance=self._provenance
             + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
         )
