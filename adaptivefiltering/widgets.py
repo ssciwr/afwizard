@@ -337,13 +337,13 @@ def upload_files(directory=None, filetype=""):
     :param directory:
         The directory on the server where the files will be saved.
         This will be set by the function calling upload_files and be representive of the different upload types.
-        eg. Pipelines will be saved in a differend dir than datasets or segmentations.
+        eg. Pipelines will be saved in a differend directory than datasets or segmentations.
     :type directory: string
     :param filetype:
         Set the filetype filter for the upload widget
     :type filetype: string
 
-    :return: The name of the uploaded file
+    :return: The name(s) of the uploaded file(s)
 
     """
     # this needs to be loaded here to avoid circular imports
