@@ -27,8 +27,8 @@ def execute_pdal_pipeline(dataset=None, config=None):
         The configuration of the PDAL pipeline, according to the PDAL documentation.
     :type config: dict
     :return:
-        A numpy array data structure containing the PDAL output.
-    :rtype: numpy.array
+        The full pdal pipeline object
+
     """
     # Make sure that a correct combination of arguments is given
     if config is None:
@@ -55,8 +55,8 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # We are currently only handling situations with one output array
     assert len(pipeline.arrays) == 1
 
-    # Return the output array
-    return pipeline.arrays[0]
+    # Return the output pipeline
+    return pipeline
 
 
 class PDALFilter(Filter, identifier="pdal"):
@@ -66,7 +66,7 @@ class PDALFilter(Filter, identifier="pdal"):
         dataset = PDALInMemoryDataSet.convert(dataset)
         config = self._serialize()
         return PDALInMemoryDataSet(
-            data=execute_pdal_pipeline(dataset=dataset, config=config),
+            pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
             provenance=dataset._provenance
             + [f"Applying PDAL filter with the following configuration:\n{config}"],
         )
@@ -86,7 +86,7 @@ class PDALPipeline(
         dataset = PDALInMemoryDataSet.convert(dataset)
         pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
         return PDALInMemoryDataSet(
-            data=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
+            pipeline=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
             provenance=dataset._provenance
             + [
                 f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
@@ -104,17 +104,21 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, data=None, provenance=[]):
+    def __init__(self, pipeline=None, provenance=[]):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
-        :param data:
+        :param pipeline:
             The numpy representation of the data set. This argument is used by e.g. filters that
             already have the dataset in memory.
-        :type data: numpy.array
+        :type data: pdal.pipeline
         """
         # Store the given data and provenance array
-        self.data = data
+        self.pipeline = pipeline
         super(PDALInMemoryDataSet, self).__init__(provenance=provenance)
+
+    @property
+    def data(self):
+        return self.pipeline.arrays[0]
 
     @classmethod
     def convert(cls, dataset):
@@ -136,13 +140,13 @@ class PDALInMemoryDataSet(DataSet):
         assert dataset.filename is not None
 
         filename = locate_file(dataset.filename)
-        data = execute_pdal_pipeline(
+        pipeline = execute_pdal_pipeline(
             config={"type": "readers.las", "filename": filename}
         )
         return PDALInMemoryDataSet(
-            data=data,
+            pipeline=pipeline,
             provenance=dataset._provenance
-            + [f"Loaded {data.shape[0]} points from {filename}"],
+            + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
         )
 
     def save_mesh(
@@ -248,7 +252,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         return PDALInMemoryDataSet(
-            data=newdata,
+            pipeline=newdata,
             provenance=self._provenance
             + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
         )

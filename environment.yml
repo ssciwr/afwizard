@@ -8,6 +8,7 @@ dependencies:
   - IPython=7.21.0
   - ipyvolume
   - ipywidgets<8
+  - ipyleaflet
   - jupyterlab
   - pdal=2.3.0
   - python-pdal=2.4.2

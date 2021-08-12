@@ -26,4 +26,5 @@ dependencies:
     - pyrsistent
     - sphinx_lfs_content
     - xdg
+    - ipyleaflet
     - xmltodict
