@@ -55,14 +55,10 @@ class WidgetForm:
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
 
-    @property
-    def widget(self):
-        """Return the resulting widget for further use"""
-        return ipywidgets.VBox(self._form_element.widgets)
-
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
-        display(self.widget)
+        w = ipywidgets.VBox(self._form_element.widgets)
+        display(w)
 
     @property
     def data(self):
@@ -251,9 +247,7 @@ class WidgetForm:
             up.on_click(move(-1))
             down.on_click(move(1))
 
-            vbox.children = (
-                ipywidgets.VBox([item, ipywidgets.HBox([trash, up, down])]),
-            ) + vbox.children
+            vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
 
         button.on_click(add_entry)
 
@@ -333,3 +327,58 @@ class WidgetForm:
             setter=_setter,
             widgets=[widget],
         )
+
+
+def upload_files(directory=None, filetype=""):
+    """
+    Create a widget to upload and store files over the jupyter interface.
+    This function will be called by the different load functions.
+
+    :param directory:
+        The directory on the server where the files will be saved.
+        This will be set by the function calling upload_files and be representive of the different upload types.
+        eg. Pipelines will be saved in a differend dir than datasets or segmentations.
+    :type directory: string
+    :param filetype:
+        Set the filetype filter for the upload widget
+    :type filetype: string
+
+    :return: The name of the uploaded file
+
+    """
+    # this needs to be loaded here to avoid circular imports
+    from adaptivefiltering.apps import block_until_button_click
+
+    if directory == None:
+        print("Uploaded files will be saved in the current working directory.")
+    if not os.path.isdir(directory):
+        print("The directory: " + directory + "does not exist and will be created.")
+        os.mkdir(directory)
+
+    confirm_button = ipywidgets.Button(
+        description="Confirm upload",
+        disabled=False,
+        button_style="",  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip="Confirm upload",
+        icon="check",  # (FontAwesome names without the `fa-` prefix)
+    )
+    upload = ipywidgets.FileUpload(
+        accept=filetype,  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
+        multiple=True,  # True to accept multiple files upload else False
+    )
+
+    app = ipywidgets.AppLayout(
+        header=None,
+        footer=ipywidgets.Box([upload, confirm_button]),
+        pane_widths=[1, 0, 2],
+    )
+    display(app)
+    block_until_button_click(confirm_button)
+    app.layout.display = "none"
+    uploaded_data = upload.value
+    filenames = []
+    for filename, uploaded_file in zip(uploaded_data.keys(), uploaded_data.values()):
+        filenames.append(filename)
+        with open(directory + "/" + filename, "wb") as fp:
+            fp.write(uploaded_file["content"])
+    return ["./" + directory + "/" + name for name in filenames]

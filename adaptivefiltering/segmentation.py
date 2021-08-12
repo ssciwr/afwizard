@@ -37,7 +37,7 @@ class Segment:
 
 class Segmentation(geojson.FeatureCollection):
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename=None):
         """Load segmentation from a filename
 
         :param filename:
@@ -45,8 +45,25 @@ class Segmentation(geojson.FeatureCollection):
             w.r.t. the current working directory.
         :type filename: str
         """
-        with open(filename, "r") as f:
-            return Segmentation(geojson.load(f))
+        # calls a widget to upload and directly use data from local machine.
+        if filename == None:
+            from adaptivefiltering.widgets import upload_files
+
+            filename = upload_files(
+                directory="./filters_test_upload/", filetype=".geojson"
+            )
+
+        # if a list of files is given a lost of segmentations will be returned.
+        if isinstance(filename, list):
+            segmentations = []
+            for file in filename:
+                with open(file, "r") as f:
+                    segmentations.append(Segmentation(geojson.load(f)))
+            return segmentations
+
+        else:
+            with open(filename, "r") as f:
+                return Segmentation(geojson.load(f))
 
     def save(self, filename):
         """Save the segmentation to disk
@@ -73,6 +90,18 @@ class Segmentation(geojson.FeatureCollection):
 
         segmentation_map = InteractiveMap(segmentation=self)
         return segmentation_map.show()
+
+    def merge_segments(self, segmentations):
+        if not isinstance(segmentations, list):
+            raise Exception(
+                "Segmentaion is expected to be of type list, but is %s"
+                % type(segmentations)
+            )
+        if not isinstance(segmentations[0], Segmentation):
+            raise Exception(
+                "segmentation is expexcted to be a list of Segmentations not a list of %s"
+                % type(segmentations[0])
+            )
 
     @property
     def __geo_interface__(self):
