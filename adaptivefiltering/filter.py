@@ -153,7 +153,9 @@ class Filter:
         :return: The widget form
         :rtype: :class:`~adaptivefiltering.widgets.WidgetForm`
         """
-        return WidgetForm(self.form_schema())
+        form = WidgetForm(self.form_schema())
+        form.data = self.config
+        return form
 
     def __add__(self, other):
         """Adding filters composes a pipeline"""
