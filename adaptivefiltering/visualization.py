@@ -8,7 +8,8 @@ from matplotlib import cm
 
 # Enable the matplotlib Jupyter backend
 ipython = IPython.get_ipython()
-ipython.magic("matplotlib widget")
+if ipython is not None:
+    ipython.magic("matplotlib widget")
 
 
 def vis_pointcloud(x, y, z):
