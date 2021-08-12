@@ -91,18 +91,6 @@ class Segmentation(geojson.FeatureCollection):
         segmentation_map = InteractiveMap(segmentation=self)
         return segmentation_map.show()
 
-    def merge_segments(self, segmentations):
-        if not isinstance(segmentations, list):
-            raise Exception(
-                "Segmentaion is expected to be of type list, but is %s"
-                % type(segmentations)
-            )
-        if not isinstance(segmentations[0], Segmentation):
-            raise Exception(
-                "segmentation is expexcted to be a list of Segmentations not a list of %s"
-                % type(segmentations[0])
-            )
-
     @property
     def __geo_interface__(self):
         return {
