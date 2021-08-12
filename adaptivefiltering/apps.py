@@ -84,15 +84,32 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
 
-    # Configure the finalize button
+    # Configure control buttons
+    preview = ipywidgets.Button(description="Preview")
     finalize = ipywidgets.Button(description="Finalize")
+
+    def _update_preview(_):
+        # Update the pipeline object according to the widget
+        nonlocal pipeline
+        pipeline = pipeline.copy(**form.data)
+
+        # Update all widgets one after another
+        # TODO: Do this in parallel!
+        for d, w in zip(datasets, widgets):
+            transformed = pipeline.execute(d)
+            newfig = transformed.show_hillshade()
+            w.figure.axes[0].images[0].set_data(newfig.axes[0].images[0].get_array())
+            w.draw()
+            w.flush_events()
+
+    preview.on_click(_update_preview)
 
     # Create the app layout
     app = ipywidgets.AppLayout(
         header=None,
         left_sidebar=form.widget,
         right_sidebar=flex_square_layout(widgets),
-        footer=finalize,
+        footer=ipywidgets.Box([preview, finalize]),
         pane_widths=[1, 0, 2],
     )
 
