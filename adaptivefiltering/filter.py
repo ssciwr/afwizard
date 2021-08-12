@@ -224,7 +224,9 @@ class PipelineMixin:
             "items": {"oneOf": backends, "title": "Filtering Backend"},
         }
 
-        return WidgetForm(pyrsistent.freeze(schema))
+        form = WidgetForm(pyrsistent.freeze(schema))
+        form.data = self.config
+        return form
 
     def _serialize(self):
         data = pyrsistent.thaw(self.config)

@@ -57,6 +57,11 @@ def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     pipeline = filter_.as_pipeline()
     dataset = pipeline.execute(minimal_dataset)
 
+    # Do the same on a pipeline that was constructed from a widget
+    form = pipeline.widget_form()
+    pipeline = pipeline.copy(**form.data)
+    dataset = pipeline.execute(minimal_dataset)
+
 
 @pytest.mark.slow
 @pytest.mark.parametrize("f", _pdal_filter_list)

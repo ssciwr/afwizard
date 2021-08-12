@@ -322,7 +322,9 @@ class WidgetForm:
         def _setter(_d):
             for i, s in enumerate(schema[key]):
                 try:
-                    jsonschema.validate(instance=pyrsistent.thaw(_d), schema=s)
+                    jsonschema.validate(
+                        instance=pyrsistent.thaw(_d), schema=pyrsistent.thaw(s)
+                    )
                     selector.value = names[i]
                     _select(None)
                 except ValidationError:

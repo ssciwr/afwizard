@@ -100,7 +100,9 @@ class PDALPipeline(
             "type": "array",
             "items": Filter._filter_impls["pdal"].form_schema(),
         }
-        return WidgetForm(pyrsistent.freeze(schema))
+        form = WidgetForm(pyrsistent.freeze(schema))
+        form.data = self.config
+        return form
 
 
 class PDALInMemoryDataSet(DataSet):
