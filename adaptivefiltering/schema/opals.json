@@ -3,6 +3,10 @@
     {
       "additionalProperties": false,
       "properties": {
+        "_backend": {
+          "const": "opals",
+          "type": "string"
+        },
         "attribute": {
           "default": "z",
           "description": "Valid attributes are either coordinates (x, y, z) or additional infos like Amplitude, EchoWidth etc.)",
@@ -92,6 +96,10 @@
     {
       "additionalProperties": false,
       "properties": {
+        "_backend": {
+          "const": "opals",
+          "type": "string"
+        },
         "attribute": {
           "default": "z",
           "description": "Attribute examples: z(default), Amplitude, EchoWidth, etc.",
@@ -244,6 +252,10 @@
     {
       "additionalProperties": false,
       "properties": {
+        "_backend": {
+          "const": "opals",
+          "type": "string"
+        },
         "debugOutFile": {
           "description": "Outputs a xyz file containing all points classified as ground",
           "title": "debug ground points file",
@@ -317,6 +329,5 @@
       "title": "RobFilter Module (OPALS)",
       "type": "object"
     }
-  ],
-  "title": "OPALS Filter"
+  ]
 }

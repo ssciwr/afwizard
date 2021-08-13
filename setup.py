@@ -18,6 +18,7 @@ setup(
         "IPython==7.21.0",
         "ipyvolume",
         "ipywidgets<8",
+        "jsonmerge",
         "jsonschema",
         "matplotlib",
         "numpy",

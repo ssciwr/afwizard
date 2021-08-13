@@ -3,6 +3,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetForm
 
 import json
+import jsonmerge
 import jsonschema
 import os
 import pyrsistent
@@ -58,10 +59,17 @@ class Filter:
 
     @config.setter
     def config(self, _config):
+        # Assert that the given backend matches our backend class.
+        if "_backend" in _config:
+            assert _config["_backend"] == self._identifier
+
+        # Validate the given configuration
         _config = pyrsistent.freeze(_config)
         jsonschema.validate(
             instance=pyrsistent.thaw(_config), schema=pyrsistent.thaw(self.schema())
         )
+
+        # Store the validated config
         self._config = _config
 
     def execute(self, dataset):
@@ -92,7 +100,9 @@ class Filter:
         :return:
             The data structure after serialization.
         """
-        return pyrsistent.thaw(self.config)
+        data = pyrsistent.thaw(self.config)
+        data["_backend"] = self._identifier
+        return data
 
     @classmethod
     def _deserialize(cls, data):
@@ -109,6 +119,7 @@ class Filter:
         :return:
             The deserialized filter instance
         """
+        assert cls._identifier == data.pop("_backend")
         return cls(**data)
 
     @classmethod
@@ -190,11 +201,48 @@ class PipelineMixin:
             of :class:`~adapativefiltering.filter.Filter`.
         :type filters: list
         """
+        filters = []
+        for f in kwargs.get("filters", []):
+            if isinstance(f, Filter):
+                filters.append(f.config)
+            else:
+                filters.append(f)
+        kwargs["filters"] = filters
+
         self.config = kwargs
 
     @classmethod
+    def _schema_impl(cls, method):
+        # Load the schema with pipeline metadata
+        pipeline_schema = load_schema("pipeline.json")
+
+        # Extract all the backend schema
+        backend_schemas = []
+        for ident, class_ in Filter._filter_impls.items():
+            if Filter._filter_is_backend[ident]:
+                if class_.enabled():
+                    bschema = getattr(class_, method)()
+                    backend_schemas.append(pyrsistent.thaw(bschema))
+
+        # Merge the backend schemas into a single one
+        merge_schema = {"properties": {"anyOf": {"mergeStrategy": "append"}}}
+        merger = jsonmerge.Merger(merge_schema)
+        merged = backend_schemas[0]
+        for other in backend_schemas[1:]:
+            merged = merger.merge(merged, other)
+
+        # Insert the merged schema into the pipeline schema
+        pipeline_schema["properties"]["filters"]["items"] = merged
+
+        return pyrsistent.freeze(pipeline_schema)
+
+    @classmethod
     def schema(cls):
-        return pyrsistent.freeze(load_schema("pipeline.json"))
+        return cls._schema_impl("schema")
+
+    @classmethod
+    def form_schema(cls):
+        return cls._schema_impl("form_schema")
 
     def as_pipeline(self):
         return self
@@ -208,35 +256,6 @@ class PipelineMixin:
         return self.copy(
             filters=self.config["filters"] + other.as_pipeline().config["filters"]
         )
-
-    def widget_form(self):
-        # Collect the list of available backend implementations
-        backends = []
-        for ident, class_ in Filter._filter_impls.items():
-            if Filter._filter_is_backend[ident]:
-                if class_.enabled():
-                    backends.append(class_.form_schema())
-
-        # Construct a widget that let's you select the backend
-        schema = pyrsistent.thaw(self.schema())
-        schema["properties"]["filters"] = {
-            "type": "array",
-            "items": {"oneOf": backends, "title": "Filtering Backend"},
-        }
-
-        form = WidgetForm(pyrsistent.freeze(schema))
-        form.data = self.config
-        return form
-
-    def _serialize(self):
-        data = pyrsistent.thaw(self.config)
-        data["filters"] = [serialize_filter(f) for f in self.config["filters"]]
-        return data
-
-    @classmethod
-    def _deserialize(cls, data):
-        data["filters"] = [deserialize_filter(f) for f in data["filters"]]
-        return cls(**data)
 
     @property
     def author(self):
@@ -257,7 +276,9 @@ class PipelineMixin:
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
     def execute(self, dataset):
         for f in self.config["filters"]:
-            dataset = f.execute(dataset)
+            fobj = deserialize_filter(pyrsistent.thaw(f))
+            dataset = fobj.execute(dataset)
+
         return dataset
 
 
@@ -269,10 +290,8 @@ def serialize_filter(filter_):
     """
     assert isinstance(filter_, Filter)
 
-    # Construct a dictionary with filter type and data
-    data = {}
-    data["filter_type"] = type(filter_)._identifier
-    data["filter_data"] = filter_._serialize()
+    data = filter_._serialize()
+    data["_backend"] = filter_._identifier
     return data
 
 
@@ -283,13 +302,9 @@ def deserialize_filter(data):
     object deserialization, but reads the type information to select the correct
     filter class to construct.
     """
-    # Validate the data against our filter meta schema
-    schema = load_schema("filter.json")
-    jsonschema.validate(instance=data, schema=schema)
-
     # Find the correct type and do the deserialization
-    type_ = Filter._filter_impls[data["filter_type"]]
-    return type_._deserialize(data["filter_data"])
+    type_ = Filter._filter_impls[data["_backend"]]
+    return type_._deserialize(data)
 
 
 def save_filter(filter_, filename):

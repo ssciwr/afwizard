@@ -2,6 +2,10 @@
   "anyOf": [
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell": {
           "default": 10.0,
           "title": "Cell size",
@@ -30,6 +34,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "class": {
           "default": 7,
           "title": "The classification value to apply to outliers",
@@ -62,6 +70,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "class": {
           "default": 7,
           "title": "The classification value to apply to outliers",
@@ -94,6 +106,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "type": {
           "const": "filters.skewnessbalancing",
           "type": "string"
@@ -107,6 +123,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell_size": {
           "default": 1.0,
           "title": "Cell size",
@@ -159,6 +179,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell": {
           "default": 1.0,
           "title": "Cell size",
@@ -216,6 +240,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "ignore": {
           "title": "A range of values of a dimension to ignore",
           "type": "string"
@@ -266,6 +294,5 @@
       "title": "Cloth Simulation Filter (PDAL)",
       "type": "object"
     }
-  ],
-  "title": "PDAL Filter"
+  ]
 }
