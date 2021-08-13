@@ -137,10 +137,6 @@
           "title": "Use exponential growth for window sizes?",
           "type": "boolean"
         },
-        "ignore": {
-          "title": "A range of values of a dimension to ignore",
-          "type": "string"
-        },
         "initial_distance": {
           "default": 0.15,
           "title": "Initial distance",
@@ -188,19 +184,10 @@
           "title": "Cell size",
           "type": "number"
         },
-        "classbits": {
-          "default": "",
-          "title": "Selectively ignore points marked as \u201csynthetic\u201d, \u201ckeypoint\u201d, or \u201cwithheld\u201d.",
-          "type": "string"
-        },
         "cut": {
           "default": 0.0,
           "title": "Cut net size",
           "type": "number"
-        },
-        "ignore": {
-          "title": "A range of values of a dimension to ignore",
-          "type": "string"
         },
         "returns": {
           "default": "last,only",
@@ -242,10 +229,6 @@
       "properties": {
         "_backend": {
           "const": "pdal",
-          "type": "string"
-        },
-        "ignore": {
-          "title": "A range of values of a dimension to ignore",
           "type": "string"
         },
         "iterations": {
