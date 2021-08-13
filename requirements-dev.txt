@@ -4,6 +4,7 @@ nbsphinx-link
 nbval
 pytest
 pytest-cov
+pytest-plt
 sphinx
 sphinx_lfs_content
 sphinx_rtd_theme

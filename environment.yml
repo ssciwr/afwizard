@@ -8,6 +8,7 @@ dependencies:
   - ipywidgets<8
   - ipyleaflet
   - jupyterlab
+  - mpld3
   - pdal=2.3.0
   - python-pdal=2.4.2
   - pip

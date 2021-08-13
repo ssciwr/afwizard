@@ -9,6 +9,7 @@ dependencies:
   - python=3.9
   - ipyvolume==0.6.0a8
   - ipywidgets==7.6.3
+  - mpld3==0.5.5
   - python-pdal==2.4.0
   - gdal==3.3.0
   - pip==21.1.3
