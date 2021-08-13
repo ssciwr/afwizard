@@ -4,7 +4,6 @@ from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_
 from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.visualization import vis_hillshade, vis_mesh, vis_pointcloud
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.widgets import WidgetForm
 
 import geodaisy.converters as convert
 from osgeo import gdal
@@ -68,7 +67,8 @@ class PDALFilter(Filter, identifier="pdal"):
 
     def execute(self, dataset):
         dataset = PDALInMemoryDataSet.convert(dataset)
-        config = self._serialize()
+        config = pyrsistent.thaw(self.config)
+        config.pop("_backend", None)
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
             provenance=dataset._provenance
@@ -88,7 +88,10 @@ class PDALPipeline(
 ):
     def execute(self, dataset):
         dataset = PDALInMemoryDataSet.convert(dataset)
-        pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
+        pipeline_json = pyrsistent.thaw(self.config["filters"])
+        for f in pipeline_json:
+            f.pop("_backend", None)
+
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
             provenance=dataset._provenance
@@ -96,15 +99,6 @@ class PDALPipeline(
                 f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
             ],
         )
-
-    def widget_form(self):
-        # Provide a widget that is restricted to the PDAL backend
-        schema = pyrsistent.thaw(self.form_schema())
-        schema["properties"]["filters"] = {
-            "type": "array",
-            "items": Filter._filter_impls["pdal"].form_schema(),
-        }
-        return WidgetForm(pyrsistent.freeze(schema))
 
 
 class PDALInMemoryDataSet(DataSet):
@@ -180,12 +174,6 @@ class PDALInMemoryDataSet(DataSet):
     def show_mesh(self, resolution=2.0):
         # check if a filename is given, if not make a temporary tif file to view data
         if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
@@ -215,12 +203,6 @@ class PDALInMemoryDataSet(DataSet):
     def show_hillshade(self, resolution=2.0):
         # check if a filename is given, if not make a temporary tif file to view data
         if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)

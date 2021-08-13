@@ -218,7 +218,7 @@ def execute_opals_module(dataset=None, config=None):
         raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
 
 
-class OPALSFilter(Filter, identifier="OPALS", backend=True):
+class OPALSFilter(Filter, identifier="opals", backend=True):
     """A filter implementation based on OPALS"""
 
     def execute(self, dataset):

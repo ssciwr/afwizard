@@ -53,8 +53,17 @@ def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(minimal_dataset)
 
+    form = filter_.widget_form()
+    filter_ = filter_.copy(**form.data)
+    dataset = filter_.execute(minimal_dataset)
+
     # Treating the filter as a pipeline should work as well
     pipeline = filter_.as_pipeline()
+    dataset = pipeline.execute(minimal_dataset)
+
+    # Do the same on a pipeline that was constructed from a widget
+    form = pipeline.widget_form()
+    pipeline = pipeline.copy(**form.data)
     dataset = pipeline.execute(minimal_dataset)
 
 
