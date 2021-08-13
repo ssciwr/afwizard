@@ -250,7 +250,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         return PDALInMemoryDataSet(
-            data=newdata,
+            pipeline=newdata,
             provenance=self._provenance
             + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
         )
