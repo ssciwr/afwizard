@@ -6,6 +6,7 @@ import ipywidgets
 import IPython
 import itertools
 import math
+import os
 
 
 def sized_label(text, size=12):
@@ -33,6 +34,12 @@ def block_until_button_click(button):
         the widget, but merely registers the necessary handler.
     :type button: ipywidgets.Button
     """
+
+    # If we are not running this from a test, we skip the blocking part. This is
+    # necessary to be able to run notebooks with nbval.
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return
+
     keep_running = True
 
     def _handler(_):

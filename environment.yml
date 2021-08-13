@@ -18,6 +18,7 @@ dependencies:
     - geodaisy
     - geojson
     - ipython_blocking
+    - jsonmerge
     - jsonschema
     - matplotlib
     - pyrsistent
