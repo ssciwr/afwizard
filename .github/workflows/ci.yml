@@ -51,7 +51,11 @@ jobs:
         tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
         echo "OPALS_DIR=${{ runner.workspace }}/opals_2.3.2" >> $GITHUB_ENV
 
-    - name: Run Python tests
+    - name: Run Python tests including notebooks
+      run: |
+        python -m pytest --nbval-lax
+
+    - name: Run coverage tests
       run: |
         python -m pytest --cov=./adaptivefiltering --cov-report=xml
 
