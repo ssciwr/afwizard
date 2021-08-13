@@ -55,8 +55,13 @@ class WidgetForm:
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
 
+    def widget(self):
+        """Return the resulting widget for further use"""
+        return ipywidgets.VBox(self._form_element.widgets)
+
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
+        display(self.widget)
         w = ipywidgets.VBox(self._form_element.widgets)
         display(w)
 
@@ -200,7 +205,7 @@ class WidgetForm:
         def add_entry(_):
             # if we are at the specified maximum, add should be ignored
             if "maxItems" in schema:
-                if len(vbox.children) == schema["maxItems"] + 1:
+                if len(vbox.children) is schema["maxItems"] + 1:
                     return
 
             elements.insert(0, self._construct(schema["items"], label=None))
@@ -212,7 +217,7 @@ class WidgetForm:
             def remove_entry(b):
                 # If we are at the specified minimum, remove should be ignored
                 if "minItems" in schema:
-                    if len(vbox.children) == schema["minItems"]:
+                    if len(vbox.children) is schema["minItems"]:
                         return
 
                 # Identify the current list index of the entry
@@ -279,7 +284,7 @@ class WidgetForm:
 
     def _construct_enum(self, schema, label=None, root=False):
         # We omit trivial enums, but make sure that they end up in the result
-        if len(schema["enum"]) == 1:
+        if len(schema["enum"]) is 1:
             return WidgetFormElement(
                 getter=lambda: schema["enum"][0], setter=lambda _: None, widgets=[]
             )
@@ -351,7 +356,7 @@ def upload_files(directory=None, filetype=""):
     # this needs to be loaded here to avoid circular imports
     from adaptivefiltering.apps import block_until_button_click
 
-    if directory == None:
+    if directory is None:
         print("Uploaded files will be saved in the current working directory.")
     if not os.path.isdir(directory):
         print("The directory: " + directory + "does not exist and will be created.")
@@ -379,7 +384,7 @@ def upload_files(directory=None, filetype=""):
     app.layout.display = "none"
     uploaded_data = upload.value
     filenames = []
-    for filename, uploaded_file in zip(uploaded_data.keys(), uploaded_data.values()):
+    for filename, uploaded_file in uploaded_data.items():
         filenames.append(filename)
         with open(directory + "/" + filename, "wb") as fp:
             fp.write(uploaded_file["content"])

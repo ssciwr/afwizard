@@ -8,6 +8,7 @@ import ipywidgets
 import pdal
 import json
 import numpy as np
+import collections
 
 
 class Segment:
@@ -46,15 +47,16 @@ class Segmentation(geojson.FeatureCollection):
         :type filename: str
         """
         # calls a widget to upload and directly use data from local machine.
-        if filename == None:
+        if filename is None:
             from adaptivefiltering.widgets import upload_files
 
+            # segmentation_dir is a placeholder until we decided where to store these files.
             filename = upload_files(
-                directory="./filters_test_upload/", filetype=".geojson"
+                directory="./segmentation_dir/", filetype=".geojson"
             )
 
         # if a list of files is given a lost of segmentations will be returned.
-        if isinstance(filename, list):
+        if isinstance(filename, collections.abc.Iterable):
             segmentations = []
             for file in filename:
                 with open(file, "r") as f:
@@ -123,7 +125,7 @@ class InteractiveMap:
                 "A dataset and a segmentation can't be loaded at the same time."
             )
 
-        if dataset is None and segmentation["features"] == []:
+        if dataset is None and segmentation["features"] is []:
             raise Exception("an empty segmention was given.")
 
         if dataset is None and segmentation is None:
