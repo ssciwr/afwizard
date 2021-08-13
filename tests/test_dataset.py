@@ -27,6 +27,14 @@ def test_show_mesh(dataset):
 
 def test_show_hillshade(dataset):
     dataset.show_hillshade()
+    dataset.show_hillshade(resolution=5)
+
+
+def test_show_slope(dataset):
+    # test different methods of calling show_mesh
+    # generate_geoTif is automatically tested as well
+    dataset.show_slope()
+    dataset.show_slope(resolution=5)
 
 
 def test_restriction(dataset):
