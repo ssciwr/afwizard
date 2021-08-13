@@ -94,6 +94,13 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.show_hillshade(resolution=resolution)
 
+    def show_slope(self, resolution=2.0):
+        """Visualize the point cloud as slope model in Jupyter notebook"""
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.show_slope(resolution=resolution)
+
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
 

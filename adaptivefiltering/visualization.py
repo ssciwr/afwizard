@@ -4,6 +4,7 @@ import mpld3
 import numpy as np
 
 from matplotlib import cm
+import richdem as rd
 
 
 def vis_pointcloud(x, y, z):
@@ -105,4 +106,21 @@ def vis_hillshade(z):
     # Do the visualization with matplotlib. The interactive elements
     # are automatically added by mpld3.
     plt.imshow(hs_array, cmap=cm.gray)
+    plt.show()
+
+
+def vis_slope(slope):
+    """Visualize a hillshade model in Jupyter Notebook
+
+    :param slope:
+        richdem slope object GeoTiff export.
+    :type z: richdem.rdarray
+    """
+
+    try:
+        mpld3.enable_notebook()
+    except AttributeError:
+        pass
+
+    rd.rdShow(slope, axes=False, cmap="magma", figsize=(8, 5.5))
     plt.show()

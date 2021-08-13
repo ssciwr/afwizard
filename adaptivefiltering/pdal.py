@@ -1,8 +1,14 @@
+from pdal import pipeline
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.visualization import vis_hillshade, vis_mesh, vis_pointcloud
+from adaptivefiltering.visualization import (
+    vis_hillshade,
+    vis_mesh,
+    vis_pointcloud,
+    vis_slope,
+)
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetForm
 
@@ -14,6 +20,7 @@ import os
 import pdal
 import pyrsistent
 import tempfile
+import richdem as rd
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
@@ -212,6 +219,23 @@ class PDALInMemoryDataSet(DataSet):
 
         return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
 
+    def show_slope(self, resolution=2.0):
+        if self._geo_tif_data_resolution is not resolution:
+            print(
+                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
+                    resolution
+                )
+            )
+
+            # Write a temporary file
+            with tempfile.NamedTemporaryFile() as tmp_file:
+                self.save_mesh(str(tmp_file.name), resolution=resolution)
+                shasta_dem = rd.LoadGDAL(tmp_file.name + ".tif")
+
+        slope = rd.TerrainAttribute(shasta_dem, attrib="slope_riserun")
+
+        return vis_slope(slope)
+
     def show_hillshade(self, resolution=2.0):
         # check if a filename is given, if not make a temporary tif file to view data
         if self._geo_tif_data_resolution is not resolution:
@@ -258,7 +282,13 @@ class PDALInMemoryDataSet(DataSet):
             segmentation = Segmentation([segmentation])
 
         # Construct an array of WKT Polygons for the clipping
-        polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
+        # old
+        # polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
+        for s in segmentation["features"]:
+            print(s)
+        polygons = [
+            convert.geojson_to_wkt(s["geometry"]) for s in segmentation["features"]
+        ]
 
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
@@ -268,7 +298,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         return PDALInMemoryDataSet(
-            data=newdata,
+            pipeline=newdata,
             provenance=self._provenance
             + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
         )
