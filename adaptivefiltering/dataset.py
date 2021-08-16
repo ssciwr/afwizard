@@ -35,6 +35,7 @@ class DataSet:
         self,
         filename,
         resolution=2.0,
+        classification=asprs["ground"],
     ):
         """Store the point cloud as a digital terrain model to a GeoTIFF file
 
@@ -53,13 +54,16 @@ class DataSet:
             of the features you are looking for and the point density of your
             Lidar data.
         :type resolution: float
+        :param classification:
+            The classification values to include into the written mesh file.
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.save_mesh(filename, resolution=resolution)
 
-    def show_mesh(self, resolution=2.0):
+    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
         """Visualize the point cloud as a digital terrain model in JupyterLab
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -72,28 +76,44 @@ class DataSet:
             of the features you are looking for and the point density of your
             Lidar data.
         :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_mesh(resolution=resolution)
+        return dataset.show_mesh(resolution=resolution, classification=classification)
 
-    def show_points(self, threshold=750000):
+    def show_points(self, threshold=750000, classification=asprs["ground"]):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
+
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_points(threshold=threshold)
+        return dataset.show_points(threshold=threshold, classification=classification)
 
-    def show_hillshade(self, resolution=2.0):
-        """Visualize the point cloud as hillshade model in Jupyter notebook"""
+    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
+        """Visualize the point cloud as hillshade model in Jupyter notebook
+
+        :param resolution:
+            The mesh resolution to use for the visualization in meters.
+        :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple"""
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_hillshade(resolution=resolution)
+        return dataset.show_hillshade(
+            resolution=resolution, classification=classification
+        )
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
