@@ -1,5 +1,5 @@
 from adaptivefiltering.paths import load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 from adaptivefiltering.dataset import DataSet
 import geojson
 import jsonschema
@@ -46,6 +46,13 @@ class Segmentation(geojson.FeatureCollection):
             w.r.t. the current working directory.
         :type filename: str
         """
+
+        if not isinstance(filename, collections.abc.Iterable):
+            error = "filename needs to be a string, a list or a tuple, but is" + str(
+                type(filename)
+            )
+            raise TypeError(error)
+
         # calls a widget to upload and directly use data from local machine.
         if filename is None:
             from adaptivefiltering.widgets import upload_files
@@ -56,14 +63,14 @@ class Segmentation(geojson.FeatureCollection):
             )
 
         # if a list of files is given a lost of segmentations will be returned.
-        if isinstance(filename, collections.abc.Iterable):
+        if is_iterable(filename):
             segmentations = []
             for file in filename:
                 with open(file, "r") as f:
                     segmentations.append(Segmentation(geojson.load(f)))
             return segmentations
 
-        else:
+        elif isinstance(filename, str):
             with open(filename, "r") as f:
                 return Segmentation(geojson.load(f))
 
