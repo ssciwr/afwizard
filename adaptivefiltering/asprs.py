@@ -14,15 +14,15 @@ class ASPRSClassification:
         This only exposes the subset relevant to our use cases
         """
         return {
-            "unclassified": 1,
-            "ground": 2,
-            "low_vegetation": 3,
-            "medium_vegetation": 4,
-            "high_vegetation": 5,
-            "building": 6,
-            "low_point": 7,
-            "water": 9,
-            "road_surface": 11,
+            "unclassified": (0, 1),
+            "ground": (2,),
+            "low_vegetation": (3,),
+            "medium_vegetation": (4,),
+            "high_vegetation": (5,),
+            "building": (6,),
+            "low_point": (7,),
+            "water": (9,),
+            "road_surface": (11,),
         }
 
     def __getitem__(self, class_):
@@ -64,7 +64,7 @@ class ASPRSClassification:
                 else:
                     try:
                         # For strings, we do a lookup in our internal name mapping
-                        return (self._mapping()[item.strip()],)
+                        return self._mapping()[item.strip()]
                     except KeyError:
                         raise AdaptiveFilteringError("Classifier not known")
 

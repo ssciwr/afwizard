@@ -41,7 +41,7 @@ class DataSet:
         self,
         filename,
         resolution=2.0,
-        classification=asprs["ground"],
+        classification=asprs[:],
     ):
         """Store the point cloud as a digital terrain model to a GeoTIFF file
 
@@ -71,7 +71,7 @@ class DataSet:
             filename, resolution=resolution, classification=classification
         )
 
-    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
+    def show_mesh(self, resolution=2.0, classification=asprs[:]):
         """Visualize the point cloud as a digital terrain model in JupyterLab
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -93,7 +93,7 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.show_mesh(resolution=resolution, classification=classification)
 
-    def show_points(self, threshold=750000, classification=asprs["ground"]):
+    def show_points(self, threshold=750000, classification=asprs[:]):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
@@ -107,7 +107,7 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.show_points(threshold=threshold, classification=classification)
 
-    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
+    def show_hillshade(self, resolution=2.0, classification=asprs[:]):
         """Visualize the point cloud as hillshade model in Jupyter notebook
 
         :param resolution:
