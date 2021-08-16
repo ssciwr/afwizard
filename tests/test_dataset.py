@@ -67,3 +67,9 @@ def test_asprs_classification():
 
     with pytest.raises(AdaptiveFilteringError):
         asprs["non-existing"]
+
+    with pytest.raises(AdaptiveFilteringError):
+        asprs[-1]
+
+    with pytest.raises(AdaptiveFilteringError):
+        asprs[256]

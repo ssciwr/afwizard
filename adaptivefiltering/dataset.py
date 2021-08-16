@@ -237,6 +237,13 @@ class ASPRSClassification:
 
             # If no string was given, we assume that a plain integer was given
             assert isinstance(item, int)
+
+            # Check whether the value is in the interval [0, 255]
+            if item < 0 or item > 255:
+                raise AdaptiveFilteringError(
+                    "Classification values need to be in the interval [0, 255]"
+                )
+
             return (item,)
 
         def _sort_uniq(items):
