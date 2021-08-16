@@ -20,8 +20,8 @@ class DataSet:
             Will give a warning if too many data points are present.
         :type filename: str
         """
-        # initilizise self._geo_tif_data_resolution as 0
-        self._geo_tif_data_resolution = 0
+        # Initialize a cache data structure for rasterization operations on this data set
+        self._mesh_data_cache = {}
 
         # Store the given parameters
         self._provenance = provenance
@@ -61,7 +61,9 @@ class DataSet:
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.save_mesh(filename, resolution=resolution)
+        return dataset.save_mesh(
+            filename, resolution=resolution, classification=classification
+        )
 
     def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
         """Visualize the point cloud as a digital terrain model in JupyterLab

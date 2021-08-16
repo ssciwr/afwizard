@@ -173,13 +173,14 @@ class PDALInMemoryDataSet(DataSet):
             ],
         )
 
-        # Read the result
-        self._geo_tif_data = gdal.Open(filename + ".tif", gdal.GA_ReadOnly)
-        self._geo_tif_data_resolution = resolution
+        # Also store the data in our internal cache
+        self._mesh_data_cache[resolution, classification] = gdal.Open(
+            filename + ".tif", gdal.GA_ReadOnly
+        )
 
     def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
         # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
+        if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(
@@ -188,16 +189,19 @@ class PDALInMemoryDataSet(DataSet):
                     classification=classification,
                 )
 
+        # Retrieve the raster data from cache
+        data = self._mesh_data_cache[resolution, classification]
+
         # use the number of x and y points to generate a grid.
-        x = np.arange(0, self._geo_tif_data.RasterXSize)
-        y = np.arange(0, self._geo_tif_data.RasterYSize)
+        x = np.arange(0, data.RasterXSize)
+        y = np.arange(0, data.RasterYSize)
 
         # multiplay x and y with the given resolution for comparable plot.
-        x = x * self._geo_tif_data.GetGeoTransform()[1]
-        y = y * self._geo_tif_data.GetGeoTransform()[1]
+        x = x * data.GetGeoTransform()[1]
+        y = y * data.GetGeoTransform()[1]
 
         # get height information from
-        band = self._geo_tif_data.GetRasterBand(1)
+        band = data.GetRasterBand(1)
         z = band.ReadAsArray()
         return vis_mesh(x, y, z)
 
@@ -221,7 +225,7 @@ class PDALInMemoryDataSet(DataSet):
 
     def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
         # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
+        if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(
@@ -230,7 +234,10 @@ class PDALInMemoryDataSet(DataSet):
                     classification=classification,
                 )
 
-        band = self._geo_tif_data.GetRasterBand(1)
+        # Retrieve the raster data from cache
+        data = self._mesh_data_cache[resolution, classification]
+
+        band = data.GetRasterBand(1)
 
         return vis_hillshade(band.ReadAsArray())
 
