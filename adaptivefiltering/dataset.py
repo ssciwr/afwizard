@@ -1,3 +1,4 @@
+from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
 
@@ -7,7 +8,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[]):
+    def __init__(self, filename=None, remove_classification=False, provenance=[]):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -18,13 +19,19 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
+        :param remove_classification:
+            Whether the classification values in the data set should be removed aka set to 1 (unclassified).
+            This is useful to drop an automatic preclassification in order to create an archaelogically
+            relevant classification from scratch.
+        :type remove_classification: bool
         """
-        # initilizise self._geo_tif_data_resolution as 0
-        self._geo_tif_data_resolution = 0
+        # Initialize a cache data structure for rasterization operations on this data set
+        self._mesh_data_cache = {}
 
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
+        self.remove_classification = remove_classification
 
         # Make the path absolute
         if self.filename is not None:
@@ -34,6 +41,7 @@ class DataSet:
         self,
         filename,
         resolution=2.0,
+        classification=asprs["ground"],
     ):
         """Store the point cloud as a digital terrain model to a GeoTIFF file
 
@@ -52,13 +60,18 @@ class DataSet:
             of the features you are looking for and the point density of your
             Lidar data.
         :type resolution: float
+        :param classification:
+            The classification values to include into the written mesh file.
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.save_mesh(filename, resolution=resolution)
+        return dataset.save_mesh(
+            filename, resolution=resolution, classification=classification
+        )
 
-    def show_mesh(self, resolution=2.0):
+    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
         """Visualize the point cloud as a digital terrain model in JupyterLab
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -71,28 +84,44 @@ class DataSet:
             of the features you are looking for and the point density of your
             Lidar data.
         :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_mesh(resolution=resolution)
+        return dataset.show_mesh(resolution=resolution, classification=classification)
 
-    def show_points(self, threshold=750000):
+    def show_points(self, threshold=750000, classification=asprs["ground"]):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
+
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_points(threshold=threshold)
+        return dataset.show_points(threshold=threshold, classification=classification)
 
-    def show_hillshade(self, resolution=2.0):
-        """Visualize the point cloud as hillshade model in Jupyter notebook"""
+    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
+        """Visualize the point cloud as hillshade model in Jupyter notebook
+
+        :param resolution:
+            The mesh resolution to use for the visualization in meters.
+        :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple"""
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_hillshade(resolution=resolution)
+        return dataset.show_hillshade(
+            resolution=resolution, classification=classification
+        )
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
@@ -120,7 +149,7 @@ class DataSet:
         """
         # If the filenames match, this is a no-op operation
         if filename == self.filename:
-            return
+            return self
 
         # Otherwise, we can simply copy the file to the new location
         # after checking that we are not accidentally overriding something
@@ -133,7 +162,9 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(
+            filename=filename, remove_classification=self.remove_classification
+        )
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset

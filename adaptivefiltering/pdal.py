@@ -1,3 +1,4 @@
+from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
@@ -5,6 +6,7 @@ from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.visualization import vis_hillshade, vis_mesh, vis_pointcloud
 from adaptivefiltering.utils import AdaptiveFilteringError
 
+import functools
 import geodaisy.converters as convert
 from osgeo import gdal
 import json
@@ -28,7 +30,6 @@ def execute_pdal_pipeline(dataset=None, config=None):
     :return:
         The full pdal pipeline object
     :rtype: pipeline
-
     """
     # Make sure that a correct combination of arguments is given
     if config is None:
@@ -137,9 +138,14 @@ class PDALInMemoryDataSet(DataSet):
         # Load the file from the given filename
         assert dataset.filename is not None
 
+        # Define a pipeline step that removes classification
+        assign = []
+        if dataset.remove_classification:
+            assign = [{"type": "filters.assign", "value": ["Classification = 1"]}]
+
         filename = locate_file(dataset.filename)
         pipeline = execute_pdal_pipeline(
-            config={"type": "readers.las", "filename": filename}
+            config=[{"type": "readers.las", "filename": filename}] + assign
         )
         return PDALInMemoryDataSet(
             pipeline=pipeline,
@@ -147,67 +153,95 @@ class PDALInMemoryDataSet(DataSet):
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
         )
 
-    def save_mesh(
-        self,
-        filename,
-        resolution=2.0,
-    ):
+    def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
         # if .tif is already in the filename it will be removed to avoid double file extension
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
 
         execute_pdal_pipeline(
             dataset=self,
-            config={
-                "filename": filename + ".tif",
-                "gdaldriver": "GTiff",
-                "output_type": "all",
-                "resolution": resolution,
-                "type": "writers.gdal",
-            },
+            config=[
+                {
+                    "type": "filters.range",
+                    "limits": ",".join(
+                        f"Classification[{c}:{c}]" for c in classification
+                    ),
+                },
+                {
+                    "filename": filename + ".tif",
+                    "gdaldriver": "GTiff",
+                    "output_type": "all",
+                    "resolution": resolution,
+                    "type": "writers.gdal",
+                },
+            ],
         )
 
-        # Read the result
-        self._geo_tif_data = gdal.Open(filename + ".tif", gdal.GA_ReadOnly)
-        self._geo_tif_data_resolution = resolution
+        # Also store the data in our internal cache
+        self._mesh_data_cache[resolution, classification] = gdal.Open(
+            filename + ".tif", gdal.GA_ReadOnly
+        )
 
-    def show_mesh(self, resolution=2.0):
+    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
         # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
+        if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(str(tmp_file.name), resolution=resolution)
+                self.save_mesh(
+                    str(tmp_file.name),
+                    resolution=resolution,
+                    classification=classification,
+                )
+
+        # Retrieve the raster data from cache
+        data = self._mesh_data_cache[resolution, classification]
 
         # use the number of x and y points to generate a grid.
-        x = np.arange(0, self._geo_tif_data.RasterXSize)
-        y = np.arange(0, self._geo_tif_data.RasterYSize)
+        x = np.arange(0, data.RasterXSize)
+        y = np.arange(0, data.RasterYSize)
 
         # multiplay x and y with the given resolution for comparable plot.
-        x = x * self._geo_tif_data.GetGeoTransform()[1]
-        y = y * self._geo_tif_data.GetGeoTransform()[1]
+        x = x * data.GetGeoTransform()[1]
+        y = y * data.GetGeoTransform()[1]
 
         # get height information from
-        band = self._geo_tif_data.GetRasterBand(1)
+        band = data.GetRasterBand(1)
         z = band.ReadAsArray()
         return vis_mesh(x, y, z)
 
-    def show_points(self, threshold=750000):
+    def show_points(self, threshold=750000, classification=asprs["ground"]):
         if len(self.data["X"]) >= threshold:
             error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
                 len(self.data["X"]), threshold
             )
             raise ValueError(error_text)
 
-        return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
+        filtered_data = self.data[
+            functools.reduce(
+                np.logical_or,
+                (self.data["Classification"] == c for c in classification),
+            )
+        ]
 
-    def show_hillshade(self, resolution=2.0):
+        return vis_pointcloud(
+            filtered_data["X"], filtered_data["Y"], filtered_data["Z"]
+        )
+
+    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
         # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
+        if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(str(tmp_file.name), resolution=resolution)
+                self.save_mesh(
+                    str(tmp_file.name),
+                    resolution=resolution,
+                    classification=classification,
+                )
 
-        band = self._geo_tif_data.GetRasterBand(1)
+        # Retrieve the raster data from cache
+        data = self._mesh_data_cache[resolution, classification]
+
+        band = data.GetRasterBand(1)
 
         return vis_hillshade(band.ReadAsArray())
 
