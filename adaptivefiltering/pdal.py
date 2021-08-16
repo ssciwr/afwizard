@@ -30,7 +30,6 @@ def execute_pdal_pipeline(dataset=None, config=None):
     :return:
         The full pdal pipeline object
     :rtype: pipeline
-
     """
     # Make sure that a correct combination of arguments is given
     if config is None:
@@ -139,9 +138,14 @@ class PDALInMemoryDataSet(DataSet):
         # Load the file from the given filename
         assert dataset.filename is not None
 
+        # Define a pipeline step that removes classification
+        assign = []
+        if dataset.remove_classification:
+            assign = [{"type": "filters.assign", "value": ["Classification = 1"]}]
+
         filename = locate_file(dataset.filename)
         pipeline = execute_pdal_pipeline(
-            config={"type": "readers.las", "filename": filename}
+            config=[{"type": "readers.las", "filename": filename}] + assign
         )
         return PDALInMemoryDataSet(
             pipeline=pipeline,

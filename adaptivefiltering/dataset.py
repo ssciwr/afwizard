@@ -8,7 +8,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[]):
+    def __init__(self, filename=None, remove_classification=False, provenance=[]):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -19,6 +19,11 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
+        :param remove_classification:
+            Whether the classification values in the data set should be removed aka set to 1 (unclassified).
+            This is useful to drop an automatic preclassification in order to create an archaelogically
+            relevant classification from scratch.
+        :type remove_classification: bool
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -26,6 +31,7 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
+        self.remove_classification = remove_classification
 
         # Make the path absolute
         if self.filename is not None:
@@ -143,7 +149,7 @@ class DataSet:
         """
         # If the filenames match, this is a no-op operation
         if filename == self.filename:
-            return
+            return self
 
         # Otherwise, we can simply copy the file to the new location
         # after checking that we are not accidentally overriding something
@@ -156,7 +162,9 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(
+            filename=filename, remove_classification=self.remove_classification
+        )
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset
