@@ -10,6 +10,7 @@ import itertools
 import math
 import numpy as np
 import os
+import time
 
 
 def sized_label(text, size=12):
@@ -55,6 +56,7 @@ def block_until_button_click(button):
     with ctx:
         while keep_running:
             ctx.step()
+            time.sleep(0.01)
 
 
 def flex_square_layout(widgets):
