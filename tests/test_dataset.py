@@ -4,6 +4,8 @@ from adaptivefiltering.segmentation import Segment
 
 from . import dataset, minimal_dataset
 
+import io
+import numpy as np
 import os
 import pytest
 
@@ -49,3 +51,15 @@ def test_save_dataset(minimal_dataset):
 
     # Now with the override flag
     minimal_dataset.save(tmpfile, overwrite=True)
+
+
+def test_remove_classification(minimal_dataset):
+    removed = remove_classification(minimal_dataset)
+    vals = tuple(np.unique(removed.data["Classification"]))
+    assert vals == (1,)
+
+
+def test_provenance(minimal_dataset):
+    # For now, only check that output to a stream works
+    with io.StringIO() as out:
+        minimal_dataset.provenance(out)

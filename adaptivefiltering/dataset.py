@@ -211,7 +211,8 @@ def remove_classification(dataset):
 
     dataset = PDALInMemoryDataSet.convert(dataset)
     pipeline = execute_pdal_pipeline(
-        config={"type": "filters.assign", "value": ["Classification = 1"]}
+        dataset=dataset,
+        config={"type": "filters.assign", "value": ["Classification = 1"]},
     )
 
     return PDALInMemoryDataSet(
