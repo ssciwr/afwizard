@@ -1,11 +1,14 @@
+from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.pdal import PDALInMemoryDataSet
 
 import ipython_blocking
 import ipywidgets
 import IPython
 import itertools
 import math
+import numpy as np
 import os
 
 
@@ -55,6 +58,7 @@ def block_until_button_click(button):
 
 
 def flex_square_layout(widgets):
+    """Place widgets into a grid layout that is approximately square."""
     # Arrange the widgets in a flexible square layout
     grid_cols = math.ceil(math.sqrt(len(widgets)))
     grid_rows = math.ceil(len(widgets) / grid_cols)
@@ -66,6 +70,27 @@ def flex_square_layout(widgets):
             grid[xy] = widgets[i]
 
     return grid
+
+
+def classification_widget(datasets):
+    """Create a widget to select classification values"""
+
+    def get_classes(dataset):
+        # Make sure that we have an in-memory copy of the dataset
+        dataset = PDALInMemoryDataSet.convert(dataset)
+
+        # Get the lists present in this dataset
+        return np.unique(dataset.data["Classification"])
+
+    # Join the classes in all datasets
+    classes = set().union(*tuple(set(get_classes(d)) for d in datasets))
+
+    return ipywidgets.SelectMultiple(
+        options=[
+            (f"{asprs_class_name(code)} ({code})", code) for code in sorted(classes)
+        ],
+        value=list(sorted(classes)),
+    )
 
 
 def pipeline_tuning(datasets=[], pipeline=None):
@@ -91,6 +116,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
 
+    # Get the classification value selection widget
+    class_widget = classification_widget(datasets)
+
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview")
     finalize = ipywidgets.Button(description="Finalize")
@@ -115,9 +143,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
     app = ipywidgets.AppLayout(
         header=None,
         left_sidebar=form.widget,
-        right_sidebar=flex_square_layout(widgets),
+        center=flex_square_layout(widgets),
+        right_sidebar=class_widget,
         footer=ipywidgets.Box([preview, finalize]),
-        pane_widths=[1, 0, 2],
+        pane_widths=[2, 3, 1],
     )
 
     # Show the app in Jupyter notebook

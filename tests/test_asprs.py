@@ -16,6 +16,7 @@ def test_asprs_classification():
     assert asprs[2:4:2] == (2, 4)
     assert asprs[:4] == (0, 1, 2, 3, 4)
     assert asprs[253:] == (253, 254, 255)
+    assert len(asprs[:]) == 256
 
     with pytest.raises(AdaptiveFilteringError):
         asprs["non-existing"]

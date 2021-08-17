@@ -1,29 +1,51 @@
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 
-import functools
+# Mapping from human-readable name to class codes
+_name_to_class = {
+    "unclassified": (0, 1),
+    "ground": (2,),
+    "low_vegetation": (3,),
+    "medium_vegetation": (4,),
+    "high_vegetation": (5,),
+    "building": (6,),
+    "low_point": (7,),
+    "water": (9,),
+    "road_surface": (11,),
+}
+
+
+# Inverse mapping from class codes to human readable names
+_class_to_name = ["(not implemented)"] * 256
+
+# Populate the inverse mapping
+for name, classes in _name_to_class.items():
+    for c in classes:
+        _class_to_name[c] = name
+
+
+def asprs_class_code(name):
+    """Map ASPRS classification name to code"""
+    try:
+        return _name_to_class[name]
+    except KeyError:
+        raise AdaptiveFilteringError(
+            f"Classification identifier '{name}'' not known to adaptivefiltering"
+        )
+
+
+def asprs_class_name(code):
+    """Map ASPRS classification code to name"""
+    try:
+        return _class_to_name[code]
+    except IndexError:
+        raise AdaptiveFilteringError(
+            f"Classification code '{code}' not in range [0, 255]"
+        )
 
 
 class ASPRSClassification:
     """A data structure that describes the ASPRS Standard Lidar Point Classes"""
-
-    @functools.lru_cache
-    def _mapping(cls):
-        """Mapping of string names to classification values.
-
-        This only exposes the subset relevant to our use cases
-        """
-        return {
-            "unclassified": (0, 1),
-            "ground": (2,),
-            "low_vegetation": (3,),
-            "medium_vegetation": (4,),
-            "high_vegetation": (5,),
-            "building": (6,),
-            "low_point": (7,),
-            "water": (9,),
-            "road_surface": (11,),
-        }
 
     def __getitem__(self, class_):
         """Create a classification value sequence from input"""
@@ -62,11 +84,7 @@ class ASPRSClassification:
                     # values for each of the entries of that list
                     return sum((_process_list_item(i.strip()) for i in subitems), ())
                 else:
-                    try:
-                        # For strings, we do a lookup in our internal name mapping
-                        return self._mapping()[item.strip()]
-                    except KeyError:
-                        raise AdaptiveFilteringError("Classifier not known")
+                    return asprs_class_code(item.strip())
 
             # If no string was given, we assume that a plain integer was given
             assert isinstance(item, int)
