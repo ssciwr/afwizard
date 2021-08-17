@@ -8,7 +8,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, remove_classification=False, provenance=[]):
+    def __init__(self, filename=None, provenance=[]):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -19,11 +19,6 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
-        :param remove_classification:
-            Whether the classification values in the data set should be removed aka set to 1 (unclassified).
-            This is useful to drop an automatic preclassification in order to create an archaelogically
-            relevant classification from scratch.
-        :type remove_classification: bool
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -31,7 +26,6 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
-        self.remove_classification = remove_classification
 
         # Make the path absolute
         if self.filename is not None:
@@ -41,7 +35,7 @@ class DataSet:
         self,
         filename,
         resolution=2.0,
-        classification=asprs["ground"],
+        classification=asprs[:],
     ):
         """Store the point cloud as a digital terrain model to a GeoTIFF file
 
@@ -71,7 +65,7 @@ class DataSet:
             filename, resolution=resolution, classification=classification
         )
 
-    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
+    def show_mesh(self, resolution=2.0, classification=asprs[:]):
         """Visualize the point cloud as a digital terrain model in JupyterLab
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -93,7 +87,7 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.show_mesh(resolution=resolution, classification=classification)
 
-    def show_points(self, threshold=750000, classification=asprs["ground"]):
+    def show_points(self, threshold=750000, classification=asprs[:]):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
@@ -107,7 +101,7 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
         return dataset.show_points(threshold=threshold, classification=classification)
 
-    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
+    def show_hillshade(self, resolution=2.0, classification=asprs[:]):
         """Visualize the point cloud as hillshade model in Jupyter notebook
 
         :param resolution:
@@ -162,9 +156,7 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(
-            filename=filename, remove_classification=self.remove_classification
-        )
+        return DataSet(filename=filename)
 
     def restrict(self, segmentation):
         """Restrict the data set to a spatial subset
@@ -199,3 +191,31 @@ class DataSet:
     def convert(cls, dataset):
         """Convert this dataset to an instance of DataSet"""
         return dataset.save(get_temporary_filename(extension="las"))
+
+
+def remove_classification(dataset):
+    """Remove the classification values from a Lidar dataset
+
+    Instead, all points will be classified as 1 (unclassified). This is useful
+    to drop an automatic preclassification in order to create an archaelogically
+    relevant classification from scratch.
+
+    :param dataset:
+        The dataset to remove the classification from
+    :type dataset: adaptivefiltering.Dataset
+    :return:
+        A transformed dataset with unclassified points
+    :rtype:
+    """
+    from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+    pipeline = execute_pdal_pipeline(
+        dataset=dataset,
+        config={"type": "filters.assign", "value": ["Classification = 1"]},
+    )
+
+    return PDALInMemoryDataSet(
+        pipeline=pipeline,
+        provenance=dataset._provenance + ["Removed all point classifications"],
+    )

@@ -1,12 +1,16 @@
+from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.pdal import PDALInMemoryDataSet
 
 import ipython_blocking
 import ipywidgets
 import IPython
 import itertools
 import math
+import numpy as np
 import os
+import time
 
 
 def sized_label(text, size=12):
@@ -52,9 +56,11 @@ def block_until_button_click(button):
     with ctx:
         while keep_running:
             ctx.step()
+            time.sleep(0.01)
 
 
 def flex_square_layout(widgets):
+    """Place widgets into a grid layout that is approximately square."""
     # Arrange the widgets in a flexible square layout
     grid_cols = math.ceil(math.sqrt(len(widgets)))
     grid_rows = math.ceil(len(widgets) / grid_cols)
@@ -66,6 +72,27 @@ def flex_square_layout(widgets):
             grid[xy] = widgets[i]
 
     return grid
+
+
+def classification_widget(datasets):
+    """Create a widget to select classification values"""
+
+    def get_classes(dataset):
+        # Make sure that we have an in-memory copy of the dataset
+        dataset = PDALInMemoryDataSet.convert(dataset)
+
+        # Get the lists present in this dataset
+        return np.unique(dataset.data["Classification"])
+
+    # Join the classes in all datasets
+    classes = set().union(*tuple(set(get_classes(d)) for d in datasets))
+
+    return ipywidgets.SelectMultiple(
+        options=[
+            (f"{asprs_class_name(code)} ({code})", code) for code in sorted(classes)
+        ],
+        value=list(sorted(classes)),
+    )
 
 
 def pipeline_tuning(datasets=[], pipeline=None):
@@ -91,6 +118,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
 
+    # Get the classification value selection widget
+    class_widget = classification_widget(datasets)
+
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview")
     finalize = ipywidgets.Button(description="Finalize")
@@ -104,20 +134,59 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # TODO: Do this in parallel!
         for d, w in zip(datasets, widgets):
             transformed = pipeline.execute(d)
-            newfig = transformed.show_hillshade()
+            newfig = transformed.show_hillshade(classification=class_widget.value)
             w.figure.axes[0].images[0].set_data(newfig.axes[0].images[0].get_array())
             w.draw()
             w.flush_events()
 
     preview.on_click(_update_preview)
 
-    # Create the app layout
+    # Define the most commonly used layout classes
+    layout = ipywidgets.Layout(width="100%")
+
+    # Create the filter configuration widget including layout tweaks
+    left_sidebar = ipywidgets.VBox(
+        [
+            ipywidgets.HTML("Interactive pipeline configuration:", layout=layout),
+            form.widget,
+        ]
+    )
+
+    # Create the center widget including layout tweaks
+    if len(widgets) > 1:
+        center = ipywidgets.Tab()
+        center.children = widgets
+        center.titles = tuple(f"Dataset #{i}" for i in range(len(widgets)))
+        print(center.titles)
+    else:
+        center = widgets[0]
+    center.layout = layout
+
+    # Create the right sidebar including layout tweaks
+    preview.layout = layout
+    finalize.layout = layout
+    class_widget.layout = layout
+    right_sidebar = ipywidgets.VBox(
+        [
+            ipywidgets.HTML("Ground point filtering controls:", layout=layout),
+            preview,
+            finalize,
+            ipywidgets.HTML(
+                "Point classifications to include in the hillshade visualization (click preview to update):",
+                layout=layout,
+            ),
+            class_widget,
+        ]
+    )
+
+    # Create the final app layout
     app = ipywidgets.AppLayout(
         header=None,
-        left_sidebar=form.widget,
-        right_sidebar=flex_square_layout(widgets),
-        footer=ipywidgets.Box([preview, finalize]),
-        pane_widths=[1, 0, 2],
+        left_sidebar=left_sidebar,
+        center=center,
+        right_sidebar=right_sidebar,
+        footer=None,
+        pane_widths=[2, 3, 1],
     )
 
     # Show the app in Jupyter notebook
