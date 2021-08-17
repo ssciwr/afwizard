@@ -132,20 +132,58 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # TODO: Do this in parallel!
         for d, w in zip(datasets, widgets):
             transformed = pipeline.execute(d)
-            newfig = transformed.show_hillshade()
+            newfig = transformed.show_hillshade(classification=class_widget.value)
             w.figure.axes[0].images[0].set_data(newfig.axes[0].images[0].get_array())
             w.draw()
             w.flush_events()
 
     preview.on_click(_update_preview)
 
-    # Create the app layout
+    # Define the most commonly used layout classes
+    layout = ipywidgets.Layout(width="100%")
+
+    # Create the filter configuration widget including layout tweaks
+    left_sidebar = ipywidgets.VBox(
+        [
+            ipywidgets.HTML("Interactive pipeline configuration:", layout=layout),
+            form.widget,
+        ]
+    )
+
+    # Create the center widget including layout tweaks
+    if len(widgets) > 1:
+        center = ipywidgets.Tab()
+        center.children = widgets
+        center.titles = tuple(f"Dataset #{i}" for i in range(len(widgets)))
+        print(center.titles)
+    else:
+        center = widgets[0]
+    center.layout = layout
+
+    # Create the right sidebar including layout tweaks
+    preview.layout = layout
+    finalize.layout = layout
+    class_widget.layout = layout
+    right_sidebar = ipywidgets.VBox(
+        [
+            ipywidgets.HTML("Ground point filtering controls:", layout=layout),
+            preview,
+            finalize,
+            ipywidgets.HTML(
+                "Point classifications to include in the hillshade visualization (click preview to update):",
+                layout=layout,
+            ),
+            class_widget,
+        ]
+    )
+
+    # Create the final app layout
     app = ipywidgets.AppLayout(
         header=None,
-        left_sidebar=form.widget,
-        center=flex_square_layout(widgets),
-        right_sidebar=class_widget,
-        footer=ipywidgets.Box([preview, finalize]),
+        left_sidebar=left_sidebar,
+        center=center,
+        right_sidebar=right_sidebar,
+        footer=None,
         pane_widths=[2, 3, 1],
     )
 
