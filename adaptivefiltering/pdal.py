@@ -138,15 +138,11 @@ class PDALInMemoryDataSet(DataSet):
         # Load the file from the given filename
         assert dataset.filename is not None
 
-        # Define a pipeline step that removes classification
-        assign = []
-        if dataset.remove_classification:
-            assign = [{"type": "filters.assign", "value": ["Classification = 1"]}]
-
         filename = locate_file(dataset.filename)
         pipeline = execute_pdal_pipeline(
-            config=[{"type": "readers.las", "filename": filename}] + assign
+            config={"type": "readers.las", "filename": filename}
         )
+
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
