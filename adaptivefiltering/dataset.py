@@ -158,7 +158,7 @@ class DataSet:
         # And return a DataSet instance
         return DataSet(filename=filename)
 
-    def restrict(self, segmentation):
+    def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
 
         :param segmentation:
@@ -167,6 +167,7 @@ class DataSet:
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
+
         return dataset.restrict(segmentation)
 
     def provenance(self, stream=sys.stdout):

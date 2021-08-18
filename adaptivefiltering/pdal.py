@@ -269,6 +269,12 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
+        # Maybe create the segmentation
+        if segmentation is None:
+            from adaptivefiltering.apps import create_segmentation
+
+            segmentation = create_segmentation(self)
+
         # Construct an array of WKT Polygons for the clipping
         polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
 

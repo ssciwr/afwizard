@@ -2,6 +2,7 @@ from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.pdal import PDALInMemoryDataSet
+from adaptivefiltering.segmentation import InteractiveMap, Segmentation
 
 import ipython_blocking
 import ipywidgets
@@ -203,3 +204,28 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Return the pipeline object
     return pipeline
+
+
+def create_segmentation(dataset):
+    # Create the necessary widgets
+    map_ = InteractiveMap(dataset=dataset)
+    map_widget = map_.show()
+    finalize = ipywidgets.Button(description="Finalize")
+
+    # Arrange them into one widget
+    layout = ipywidgets.Layout(width="100%")
+    map_widget.layout = layout
+    finalize.layout = layout
+    app = ipywidgets.VBox([map_widget, finalize])
+
+    # Show the final widget
+    IPython.display.display(app)
+
+    # Block until the finalize button is clicked
+    block_until_button_click(finalize)
+
+    # Make the app vanish
+    app.layout.display = "none"
+
+    # Extract the segementation object
+    return Segmentation(map_.return_polygon())
