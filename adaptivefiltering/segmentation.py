@@ -100,6 +100,7 @@ class InteractiveMap:
         """
 
         # handle exeptions
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         if dataset and segmentation:
             raise Exception(
@@ -114,7 +115,9 @@ class InteractiveMap:
             self.coordinates_mean = np.asarray([49.41745, 8.67529])
             self.segmentation = None
 
-        if dataset is not None and type(dataset) is not DataSet:
+        if dataset is not None and not isinstance(
+            dataset, (DataSet, PDALInMemoryDataSet)
+        ):
             raise TypeError(
                 "Dataset must be of type DataSet, but is " + str(type(dataset))
             )
@@ -133,10 +136,12 @@ class InteractiveMap:
         boundary_coordinates = self.segmentation["features"][0]["geometry"][
             "coordinates"
         ]
-
+        print(boundary_coordinates)
         self.coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
         self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
         # for ipleaflet we need to change the order of the center coordinates
+
+        print(self.coordinates_mean)
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(self.coordinates_mean[1], self.coordinates_mean[0]),
@@ -177,7 +182,7 @@ class InteractiveMap:
         # get spaciel_ref frome pipeline to specify this as in_srs in the pipeline
         # unfortunatly I can't find a way to include this metadata in the pdal.Pipeline as it only has the config and an array as options.
         dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
-            "readers.las"
+            "filters.reprojection"
         ]["comp_spatialreference"]
 
         # execute the reprojection and hexbin filter.
@@ -185,11 +190,6 @@ class InteractiveMap:
         hexbin_pipeline = execute_pdal_pipeline(
             dataset=dataset,
             config=[
-                {
-                    "type": "filters.reprojection",
-                    "in_srs": dataset_spaciaL_ref,
-                    "out_srs": "EPSG:4326",
-                },
                 {"type": "filters.hexbin"},
             ],
         )

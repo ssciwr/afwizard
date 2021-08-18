@@ -125,7 +125,13 @@ class PDALInMemoryDataSet(DataSet):
         """
         # Store the given data and provenance array
         self.pipeline = pipeline
+
+        # setup the spatial_ref history_list
+        self.spatial_history = []
+
         super(PDALInMemoryDataSet, self).__init__(provenance=provenance)
+
+    # self.pipeline = self.convert_to()
 
     @property
     def data(self):
@@ -151,9 +157,11 @@ class PDALInMemoryDataSet(DataSet):
         assert dataset.filename is not None
 
         filename = locate_file(dataset.filename)
+
         pipeline = execute_pdal_pipeline(
             config={"type": "readers.las", "filename": filename}
         )
+
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
@@ -285,7 +293,9 @@ class PDALInMemoryDataSet(DataSet):
         # old
         # polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
         for s in segmentation["features"]:
-            print(s)
+            print("print segments:", s)
+
+        print("pre restrict data", self.data)
         polygons = [
             convert.geojson_to_wkt(s["geometry"]) for s in segmentation["features"]
         ]
@@ -296,9 +306,54 @@ class PDALInMemoryDataSet(DataSet):
         newdata = execute_pdal_pipeline(
             dataset=self, config={"type": "filters.crop", "polygon": polygons}
         )
+        print("post restrict data", newdata.arrays)
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
             provenance=self._provenance
             + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
+        )
+
+    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
+        """Convert the dataset from one spatial reference into another.
+        This function also keeps track of all conversions that have happend.
+        :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
+        :type spatial_ref_out: string
+
+        :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
+
+        """
+        # skip conversion if spatial out is equal to last transformation
+
+        # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
+        if spatial_ref_in is None:
+
+            # spacial_ref_in = json.loads(self.pipeline.metadata)["metadata"]['readers.las']["comp_spatialreference"]
+            for keys, dictionary in json.loads(self.pipeline.metadata)[
+                "metadata"
+            ].items():
+                for sub_keys, sub_dictionary in dictionary.items():
+                    if sub_keys == "comp_spatialreference":
+                        spacial_ref_in = sub_dictionary
+
+        newdata = execute_pdal_pipeline(
+            dataset=self,
+            config={
+                "type": "filters.reprojection",
+                "in_srs": spacial_ref_in,
+                "out_srs": spatial_ref_out,
+            },
+        )
+
+        # if this is the first conversion
+        self.spatial_history.append(spatial_ref_out)
+
+        return PDALInMemoryDataSet(
+            pipeline=newdata,
+            provenance=self._provenance
+            + [
+                "converted the dataset to the {} spatial reference.".format(
+                    spatial_ref_out
+                )
+            ],
         )
