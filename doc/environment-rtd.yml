@@ -18,7 +18,6 @@ dependencies:
     - Click
     - geodaisy
     - geojson
-    - ipython_blocking
     - jsonmerge
     - jsonschema
     - m2r2
