@@ -220,8 +220,8 @@ class WidgetForm:
                         return
 
                 # Identify the current list index of the entry
-                for index, child in enumerate(vbox.children):
-                    if b in child.children:
+                for index, child in enumerate(vbox.children[:-1]):
+                    if b in child.children[1].children:
                         break
 
                 # Remove it from the widget list and the handler list
@@ -234,7 +234,7 @@ class WidgetForm:
                 def _move(b):
                     items = list(vbox.children[:-1])
                     for i, it in enumerate(items):
-                        if b in it.children:
+                        if b in it.children[1].children:
                             newi = min(max(i + dir, 0), len(items) - 1)
                             items[i], items[newi] = items[newi], items[i]
                             elements[i], elements[newi] = (
