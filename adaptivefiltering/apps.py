@@ -25,7 +25,7 @@ def sized_label(text, size=12):
 
 
 class InteractiveWidgetOutputProxy:
-    def __init__(self, creator):
+    def __init__(self, creator, finalization_hook=lambda obj: obj):
         """An object to capture interactive widget output
 
         :param creator:
@@ -35,6 +35,7 @@ class InteractiveWidgetOutputProxy:
         """
         # Save the creator function for later use
         self._creator = creator
+        self._finalization_hook = finalization_hook
 
         # Try instantiating the object
         try:
@@ -55,6 +56,7 @@ class InteractiveWidgetOutputProxy:
         object are carried out.
         """
         self._obj = self._creator()
+        self._obj = self._finalization_hook(self._obj)
         self._finalized = True
 
     def __getattr__(self, attr):
@@ -227,11 +229,15 @@ def create_segmentation(dataset):
     # Show the final widget
     IPython.display.display(app)
 
-    # Block until the finalize button is clicked
-    block_until_button_click(finalize)
+    # The return proxy object
+    segmentation_proxy = InteractiveWidgetOutputProxy(
+        lambda: Segmentation(map_.return_polygon())
+    )
 
-    # Make the app vanish
-    app.layout.display = "none"
+    def _finalize(_):
+        app.layout.display = "none"
+        segmentation_proxy._finalize()
 
-    # Extract the segementation object
-    return Segmentation(map_.return_polygon())
+    finalize.on_click(_finalize)
+
+    return segmentation_proxy

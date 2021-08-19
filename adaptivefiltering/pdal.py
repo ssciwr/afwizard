@@ -269,24 +269,32 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
+        def apply_restriction(seg):
+            # Construct an array of WKT Polygons for the clipping
+            polygons = [convert.geojson_to_wkt(s.polygon) for s in seg["features"]]
+
+            from adaptivefiltering.pdal import execute_pdal_pipeline
+
+            # Apply the cropping filter with all polygons
+            newdata = execute_pdal_pipeline(
+                dataset=self, config={"type": "filters.crop", "polygon": polygons}
+            )
+
+            return PDALInMemoryDataSet(
+                pipeline=newdata,
+                provenance=self._provenance
+                + [
+                    f"Cropping data to only include polygons defined by:\n{str(polygons)}"
+                ],
+            )
+
         # Maybe create the segmentation
         if segmentation is None:
             from adaptivefiltering.apps import create_segmentation
 
-            segmentation = create_segmentation(self)
+            restricted = create_segmentation(self)
+            restricted._finalization_hook = apply_restriction
 
-        # Construct an array of WKT Polygons for the clipping
-        polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
-
-        from adaptivefiltering.pdal import execute_pdal_pipeline
-
-        # Apply the cropping filter with all polygons
-        newdata = execute_pdal_pipeline(
-            dataset=self, config={"type": "filters.crop", "polygon": polygons}
-        )
-
-        return PDALInMemoryDataSet(
-            pipeline=newdata,
-            provenance=self._provenance
-            + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
-        )
+            return restricted
+        else:
+            return apply_restriction(segmentation)
