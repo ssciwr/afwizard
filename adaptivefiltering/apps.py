@@ -3,14 +3,11 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-import ipython_blocking
 import ipywidgets
 import IPython
 import itertools
 import math
 import numpy as np
-import os
-import time
 
 
 def sized_label(text, size=12):
@@ -26,37 +23,46 @@ def sized_label(text, size=12):
     return ipywidgets.HTML(value=f"<h3 style='font-size: {str(size)}px'>{text}</h>")
 
 
-def block_until_button_click(button):
-    """Block the execution of the Jupyter notebook until a button was clicked
+class InteractiveWidgetOutputProxy:
+    def __init__(self, creator):
+        """An object to capture interactive widget output
 
-    This can be used for "Save", "Continue" or "Done" buttons that finalize
-    the frontend input given into Jupyter widgets. The technique used to achieve
-    this is taken from :code:`ipython_blocking`.
+        :param creator:
+            A callable accepting no parameters that constructs the return
+            object. It will typically depend on widget state.
+        :type creator: Callable
+        """
+        # Save the creator function for later use
+        self._creator = creator
 
-    :param button:
-        The button widget to wait for. The function does not create or display
-        the widget, but merely registers the necessary handler.
-    :type button: ipywidgets.Button
-    """
+        # Try instantiating the object
+        try:
+            self._obj = creator()
+        except:
+            self._obj = None
 
-    # If we are not running this from a test, we skip the blocking part. This is
-    # necessary to be able to run notebooks with nbval.
-    if "PYTEST_CURRENT_TEST" in os.environ:
-        return
+        # Store whether this object has been finalized
+        self._finalized = False
 
-    keep_running = True
+        # Docstring Forwarding
+        self.__doc__ = getattr(self._obj, "__doc__", "")
 
-    def _handler(_):
-        nonlocal keep_running
-        keep_running = False
+    def _finalize(self):
+        """Finalize the return object.
 
-    button.on_click(_handler)
+        After this function is called once, no further updates of the return
+        object are carried out.
+        """
+        self._obj = self._creator()
+        self._finalized = True
 
-    ctx = ipython_blocking.CaptureExecution(replay=True)
-    with ctx:
-        while keep_running:
-            ctx.step()
-            time.sleep(0.01)
+    def __getattr__(self, attr):
+        # If not finalized, we recreate the object on every member access
+        if not self._finalized:
+            self._obj = self._creator()
+
+        # Forward this to the actual object
+        return getattr(self._obj, attr)
 
 
 def flex_square_layout(widgets):
@@ -192,14 +198,14 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Show the app in Jupyter notebook
     IPython.display.display(app)
 
-    # Wait until the finalize button was clicked
-    block_until_button_click(finalize)
+    # Implement finalization
+    pipeline_proxy = InteractiveWidgetOutputProxy(lambda: pipeline.copy(**form.data))
 
-    # Construct the new pipeline object
-    pipeline = pipeline.copy(**form.data)
+    def _finalize(_):
+        app.layout.display = "none"
+        pipeline_proxy._finalize()
 
-    # Hide the widget to prevent reuse of the same widget
-    app.layout.display = "none"
+    finalize.on_click(_finalize)
 
-    # Return the pipeline object
-    return pipeline
+    # Return the pipeline proxy object
+    return pipeline_proxy

@@ -288,8 +288,6 @@ def serialize_filter(filter_):
     This relies on :func:`~adaptivefilter.filter.Filter._serialize` to do the
     object serialization, but adds information about the correct filter type.
     """
-    assert isinstance(filter_, Filter)
-
     data = filter_._serialize()
     data["_backend"] = filter_._identifier
     return data
