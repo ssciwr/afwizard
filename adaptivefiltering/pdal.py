@@ -9,7 +9,7 @@ from adaptivefiltering.visualization import (
     vis_pointcloud,
     vis_slope,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, get_angular_resolution
 from adaptivefiltering.widgets import WidgetForm
 
 import geodaisy.converters as convert
@@ -174,10 +174,10 @@ class PDALInMemoryDataSet(DataSet):
         filename,
         resolution=2.0,
     ):
+        resolution = get_angular_resolution(resolution)
         # if .tif is already in the filename it will be removed to avoid double file extension
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
-        print("sasve mesh data", self.data)
         execute_pdal_pipeline(
             dataset=self,
             config={
@@ -206,10 +206,6 @@ class PDALInMemoryDataSet(DataSet):
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
-        print("geotif x_raster:", self._geo_tif_data.RasterXSize)
-        print("geotif y_raster:", self._geo_tif_data.RasterYSize)
-
-        print("geotif geotransform:", self._geo_tif_data.GetGeoTransform())
 
         # use the number of x and y points to generate a grid.
         x = np.arange(0, self._geo_tif_data.RasterXSize)
@@ -222,9 +218,7 @@ class PDALInMemoryDataSet(DataSet):
         # get height information from
         band = self._geo_tif_data.GetRasterBand(1)
         z = band.ReadAsArray()
-        print("x:", x)
-        print("y:", y)
-        print("z:", z)
+
         return vis_mesh(x, y, z)
 
     def show_points(self, threshold=750000):
@@ -267,7 +261,6 @@ class PDALInMemoryDataSet(DataSet):
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
 
         band = self._geo_tif_data.GetRasterBand(1)
-        print("band", band.ReadAsArray())
         return vis_hillshade(band.ReadAsArray())
 
     def save(self, filename, compress=False, overwrite=False):
@@ -298,22 +291,15 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
-        # Construct an array of WKT Polygons for the clipping
-        # old
-        # polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
-
         polygons = [
             convert.geojson_to_wkt(s["geometry"]) for s in segmentation["features"]
         ]
-        # print(polygons)
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
         # Apply the cropping filter with all polygons
         newdata = execute_pdal_pipeline(
             dataset=self, config={"type": "filters.crop", "polygon": polygons}
         )
-
-        # print("new metadata", newdata.metadata)
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
@@ -330,24 +316,16 @@ class PDALInMemoryDataSet(DataSet):
         :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
 
         """
-        # skip conversion if spatial out is equal to last transformation
 
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
-
-        # print(json.loads(self.pipeline.metadata))
         if spatial_ref_in is None:
 
-            # spacial_ref_in = json.loads(self.pipeline.metadata)["metadata"]['readers.las']["comp_spatialreference"]
             for keys, dictionary in json.loads(self.pipeline.metadata)[
                 "metadata"
             ].items():
                 for sub_keys, sub_dictionary in dictionary.items():
                     if sub_keys == "comp_spatialreference":
-                        print("sub_dict", sub_dictionary)
                         spatial_ref_in = sub_dictionary
-
-        print("spatial ref in:", spatial_ref_in)
-        print("spatial ref out:", spatial_ref_out)
 
         newdata = execute_pdal_pipeline(
             dataset=self,
