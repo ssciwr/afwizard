@@ -131,8 +131,6 @@ class PDALInMemoryDataSet(DataSet):
 
         super(PDALInMemoryDataSet, self).__init__(provenance=provenance)
 
-    # self.pipeline = self.convert_to()
-
     @property
     def data(self):
         return self.pipeline.arrays[0]
@@ -159,7 +157,10 @@ class PDALInMemoryDataSet(DataSet):
         filename = locate_file(dataset.filename)
 
         pipeline = execute_pdal_pipeline(
-            config={"type": "readers.las", "filename": filename}
+            config=[
+                {"type": "readers.las", "filename": filename},
+                {"type": "filters.reprojection", "out_srs": "EPSG:4326"},
+            ]
         )
 
         return PDALInMemoryDataSet(
@@ -353,13 +354,6 @@ class PDALInMemoryDataSet(DataSet):
                 "out_srs": spatial_ref_out,
             },
         )
-        # if this is the first conversion
-        #  self.spatial_history.append(spatial_ref_out)
-        # print(type(newdata.metadata))
-        # print(newdata.metadata)
-        # new_metadata = json.loads(newdata.metadata)
-        # new_metadata.update(json.loads(self.pipeline.metadata))
-        # newdata.metadata =  json.dumps(new_metadata)
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
