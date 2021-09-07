@@ -291,15 +291,22 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
+        # Construct an array of WKT Polygons for the clipping
+        # old
+        # polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
+
         polygons = [
             convert.geojson_to_wkt(s["geometry"]) for s in segmentation["features"]
         ]
+        # print(polygons)
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
         # Apply the cropping filter with all polygons
         newdata = execute_pdal_pipeline(
             dataset=self, config={"type": "filters.crop", "polygon": polygons}
         )
+
+        # print("new metadata", newdata.metadata)
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
@@ -316,16 +323,24 @@ class PDALInMemoryDataSet(DataSet):
         :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
 
         """
+        # skip conversion if spatial out is equal to last transformation
 
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
+
+        # print(json.loads(self.pipeline.metadata))
         if spatial_ref_in is None:
 
+            # spacial_ref_in = json.loads(self.pipeline.metadata)["metadata"]['readers.las']["comp_spatialreference"]
             for keys, dictionary in json.loads(self.pipeline.metadata)[
                 "metadata"
             ].items():
                 for sub_keys, sub_dictionary in dictionary.items():
                     if sub_keys == "comp_spatialreference":
+                        print("sub_dict", sub_dictionary)
                         spatial_ref_in = sub_dictionary
+
+        print("spatial ref in:", spatial_ref_in)
+        print("spatial ref out:", spatial_ref_out)
 
         newdata = execute_pdal_pipeline(
             dataset=self,
