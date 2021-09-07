@@ -300,14 +300,15 @@ class PDALInMemoryDataSet(DataSet):
         # Wrap the result in a DataSet instance
         return DataSet(filename=filename)
 
-    def restrict(self, segmentation):
+    def restrict(self, segmentation=None):
         # If a single Segment is given, we convert it to a segmentation
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
         def apply_restriction(seg):
             # Construct an array of WKT Polygons for the clipping
-            polygons = [convert.geojson_to_wkt(s.polygon) for s in seg["features"]]
+            print(seg["features"])
+            polygons = [convert.geojson_to_wkt(s["geometry"]) for s in seg["features"]]
 
             from adaptivefiltering.pdal import execute_pdal_pipeline
 
