@@ -168,7 +168,7 @@ class PDALInMemoryDataSet(DataSet):
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
         # if .tif is already in the filename it will be removed to avoid double file extension
 
-        resolution = get_angular_resolution(resolution)
+        ang_resolution = get_angular_resolution(resolution)
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
         execute_pdal_pipeline(
@@ -184,7 +184,7 @@ class PDALInMemoryDataSet(DataSet):
                     "filename": filename + ".tif",
                     "gdaldriver": "GTiff",
                     "output_type": "all",
-                    "resolution": resolution,
+                    "resolution": ang_resolution,
                     "default_srs": "EPSG:4326",
                     "type": "writers.gdal",
                 },
