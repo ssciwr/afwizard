@@ -136,7 +136,6 @@ class InteractiveMap:
         boundary_coordinates = self.segmentation["features"][0]["geometry"][
             "coordinates"
         ]
-        print(boundary_coordinates)
         self.coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
         self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
         # for ipleaflet we need to change the order of the center coordinates
@@ -149,7 +148,6 @@ class InteractiveMap:
             scroll_wheel_zoom=True,
             max_zoom=20,
         )
-
         self.m.add_layer(self.boundary_geoJSON)
 
         # add polygon draw tool and zoom slider
@@ -179,11 +177,8 @@ class InteractiveMap:
         # convert dataset to in memory pdal dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
 
-        # get spaciel_ref frome pipeline to specify this as in_srs in the pipeline
-        # unfortunatly I can't find a way to include this metadata in the pdal.Pipeline as it only has the config and an array as options.
-        dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
-            "filters.reprojection"
-        ]["comp_spatialreference"]
+        # convert the dataset to EPSG:4326 format
+        # dataset = dataset.convert_georef(spatial_ref_out="EPSG:4326")
 
         # execute the reprojection and hexbin filter.
         # this is nessesary for the map to function properly.
@@ -225,9 +220,9 @@ class InteractiveMap:
             ]
         )
         # flip the coordinates to reflect proper geojson format
-        hexbin_segmentation["features"][0]["geometry"]["coordinates"] = np.flip(
-            np.asarray(hexbin_segmentation["features"][0]["geometry"]["coordinates"])
-        ).tolist()
+        # hexbin_segmentation["features"][0]["geometry"]["coordinates"] = np.flip(
+        #     np.asarray(hexbin_segmentation["features"][0]["geometry"]["coordinates"])
+        # ).tolist()
 
         return hexbin_segmentation
 

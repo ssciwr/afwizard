@@ -204,6 +204,8 @@ class PDALInMemoryDataSet(DataSet):
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
+        print("geotif x_raster:", self._geo_tif_data.RasterXSize)
+        print("geotif geotransform:", self._geo_tif_data.GetGeoTransform())
 
         # use the number of x and y points to generate a grid.
         x = np.arange(0, self._geo_tif_data.RasterXSize)
@@ -216,6 +218,9 @@ class PDALInMemoryDataSet(DataSet):
         # get height information from
         band = self._geo_tif_data.GetRasterBand(1)
         z = band.ReadAsArray()
+        print("x:", x)
+        print("y:", y)
+        print("z:", z)
         return vis_mesh(x, y, z)
 
     def show_points(self, threshold=750000):
@@ -228,17 +233,17 @@ class PDALInMemoryDataSet(DataSet):
         return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
 
     def show_slope(self, resolution=2.0):
-        if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
+        # if self._geo_tif_data_resolution is not resolution:
+        #     print(
+        #         "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
+        #             resolution
+        #         )
+        #     )
 
-            # Write a temporary file
-            with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(str(tmp_file.name), resolution=resolution)
-                shasta_dem = rd.LoadGDAL(tmp_file.name + ".tif")
+        # Write a temporary file
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            self.save_mesh(str(tmp_file.name), resolution=resolution)
+            shasta_dem = rd.LoadGDAL(tmp_file.name + ".tif")
 
         slope = rd.TerrainAttribute(shasta_dem, attrib="slope_riserun")
 
@@ -292,21 +297,19 @@ class PDALInMemoryDataSet(DataSet):
         # Construct an array of WKT Polygons for the clipping
         # old
         # polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
-        for s in segmentation["features"]:
-            print("print segments:", s)
 
-        print("pre restrict data", self.data)
         polygons = [
             convert.geojson_to_wkt(s["geometry"]) for s in segmentation["features"]
         ]
-
+        # print(polygons)
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
         # Apply the cropping filter with all polygons
         newdata = execute_pdal_pipeline(
             dataset=self, config={"type": "filters.crop", "polygon": polygons}
         )
-        print("post restrict data", newdata.arrays)
+
+        # print("new metadata", newdata.metadata)
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
@@ -326,6 +329,8 @@ class PDALInMemoryDataSet(DataSet):
         # skip conversion if spatial out is equal to last transformation
 
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
+
+        # print(json.loads(self.pipeline.metadata))
         if spatial_ref_in is None:
 
             # spacial_ref_in = json.loads(self.pipeline.metadata)["metadata"]['readers.las']["comp_spatialreference"]
@@ -334,19 +339,27 @@ class PDALInMemoryDataSet(DataSet):
             ].items():
                 for sub_keys, sub_dictionary in dictionary.items():
                     if sub_keys == "comp_spatialreference":
-                        spacial_ref_in = sub_dictionary
+                        print("sub_dict", sub_dictionary)
+                        spatial_ref_in = sub_dictionary
+
+        print("spatial ref in:", spatial_ref_in)
+        print("spatial ref out:", spatial_ref_out)
 
         newdata = execute_pdal_pipeline(
             dataset=self,
             config={
                 "type": "filters.reprojection",
-                "in_srs": spacial_ref_in,
+                "in_srs": spatial_ref_in,
                 "out_srs": spatial_ref_out,
             },
         )
-
         # if this is the first conversion
-        self.spatial_history.append(spatial_ref_out)
+        #  self.spatial_history.append(spatial_ref_out)
+        # print(type(newdata.metadata))
+        # print(newdata.metadata)
+        # new_metadata = json.loads(newdata.metadata)
+        # new_metadata.update(json.loads(self.pipeline.metadata))
+        # newdata.metadata =  json.dumps(new_metadata)
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
