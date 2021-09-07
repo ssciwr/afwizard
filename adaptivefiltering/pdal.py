@@ -177,7 +177,7 @@ class PDALInMemoryDataSet(DataSet):
         # if .tif is already in the filename it will be removed to avoid double file extension
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
-
+        print("sasve mesh data", self.data)
         execute_pdal_pipeline(
             dataset=self,
             config={
@@ -185,6 +185,7 @@ class PDALInMemoryDataSet(DataSet):
                 "gdaldriver": "GTiff",
                 "output_type": "all",
                 "resolution": resolution,
+                "default_srs": "EPSG:4326",
                 "type": "writers.gdal",
             },
         )
@@ -206,6 +207,8 @@ class PDALInMemoryDataSet(DataSet):
             with tempfile.NamedTemporaryFile() as tmp_file:
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
         print("geotif x_raster:", self._geo_tif_data.RasterXSize)
+        print("geotif y_raster:", self._geo_tif_data.RasterYSize)
+
         print("geotif geotransform:", self._geo_tif_data.GetGeoTransform())
 
         # use the number of x and y points to generate a grid.
@@ -234,12 +237,12 @@ class PDALInMemoryDataSet(DataSet):
         return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
 
     def show_slope(self, resolution=2.0):
-        # if self._geo_tif_data_resolution is not resolution:
-        #     print(
-        #         "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-        #             resolution
-        #         )
-        #     )
+        if self._geo_tif_data_resolution is not resolution:
+            print(
+                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
+                    resolution
+                )
+            )
 
         # Write a temporary file
         with tempfile.NamedTemporaryFile() as tmp_file:
@@ -264,7 +267,7 @@ class PDALInMemoryDataSet(DataSet):
                 self.save_mesh(str(tmp_file.name), resolution=resolution)
 
         band = self._geo_tif_data.GetRasterBand(1)
-
+        print("band", band.ReadAsArray())
         return vis_hillshade(band.ReadAsArray())
 
     def save(self, filename, compress=False, overwrite=False):
