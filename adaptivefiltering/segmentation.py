@@ -1,6 +1,7 @@
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.dataset import DataSet
+
 import geojson
 import jsonschema
 import ipyleaflet
@@ -115,9 +116,7 @@ class InteractiveMap:
             self.coordinates_mean = np.asarray([49.41745, 8.67529])
             self.segmentation = None
 
-        if dataset is not None and not isinstance(
-            dataset, (DataSet, PDALInMemoryDataSet)
-        ):
+        if dataset is not None and not isinstance(dataset, DataSet):
             raise TypeError(
                 "Dataset must be of type DataSet, but is " + str(type(dataset))
             )

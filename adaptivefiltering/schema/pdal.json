@@ -2,6 +2,10 @@
   "anyOf": [
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell": {
           "default": 10.0,
           "title": "Cell size",
@@ -30,6 +34,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "class": {
           "default": 7,
           "title": "The classification value to apply to outliers",
@@ -62,6 +70,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "class": {
           "default": 7,
           "title": "The classification value to apply to outliers",
@@ -94,6 +106,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "type": {
           "const": "filters.skewnessbalancing",
           "type": "string"
@@ -107,6 +123,10 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell_size": {
           "default": 1.0,
           "title": "Cell size",
@@ -116,10 +136,6 @@
           "default": true,
           "title": "Use exponential growth for window sizes?",
           "type": "boolean"
-        },
-        "ignore": {
-          "title": "A range of values of a dimension to ignore",
-          "type": "string"
         },
         "initial_distance": {
           "default": 0.15,
@@ -159,24 +175,19 @@
     },
     {
       "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell": {
           "default": 1.0,
           "title": "Cell size",
           "type": "number"
         },
-        "classbits": {
-          "default": "",
-          "title": "Selectively ignore points marked as \u201csynthetic\u201d, \u201ckeypoint\u201d, or \u201cwithheld\u201d.",
-          "type": "string"
-        },
         "cut": {
           "default": 0.0,
           "title": "Cut net size",
           "type": "number"
-        },
-        "ignore": {
-          "title": "A range of values of a dimension to ignore",
-          "type": "string"
         },
         "returns": {
           "default": "last,only",
@@ -216,8 +227,8 @@
     },
     {
       "properties": {
-        "ignore": {
-          "title": "A range of values of a dimension to ignore",
+        "_backend": {
+          "const": "pdal",
           "type": "string"
         },
         "iterations": {
@@ -266,6 +277,5 @@
       "title": "Cloth Simulation Filter (PDAL)",
       "type": "object"
     }
-  ],
-  "title": "PDAL Filter"
+  ]
 }

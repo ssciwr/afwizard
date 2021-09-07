@@ -1,10 +1,16 @@
+import IPython
 import ipyvolume.pylab as vis
-import matplotlib.pyplot as plt
-import mpld3
+import matplotlib.pyplot as plt, mpld3
 import numpy as np
 
 from matplotlib import cm
 import richdem as rd
+
+
+# Enable the matplotlib Jupyter backend
+ipython = IPython.get_ipython()
+if ipython is not None:
+    ipython.magic("matplotlib widget")
 
 
 def vis_pointcloud(x, y, z):
@@ -77,16 +83,6 @@ def vis_hillshade(z):
         GeoTiff export.
     :type z: numpy.array
     """
-    # Enable interactive elements on matplotlib plots. Ignoring the
-    # resulting errors if being called outside of notebooks.
-    try:
-        mpld3.enable_notebook()
-    except AttributeError:
-        pass
-
-    # For future reference: This is how several hillshades can share the
-    # zoom: https://stackoverflow.com/questions/4200586/matplotlib-pyplot-how-to-zoom-subplots-together
-
     # These two values might be worth exposing
     azimuth = 315
     angle_altitude = 45
@@ -103,10 +99,26 @@ def vis_hillshade(z):
     ) * np.cos(azimuthrad - aspect)
     hs_array = 255 * (shaded + 1) / 2
 
-    # Do the visualization with matplotlib. The interactive elements
-    # are automatically added by mpld3.
-    plt.imshow(hs_array, cmap=cm.gray)
-    plt.show()
+    # Plot the image
+    plt.ioff()
+    fig, ax = plt.subplots()
+    ax.imshow(hs_array, cmap=cm.gray)
+
+    # Make sure that we get the "raw" image and no axes, whitespace etc.
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    fig.set_tight_layout(True)
+
+    # Set some properties on the canvas that fit our use case
+    fig.canvas.toolbar_visible = False
+    fig.canvas.header_visible = False
+    fig.canvas.footer_visible = False
+    fig.canvas.resizable = False
+    fig.canvas.capture_scroll = False
+
+    # Return the figure object. The widget can be extracted from this using
+    # the canvas property
+    return fig
 
 
 def vis_slope(slope):

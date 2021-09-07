@@ -5,8 +5,8 @@ import pytest
 
 
 # A list of simple no-op filters for test parametrization
-filters = [PDALFilter(type="filters.smrf"), Filter()]
-pipelines = [filters[0] + filters[0], filters[1].as_pipeline()]
+filters = [PDALFilter(type="filters.smrf")]
+pipelines = [filters[0] + filters[0], filters[0].as_pipeline()]
 
 
 def test_baseclass_conversions():

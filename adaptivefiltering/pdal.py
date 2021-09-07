@@ -1,4 +1,5 @@
 from pdal import pipeline
+from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
@@ -12,6 +13,7 @@ from adaptivefiltering.visualization import (
 from adaptivefiltering.utils import AdaptiveFilteringError, get_angular_resolution
 from adaptivefiltering.widgets import WidgetForm
 
+import functools
 import geodaisy.converters as convert
 from osgeo import gdal
 import json
@@ -36,7 +38,6 @@ def execute_pdal_pipeline(dataset=None, config=None):
     :return:
         The full pdal pipeline object
     :rtype: pipeline
-
     """
     # Make sure that a correct combination of arguments is given
     if config is None:
@@ -75,7 +76,8 @@ class PDALFilter(Filter, identifier="pdal"):
 
     def execute(self, dataset):
         dataset = PDALInMemoryDataSet.convert(dataset)
-        config = self._serialize()
+        config = pyrsistent.thaw(self.config)
+        config.pop("_backend", None)
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
             provenance=dataset._provenance
@@ -95,7 +97,10 @@ class PDALPipeline(
 ):
     def execute(self, dataset):
         dataset = PDALInMemoryDataSet.convert(dataset)
-        pipeline_json = [f["filter_data"] for f in self._serialize()["filters"]]
+        pipeline_json = pyrsistent.thaw(self.config["filters"])
+        for f in pipeline_json:
+            f.pop("_backend", None)
+
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
             provenance=dataset._provenance
@@ -103,15 +108,6 @@ class PDALPipeline(
                 f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
             ],
         )
-
-    def widget_form(self):
-        # Provide a widget that is restricted to the PDAL backend
-        schema = pyrsistent.thaw(self.form_schema())
-        schema["properties"]["filters"] = {
-            "type": "array",
-            "items": Filter._filter_impls["pdal"].form_schema(),
-        }
-        return WidgetForm(pyrsistent.freeze(schema))
 
 
 class PDALInMemoryDataSet(DataSet):
@@ -169,66 +165,64 @@ class PDALInMemoryDataSet(DataSet):
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
         )
 
-    def save_mesh(
-        self,
-        filename,
-        resolution=2.0,
-    ):
-        resolution = get_angular_resolution(resolution)
+    def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
         # if .tif is already in the filename it will be removed to avoid double file extension
+
+        resolution = get_angular_resolution(resolution)
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
         execute_pdal_pipeline(
             dataset=self,
-            config={
-                "filename": filename + ".tif",
-                "gdaldriver": "GTiff",
-                "output_type": "all",
-                "resolution": resolution,
-                "default_srs": "EPSG:4326",
-                "type": "writers.gdal",
-            },
+            config=[
+                {
+                    "type": "filters.range",
+                    "limits": ",".join(
+                        f"Classification[{c}:{c}]" for c in classification
+                    ),
+                },
+                {
+                    "filename": filename + ".tif",
+                    "gdaldriver": "GTiff",
+                    "output_type": "all",
+                    "resolution": resolution,
+                    "default_srs": "EPSG:4326",
+                    "type": "writers.gdal",
+                },
+            ],
         )
 
-        # Read the result
-        self._geo_tif_data = gdal.Open(filename + ".tif", gdal.GA_ReadOnly)
-        self._geo_tif_data_resolution = resolution
+        # Also store the data in our internal cache
+        self._mesh_data_cache[resolution, classification] = gdal.Open(
+            filename + ".tif", gdal.GA_ReadOnly
+        )
 
-    def show_mesh(self, resolution=2.0):
+    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
         # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
+        if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(str(tmp_file.name), resolution=resolution)
+                self.save_mesh(
+                    str(tmp_file.name),
+                    resolution=resolution,
+                    classification=classification,
+                )
+
+        # Retrieve the raster data from cache
+        data = self._mesh_data_cache[resolution, classification]
 
         # use the number of x and y points to generate a grid.
-        x = np.arange(0, self._geo_tif_data.RasterXSize)
-        y = np.arange(0, self._geo_tif_data.RasterYSize)
+        x = np.arange(0, data.RasterXSize)
+        y = np.arange(0, data.RasterYSize)
 
         # multiplay x and y with the given resolution for comparable plot.
-        x = x * self._geo_tif_data.GetGeoTransform()[1]
-        y = y * self._geo_tif_data.GetGeoTransform()[1]
+        x = x * data.GetGeoTransform()[1]
+        y = y * data.GetGeoTransform()[1]
 
         # get height information from
-        band = self._geo_tif_data.GetRasterBand(1)
+        band = data.GetRasterBand(1)
         z = band.ReadAsArray()
 
         return vis_mesh(x, y, z)
-
-    def show_points(self, threshold=750000):
-        if len(self.data["X"]) >= threshold:
-            error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data["X"]), threshold
-            )
-            raise ValueError(error_text)
-
-        return vis_pointcloud(self.data["X"], self.data["Y"], self.data["Z"])
 
     def show_slope(self, resolution=2.0):
         if self._geo_tif_data_resolution is not resolution:
@@ -247,20 +241,40 @@ class PDALInMemoryDataSet(DataSet):
 
         return vis_slope(slope)
 
-    def show_hillshade(self, resolution=2.0):
-        # check if a filename is given, if not make a temporary tif file to view data
-        if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
+    def show_points(self, threshold=750000, classification=asprs["ground"]):
+        if len(self.data["X"]) >= threshold:
+            error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
+                len(self.data["X"]), threshold
             )
+            raise ValueError(error_text)
 
+        filtered_data = self.data[
+            functools.reduce(
+                np.logical_or,
+                (self.data["Classification"] == c for c in classification),
+            )
+        ]
+
+        return vis_pointcloud(
+            filtered_data["X"], filtered_data["Y"], filtered_data["Z"]
+        )
+
+    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
+        # check if a filename is given, if not make a temporary tif file to view data
+        if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(str(tmp_file.name), resolution=resolution)
+                self.save_mesh(
+                    str(tmp_file.name),
+                    resolution=resolution,
+                    classification=classification,
+                )
 
-        band = self._geo_tif_data.GetRasterBand(1)
+        # Retrieve the raster data from cache
+        data = self._mesh_data_cache[resolution, classification]
+
+        band = data.GetRasterBand(1)
+
         return vis_hillshade(band.ReadAsArray())
 
     def save(self, filename, compress=False, overwrite=False):
@@ -291,28 +305,35 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
-        # Construct an array of WKT Polygons for the clipping
-        # old
-        # polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
+        def apply_restriction(seg):
+            # Construct an array of WKT Polygons for the clipping
+            polygons = [convert.geojson_to_wkt(s.polygon) for s in seg["features"]]
 
-        polygons = [
-            convert.geojson_to_wkt(s["geometry"]) for s in segmentation["features"]
-        ]
-        # print(polygons)
-        from adaptivefiltering.pdal import execute_pdal_pipeline
+            from adaptivefiltering.pdal import execute_pdal_pipeline
 
-        # Apply the cropping filter with all polygons
-        newdata = execute_pdal_pipeline(
-            dataset=self, config={"type": "filters.crop", "polygon": polygons}
-        )
+            # Apply the cropping filter with all polygons
+            newdata = execute_pdal_pipeline(
+                dataset=self, config={"type": "filters.crop", "polygon": polygons}
+            )
 
-        # print("new metadata", newdata.metadata)
+            return PDALInMemoryDataSet(
+                pipeline=newdata,
+                provenance=self._provenance
+                + [
+                    f"Cropping data to only include polygons defined by:\n{str(polygons)}"
+                ],
+            )
 
-        return PDALInMemoryDataSet(
-            pipeline=newdata,
-            provenance=self._provenance
-            + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
-        )
+        # Maybe create the segmentation
+        if segmentation is None:
+            from adaptivefiltering.apps import create_segmentation
+
+            restricted = create_segmentation(self)
+            restricted._finalization_hook = apply_restriction
+
+            return restricted
+        else:
+            return apply_restriction(segmentation)
 
     def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
         """Convert the dataset from one spatial reference into another.

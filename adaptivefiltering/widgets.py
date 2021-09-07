@@ -55,10 +55,14 @@ class WidgetForm:
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
 
+    @property
+    def widget(self):
+        """Return the resulting widget for further use"""
+        return ipywidgets.VBox(self._form_element.widgets)
+
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
-        w = ipywidgets.VBox(self._form_element.widgets)
-        display(w)
+        display(self.widget)
 
     @property
     def data(self):
@@ -247,7 +251,9 @@ class WidgetForm:
             up.on_click(move(-1))
             down.on_click(move(1))
 
-            vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
+            vbox.children = (
+                ipywidgets.VBox([item, ipywidgets.HBox([trash, up, down])]),
+            ) + vbox.children
 
         button.on_click(add_entry)
 
@@ -316,7 +322,9 @@ class WidgetForm:
         def _setter(_d):
             for i, s in enumerate(schema[key]):
                 try:
-                    jsonschema.validate(instance=_d, schema=s)
+                    jsonschema.validate(
+                        instance=pyrsistent.thaw(_d), schema=pyrsistent.thaw(s)
+                    )
                     selector.value = names[i]
                     _select(None)
                 except ValidationError:
