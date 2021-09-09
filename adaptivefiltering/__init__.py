@@ -9,6 +9,7 @@ from adaptivefiltering.dataset import DataSet, remove_classification
 from adaptivefiltering.filter import load_filter, save_filter
 from adaptivefiltering.opals import set_opals_directory
 from adaptivefiltering.paths import set_data_directory
+from adaptivefiltering.version import __version__, get_version
 
 # This is necessary for autodoc to generate the User API
 # The order of objects in this list defines the order in
@@ -16,6 +17,7 @@ from adaptivefiltering.paths import set_data_directory
 __all__ = [
     "asprs",
     "DataSet",
+    "get_version",
     "load_filter",
     "pipeline_tuning",
     "remove_classification",
