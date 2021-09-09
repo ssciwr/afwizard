@@ -197,7 +197,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
     def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
-        # check if a filename is given, if not make a temporary tif file to view data
+        # make a temporary tif file to view data
         if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
@@ -224,23 +224,6 @@ class PDALInMemoryDataSet(DataSet):
 
         return vis_mesh(x, y, z)
 
-    def show_slope(self, resolution=2.0, classification=asprs["ground"]):
-        if self._geo_tif_data_resolution is not resolution:
-            print(
-                "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
-                    resolution
-                )
-            )
-
-        # Write a temporary file
-        with tempfile.NamedTemporaryFile() as tmp_file:
-            self.save_mesh(str(tmp_file.name), resolution=resolution)
-            shasta_dem = rd.LoadGDAL(tmp_file.name + ".tif")
-
-        slope = rd.TerrainAttribute(shasta_dem, attrib="slope_riserun")
-
-        return vis_slope(slope)
-
     def show_points(self, threshold=750000, classification=asprs["ground"]):
         if len(self.data["X"]) >= threshold:
             error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
@@ -259,8 +242,23 @@ class PDALInMemoryDataSet(DataSet):
             filtered_data["X"], filtered_data["Y"], filtered_data["Z"]
         )
 
+    def show_slope(self, resolution=2.0, classification=asprs["ground"]):
+        # make a temporary tif file to view data
+
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            self.save_mesh(
+                str(tmp_file.name),
+                resolution=resolution,
+                classification=classification,
+            )
+            shasta_dem = rd.LoadGDAL(tmp_file.name + ".tif")
+
+        slope = rd.TerrainAttribute(shasta_dem, attrib="slope_riserun")
+
+        return vis_slope(slope)
+
     def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
-        # check if a filename is given, if not make a temporary tif file to view data
+        # make a temporary tif file to view data
         if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
@@ -359,14 +357,13 @@ class PDALInMemoryDataSet(DataSet):
 
     def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
         """Convert the dataset from one spatial reference into another.
-        This function also keeps track of all conversions that have happend.
         :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
         :type spatial_ref_out: string
 
         :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
+        :type spatial_ref_in: string
 
         """
-        # skip conversion if spatial out is equal to last transformation
 
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
 

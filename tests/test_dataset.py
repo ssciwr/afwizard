@@ -1,6 +1,7 @@
 from adaptivefiltering.dataset import *
 from adaptivefiltering.paths import get_temporary_filename
 from adaptivefiltering.segmentation import Segment
+from adaptivefiltering.asprs import asprs
 
 from . import dataset, minimal_dataset
 
@@ -25,11 +26,18 @@ def test_show_mesh(dataset):
     # generate_geoTif is automatically tested as well
     dataset.show_mesh()
     dataset.show_mesh(resolution=5)
+    dataset.show_mesh(
+        resolution=5,
+    )
+    dataset.show_mesh(classification=asprs[5])
+    dataset.show_mesh(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_show_hillshade(dataset):
     dataset.show_hillshade()
     dataset.show_hillshade(resolution=5)
+    dataset.show_hillshade(classification=asprs[5])
+    dataset.show_hillshade(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_show_slope(dataset):
@@ -37,6 +45,8 @@ def test_show_slope(dataset):
     # generate_geoTif is automatically tested as well
     dataset.show_slope()
     dataset.show_slope(resolution=5)
+    dataset.show_slope(classification=asprs[5])
+    dataset.show_slope(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_restriction(dataset):
@@ -71,3 +81,12 @@ def test_provenance(minimal_dataset):
     # For now, only check that output to a stream works
     with io.StringIO() as out:
         minimal_dataset.provenance(out)
+
+
+def test_restrict(dataset):
+    # not really sure how to test this one.
+    dataset.restrict()
+
+
+def test_convert_georef(dataset):
+    dataset.convert_georef("EPSG:25832")

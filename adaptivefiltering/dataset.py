@@ -117,7 +117,7 @@ class DataSet:
             resolution=resolution, classification=classification
         )
 
-    def show_slope(self, resolution=2.0):
+    def show_slope(self, resolution=2.0, classification=asprs[:]):
         """Visualize the point cloud as slope model in Jupyter notebook"""
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
@@ -176,6 +176,21 @@ class DataSet:
         dataset = PDALInMemoryDataSet.convert(self)
 
         return dataset.restrict(segmentation)
+
+    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
+        """Convert the dataset from one spatial reference into another.
+        :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
+        :type spatial_ref_out: string
+
+        :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
+        :type spatial_ref_in: string
+
+        """
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+
+        return dataset.convert_georef(spatial_ref_out, spatial_ref_in)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
