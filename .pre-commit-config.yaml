@@ -27,3 +27,9 @@ repos:
       - id: pretty-format-json
         args:
           - --autofix
+
+  # Automatically format/sanitize setup.cfg
+  - repo: https://github.com/asottile/setup-cfg-fmt
+    rev: v1.17.0
+    hooks:
+      - id: setup-cfg-fmt
