@@ -1,4 +1,4 @@
-# This is the single source of truth 
+# This is the single source of truth
 __version__ = "0.0.1"
 
 
