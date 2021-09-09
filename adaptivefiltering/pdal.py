@@ -224,7 +224,7 @@ class PDALInMemoryDataSet(DataSet):
 
         return vis_mesh(x, y, z)
 
-    def show_slope(self, resolution=2.0):
+    def show_slope(self, resolution=2.0, classification=asprs["ground"]):
         if self._geo_tif_data_resolution is not resolution:
             print(
                 "Either no previous geotif file exists or a different resolution is requested. A new temporary geotif file with a resolution of {} will be created but not saved.".format(
@@ -301,13 +301,34 @@ class PDALInMemoryDataSet(DataSet):
         return DataSet(filename=filename)
 
     def restrict(self, segmentation=None):
-        # If a single Segment is given, we convert it to a segmentation
+        """
+        If a segmentation is given,
+        the pdal crop filter will be applied to the dataset and return the smaller dataset.
+
+        If no segmentation is provided the user will be prompeted to draw one on a map of the dataset.
+
+
+        :param segmentation:
+        A Segmentation object, default: None
+        :type segmentation: Segmentation
+
+        :return:
+        DataSet
+
+        """
+
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation])
 
         def apply_restriction(seg):
+
+            # raise an Error if two polygons are given.
+            if len(seg["features"]) > 1:
+                raise NotImplementedError(
+                    "The function to choose multiple segments at the same time is not implemented yet."
+                )
             # Construct an array of WKT Polygons for the clipping
-            print(seg["features"])
+
             polygons = [convert.geojson_to_wkt(s["geometry"]) for s in seg["features"]]
 
             from adaptivefiltering.pdal import execute_pdal_pipeline
@@ -349,7 +370,6 @@ class PDALInMemoryDataSet(DataSet):
 
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
 
-        # print(json.loads(self.pipeline.metadata))
         if spatial_ref_in is None:
 
             # spacial_ref_in = json.loads(self.pipeline.metadata)["metadata"]['readers.las']["comp_spatialreference"]
@@ -358,11 +378,7 @@ class PDALInMemoryDataSet(DataSet):
             ].items():
                 for sub_keys, sub_dictionary in dictionary.items():
                     if sub_keys == "comp_spatialreference":
-                        print("sub_dict", sub_dictionary)
                         spatial_ref_in = sub_dictionary
-
-        print("spatial ref in:", spatial_ref_in)
-        print("spatial ref out:", spatial_ref_out)
 
         newdata = execute_pdal_pipeline(
             dataset=self,
