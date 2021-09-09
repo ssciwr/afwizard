@@ -122,17 +122,31 @@ def vis_hillshade(z):
 
 
 def vis_slope(slope):
-    """Visualize a hillshade model in Jupyter Notebook
+    """Visualize a slope model in Jupyter Notebook
 
     :param slope:
         richdem slope object GeoTiff export.
     :type z: richdem.rdarray
     """
 
-    try:
-        mpld3.enable_notebook()
-    except AttributeError:
-        pass
+    # Plot the image
+    plt.ioff()
+    fig, ax = plt.subplots()
+    # colour is subject to change and discussion.
+    ax.imshow(slope, cmap=cm.RdBu)
 
-    rd.rdShow(slope, axes=False, cmap="magma", figsize=(8, 5.5))
-    plt.show()
+    # Make sure that we get the "raw" image and no axes, whitespace etc.
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    fig.set_tight_layout(True)
+
+    # Set some properties on the canvas that fit our use case
+    fig.canvas.toolbar_visible = False
+    fig.canvas.header_visible = False
+    fig.canvas.footer_visible = False
+    fig.canvas.resizable = False
+    fig.canvas.capture_scroll = False
+
+    # Return the figure object. The widget can be extracted from this using
+    # the canvas property
+    return fig
