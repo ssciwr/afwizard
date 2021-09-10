@@ -111,7 +111,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[]):
+    def __init__(self, pipeline=None, provenance=[], georeferenced=True):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -125,7 +125,9 @@ class PDALInMemoryDataSet(DataSet):
         # setup the spatial_ref history_list
         self.spatial_history = []
 
-        super(PDALInMemoryDataSet, self).__init__(provenance=provenance)
+        super(PDALInMemoryDataSet, self).__init__(
+            provenance=provenance, georeferenced=georeferenced
+        )
 
     @property
     def data(self):
@@ -152,23 +154,35 @@ class PDALInMemoryDataSet(DataSet):
 
         filename = locate_file(dataset.filename)
 
+        # Conditionally define a reprojection filter
+        reproj_filter = []
+        if dataset.georeferenced:
+            reproj_filter.append(
+                {"type": "filters.reprojection", "out_srs": "EPSG:4326"}
+            )
+
+        # Execute the reader pipeline
         pipeline = execute_pdal_pipeline(
-            config=[
-                {"type": "readers.las", "filename": filename},
-                {"type": "filters.reprojection", "out_srs": "EPSG:4326"},
-            ]
+            config=[{"type": "readers.las", "filename": filename}] + reproj_filter
         )
 
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
+            georeferenced=dataset.georeferenced,
         )
 
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
         # if .tif is already in the filename it will be removed to avoid double file extension
 
-        ang_resolution = get_angular_resolution(resolution)
+        resolution_options = {}
+        if self.georeferenced:
+            resolution_options["resolution"] = get_angular_resolution(resolution)
+            resolution_options["default_srs"] = "EPSG:4326"
+        else:
+            resolution_options["resolution"] = resolution
+
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
         execute_pdal_pipeline(
@@ -184,9 +198,8 @@ class PDALInMemoryDataSet(DataSet):
                     "filename": filename + ".tif",
                     "gdaldriver": "GTiff",
                     "output_type": "all",
-                    "resolution": ang_resolution,
-                    "default_srs": "EPSG:4326",
                     "type": "writers.gdal",
+                    **resolution_options,
                 },
             ],
         )

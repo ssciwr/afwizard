@@ -8,7 +8,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[]):
+    def __init__(self, filename=None, provenance=[], georeferenced=True):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -19,6 +19,10 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
+        :param georeferenced:
+            Whether the dataset is geo-referenced. Defaults to true. Manually
+            disable this when working e.g. with synthetic data.
+        :type georeferenced: bool
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -26,6 +30,7 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
+        self.georeferenced = georeferenced
 
         # Make the path absolute
         if self.filename is not None:
@@ -163,7 +168,7 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(filename=filename, georeferenced=self.georeferenced)
 
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
