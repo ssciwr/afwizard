@@ -309,7 +309,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         # Wrap the result in a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(filename=filename, georeferenced=self.georeferenced)
 
     def restrict(self, segmentation=None):
         """
