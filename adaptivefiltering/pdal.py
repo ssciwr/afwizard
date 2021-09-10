@@ -329,10 +329,9 @@ class PDALInMemoryDataSet(DataSet):
         """
 
         if isinstance(segmentation, Segment):
-            segmentation = Segmentation([segmentation])
+            segmentation = Segmentation([segmentation.__geo_interface__])
 
         def apply_restriction(seg):
-
             # raise an Error if two polygons are given.
             if len(seg["features"]) > 1:
                 raise NotImplementedError(
