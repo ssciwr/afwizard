@@ -17,10 +17,10 @@ dependencies:
     - Click
     - geodaisy
     - geojson
-    - ipython_blocking
     - jsonmerge
     - jsonschema
     - matplotlib
     - pyrsistent
     - xdg
     - xmltodict
+    - richdem

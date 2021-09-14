@@ -1,9 +1,12 @@
 from adaptivefiltering.dataset import *
 from adaptivefiltering.paths import get_temporary_filename
 from adaptivefiltering.segmentation import Segment
+from adaptivefiltering.asprs import asprs
 
 from . import dataset, minimal_dataset
 
+import io
+import numpy as np
 import os
 import pytest
 
@@ -23,10 +26,22 @@ def test_show_mesh(dataset):
     # generate_geoTif is automatically tested as well
     dataset.show_mesh()
     dataset.show_mesh(resolution=5)
+    dataset.show_mesh(classification=asprs[5])
 
 
 def test_show_hillshade(dataset):
     dataset.show_hillshade()
+    dataset.show_hillshade(resolution=5)
+    dataset.show_hillshade(classification=asprs[5])
+
+
+def test_show_slope(dataset):
+    # test different methods of calling show_mesh
+    # generate_geoTif is automatically tested as well
+    dataset.show_slope()
+    dataset.show_slope(resolution=5)
+    dataset.show_slope(classification=asprs[5])
+    dataset.show_slope(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_restriction(dataset):
@@ -49,3 +64,24 @@ def test_save_dataset(minimal_dataset):
 
     # Now with the override flag
     minimal_dataset.save(tmpfile, overwrite=True)
+
+
+def test_remove_classification(minimal_dataset):
+    removed = remove_classification(minimal_dataset)
+    vals = tuple(np.unique(removed.data["Classification"]))
+    assert vals == (1,)
+
+
+def test_provenance(minimal_dataset):
+    # For now, only check that output to a stream works
+    with io.StringIO() as out:
+        minimal_dataset.provenance(out)
+
+
+def test_restrict(dataset):
+    # not really sure how to test this one.
+    dataset.restrict()
+
+
+def test_convert_georef(dataset):
+    dataset.convert_georef("EPSG:25832")

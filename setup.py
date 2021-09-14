@@ -14,7 +14,6 @@ setup(
         "geodaisy",
         "geojson",
         "ipympl",
-        "ipython_blocking",
         "IPython==7.21.0",
         "ipyvolume",
         "ipywidgets<8",

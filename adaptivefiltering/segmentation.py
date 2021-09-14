@@ -1,6 +1,7 @@
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 from adaptivefiltering.dataset import DataSet
+
 import geojson
 import jsonschema
 import ipyleaflet
@@ -125,8 +126,9 @@ class InteractiveMap:
 
         """
 
-        # handle exeptions
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
+        # handle exeptions
         if dataset and segmentation:
             raise Exception(
                 "A dataset and a segmentation can't be loaded at the same time."
@@ -158,10 +160,10 @@ class InteractiveMap:
         boundary_coordinates = self.segmentation["features"][0]["geometry"][
             "coordinates"
         ]
-
         self.coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
         self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
         # for ipleaflet we need to change the order of the center coordinates
+
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(self.coordinates_mean[1], self.coordinates_mean[0]),
@@ -169,7 +171,6 @@ class InteractiveMap:
             scroll_wheel_zoom=True,
             max_zoom=20,
         )
-
         self.m.add_layer(self.boundary_geoJSON)
 
         # add polygon draw tool and zoom slider
@@ -199,22 +200,11 @@ class InteractiveMap:
         # convert dataset to in memory pdal dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
 
-        # get spaciel_ref frome pipeline to specify this as in_srs in the pipeline
-        # unfortunatly I can't find a way to include this metadata in the pdal.Pipeline as it only has the config and an array as options.
-        dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
-            "readers.las"
-        ]["comp_spatialreference"]
-
         # execute the reprojection and hexbin filter.
         # this is nessesary for the map to function properly.
         hexbin_pipeline = execute_pdal_pipeline(
             dataset=dataset,
             config=[
-                {
-                    "type": "filters.reprojection",
-                    "in_srs": dataset_spaciaL_ref,
-                    "out_srs": "EPSG:4326",
-                },
                 {"type": "filters.hexbin"},
             ],
         )
@@ -249,10 +239,6 @@ class InteractiveMap:
                 }
             ]
         )
-        # flip the coordinates to reflect proper geojson format
-        hexbin_segmentation["features"][0]["geometry"]["coordinates"] = np.flip(
-            np.asarray(hexbin_segmentation["features"][0]["geometry"]["coordinates"])
-        ).tolist()
 
         return hexbin_segmentation
 

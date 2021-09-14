@@ -1,3 +1,4 @@
+from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
 
@@ -7,7 +8,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[]):
+    def __init__(self, filename=None, provenance=[], georeferenced=True):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -18,13 +19,18 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
+        :param georeferenced:
+            Whether the dataset is geo-referenced. Defaults to true. Manually
+            disable this when working e.g. with synthetic data.
+        :type georeferenced: bool
         """
-        # initilizise self._geo_tif_data_resolution as 0
-        self._geo_tif_data_resolution = 0
+        # Initialize a cache data structure for rasterization operations on this data set
+        self._mesh_data_cache = {}
 
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
+        self.georeferenced = georeferenced
 
         # Make the path absolute
         if self.filename is not None:
@@ -34,6 +40,7 @@ class DataSet:
         self,
         filename,
         resolution=2.0,
+        classification=asprs[:],
     ):
         """Store the point cloud as a digital terrain model to a GeoTIFF file
 
@@ -52,13 +59,18 @@ class DataSet:
             of the features you are looking for and the point density of your
             Lidar data.
         :type resolution: float
+        :param classification:
+            The classification values to include into the written mesh file.
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.save_mesh(filename, resolution=resolution)
+        return dataset.save_mesh(
+            filename, resolution=resolution, classification=classification
+        )
 
-    def show_mesh(self, resolution=2.0):
+    def show_mesh(self, resolution=2.0, classification=asprs[:]):
         """Visualize the point cloud as a digital terrain model in JupyterLab
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -71,28 +83,51 @@ class DataSet:
             of the features you are looking for and the point density of your
             Lidar data.
         :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_mesh(resolution=resolution)
+        return dataset.show_mesh(resolution=resolution, classification=classification)
 
-    def show_points(self, threshold=750000):
+    def show_points(self, threshold=750000, classification=asprs[:]):
         """Visualize the point cloud in Jupyter notebook
         Will give a warning if too many data points are present.
         Non-operational if called outside of Jupyter Notebook.
+
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_points(threshold=threshold)
+        return dataset.show_points(threshold=threshold, classification=classification)
 
-    def show_hillshade(self, resolution=2.0):
-        """Visualize the point cloud as hillshade model in Jupyter notebook"""
+    def show_hillshade(self, resolution=2.0, classification=asprs[:]):
+        """Visualize the point cloud as hillshade model in Jupyter notebook
+
+        :param resolution:
+            The mesh resolution to use for the visualization in meters.
+        :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple"""
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_hillshade(resolution=resolution)
+        return dataset.show_hillshade(
+            resolution=resolution, classification=classification
+        )
+
+    def show_slope(self, resolution=2.0, classification=asprs[:]):
+        """Visualize the point cloud as slope model in Jupyter notebook"""
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.show_slope(resolution=resolution)
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
@@ -120,7 +155,7 @@ class DataSet:
         """
         # If the filenames match, this is a no-op operation
         if filename == self.filename:
-            return
+            return self
 
         # Otherwise, we can simply copy the file to the new location
         # after checking that we are not accidentally overriding something
@@ -133,9 +168,9 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(filename=filename, georeferenced=self.georeferenced)
 
-    def restrict(self, segmentation):
+    def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
 
         :param segmentation:
@@ -144,7 +179,23 @@ class DataSet:
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
+
         return dataset.restrict(segmentation)
+
+    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
+        """Convert the dataset from one spatial reference into another using the pdal reprojection filter.
+        :param spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
+        :type spatial_ref_out: string
+
+        :param spatial_ref_in: The input format from wich the conversation is starting. The default is the spatial reference in the current metadata.
+        :type spatial_ref_in: string
+
+        """
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+
+        return dataset.convert_georef(spatial_ref_out, spatial_ref_in)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
@@ -168,3 +219,31 @@ class DataSet:
     def convert(cls, dataset):
         """Convert this dataset to an instance of DataSet"""
         return dataset.save(get_temporary_filename(extension="las"))
+
+
+def remove_classification(dataset):
+    """Remove the classification values from a Lidar dataset
+
+    Instead, all points will be classified as 1 (unclassified). This is useful
+    to drop an automatic preclassification in order to create an archaelogically
+    relevant classification from scratch.
+
+    :param dataset:
+        The dataset to remove the classification from
+    :type dataset: adaptivefiltering.Dataset
+    :return:
+        A transformed dataset with unclassified points
+    :rtype:
+    """
+    from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+    pipeline = execute_pdal_pipeline(
+        dataset=dataset,
+        config={"type": "filters.assign", "value": ["Classification = 1"]},
+    )
+
+    return PDALInMemoryDataSet(
+        pipeline=pipeline,
+        provenance=dataset._provenance + ["Removed all point classifications"],
+    )
