@@ -26,18 +26,13 @@ def test_show_mesh(dataset):
     # generate_geoTif is automatically tested as well
     dataset.show_mesh()
     dataset.show_mesh(resolution=5)
-    dataset.show_mesh(
-        resolution=5,
-    )
     dataset.show_mesh(classification=asprs[5])
-    dataset.show_mesh(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_show_hillshade(dataset):
     dataset.show_hillshade()
     dataset.show_hillshade(resolution=5)
     dataset.show_hillshade(classification=asprs[5])
-    dataset.show_hillshade(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_show_slope(dataset):

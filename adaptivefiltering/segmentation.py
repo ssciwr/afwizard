@@ -176,9 +176,6 @@ class InteractiveMap:
         # convert dataset to in memory pdal dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
 
-        # convert the dataset to EPSG:4326 format
-        # dataset = dataset.convert_georef(spatial_ref_out="EPSG:4326")
-
         # execute the reprojection and hexbin filter.
         # this is nessesary for the map to function properly.
         hexbin_pipeline = execute_pdal_pipeline(
