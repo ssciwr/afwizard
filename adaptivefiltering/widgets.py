@@ -55,6 +55,7 @@ class WidgetForm:
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
 
+    @property
     def widget(self):
         """Return the resulting widget for further use"""
         return ipywidgets.VBox(self._form_element.widgets)

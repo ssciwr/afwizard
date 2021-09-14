@@ -6,10 +6,7 @@ class AdaptiveFilteringError(Exception):
 
 
 def is_iterable(object):
-    if isinstance(object, collections.abc.Iterable) and not isinstance(object, str):
-        return True
-    else:
-        return False
+    return isinstance(object, collections.abc.Iterable) and not isinstance(object, str)
 
 
 def get_angular_resolution(res_meter):

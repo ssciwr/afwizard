@@ -54,7 +54,7 @@ class Segmentation(geojson.FeatureCollection):
             )
             raise TypeError(error)
 
-        # if a list of files is given a lost of segmentations will be returned.
+        # if a list of files is given a list of segmentations will be returned.
         if is_iterable(filename):
             segmentations = []
             for file in filename:
