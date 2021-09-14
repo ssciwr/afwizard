@@ -100,9 +100,9 @@ class InteractiveMap:
 
         """
 
-        # handle exeptions
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
+        # handle exeptions
         if dataset and segmentation:
             raise Exception(
                 "A dataset and a segmentation can't be loaded at the same time."
@@ -139,7 +139,6 @@ class InteractiveMap:
         self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
         # for ipleaflet we need to change the order of the center coordinates
 
-        print(self.coordinates_mean)
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(self.coordinates_mean[1], self.coordinates_mean[0]),
@@ -215,10 +214,6 @@ class InteractiveMap:
                 }
             ]
         )
-        # flip the coordinates to reflect proper geojson format
-        # hexbin_segmentation["features"][0]["geometry"]["coordinates"] = np.flip(
-        #     np.asarray(hexbin_segmentation["features"][0]["geometry"]["coordinates"])
-        # ).tolist()
 
         return hexbin_segmentation
 

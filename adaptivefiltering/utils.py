@@ -7,4 +7,4 @@ def get_angular_resolution(res_meter):
     This is only a rough approximation for the moment.
     https://www.usna.edu/Users/oceano/pguth/md_help/html/approx_equivalents.htm
     """
-    return res_meter * 0.00001
+    return res_meter * 0.00001 / 1.11

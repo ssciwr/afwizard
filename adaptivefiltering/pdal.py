@@ -22,7 +22,7 @@ import os
 import pdal
 import pyrsistent
 import tempfile
-import richdem as rd
+import richdem
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
@@ -121,9 +121,6 @@ class PDALInMemoryDataSet(DataSet):
         """
         # Store the given data and provenance array
         self.pipeline = pipeline
-
-        # setup the spatial_ref history_list
-        self.spatial_history = []
 
         super(PDALInMemoryDataSet, self).__init__(
             provenance=provenance, georeferenced=georeferenced
@@ -264,9 +261,9 @@ class PDALInMemoryDataSet(DataSet):
                 resolution=resolution,
                 classification=classification,
             )
-            shasta_dem = rd.LoadGDAL(tmp_file.name + ".tif")
+            shasta_dem = richdem.LoadGDAL(tmp_file.name + ".tif")
 
-        slope = rd.TerrainAttribute(shasta_dem, attrib="slope_riserun")
+        slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
 
         return vis_slope(slope)
 
@@ -312,21 +309,7 @@ class PDALInMemoryDataSet(DataSet):
         return DataSet(filename=filename, georeferenced=self.georeferenced)
 
     def restrict(self, segmentation=None):
-        """
-        If a segmentation is given,
-        the pdal crop filter will be applied to the dataset and return the smaller dataset.
-
-        If no segmentation is provided the user will be prompeted to draw one on a map of the dataset.
-
-
-        :param segmentation:
-        A Segmentation object, default: None
-        :type segmentation: Segmentation
-
-        :return:
-        DataSet
-
-        """
+        # If a single Segment is given, we convert it to a segmentation
 
         if isinstance(segmentation, Segment):
             segmentation = Segmentation([segmentation.__geo_interface__])
@@ -338,7 +321,6 @@ class PDALInMemoryDataSet(DataSet):
                     "The function to choose multiple segments at the same time is not implemented yet."
                 )
             # Construct an array of WKT Polygons for the clipping
-
             polygons = [convert.geojson_to_wkt(s["geometry"]) for s in seg["features"]]
 
             from adaptivefiltering.pdal import execute_pdal_pipeline
@@ -380,14 +362,10 @@ class PDALInMemoryDataSet(DataSet):
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
 
         if spatial_ref_in is None:
-
-            # spacial_ref_in = json.loads(self.pipeline.metadata)["metadata"]['readers.las']["comp_spatialreference"]
             for keys, dictionary in json.loads(self.pipeline.metadata)[
                 "metadata"
             ].items():
-                for sub_keys, sub_dictionary in dictionary.items():
-                    if sub_keys == "comp_spatialreference":
-                        spatial_ref_in = sub_dictionary
+                spatial_ref_in = dictionary.get("comp_spatialreference", None)
 
         newdata = execute_pdal_pipeline(
             dataset=self,

@@ -183,11 +183,11 @@ class DataSet:
         return dataset.restrict(segmentation)
 
     def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
-        """Convert the dataset from one spatial reference into another.
-        :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
+        """Convert the dataset from one spatial reference into another using the pdal reprojection filter.
+        :param spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
         :type spatial_ref_out: string
 
-        :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
+        :param spatial_ref_in: The input format from wich the conversation is starting. The default is the spatial reference in the current metadata.
         :type spatial_ref_in: string
 
         """
