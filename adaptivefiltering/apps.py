@@ -258,9 +258,6 @@ def create_upload(filetype):
         multiple=True,  # True to accept multiple files upload else False
     )
 
-    def get_value():
-        return upload
-
     layout = ipywidgets.Layout(width="100%")
     confirm_button.layout = layout
     upload.layout = layout
