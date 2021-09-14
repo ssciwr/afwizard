@@ -54,15 +54,6 @@ class Segmentation(geojson.FeatureCollection):
             )
             raise TypeError(error)
 
-        # calls a widget to upload and directly use data from local machine.
-        if filename is None:
-            from adaptivefiltering.widgets import upload_files
-
-            # segmentation_dir is a placeholder until we decided where to store these files.
-            filename = upload_files(
-                directory="./segmentation_dir/", filetype=".geojson"
-            )
-
         # if a list of files is given a lost of segmentations will be returned.
         if is_iterable(filename):
             segmentations = []

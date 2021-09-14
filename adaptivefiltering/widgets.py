@@ -356,21 +356,22 @@ def upload_button(directory=None, filetype=""):
     # this needs to be loaded here to avoid circular imports
     from adaptivefiltering.apps import create_upload
 
-    def _finalization_hook(file):
-        print("test_hook")
+    def _save_data(uploaded_files):
+        # print(uploaded_files)
         filenames = []
-        for filename, uploaded_file in uploaded_data.items():
+        for filename, uploaded_file in uploaded_files.value.items():
             filenames.append(filename)
-            with open(directory + "/" + filename, "wb") as fp:
+            print(filename)
+            with open(os.path.join(directory, filename), "wb") as fp:
                 fp.write(uploaded_file["content"])
-        return ["./" + directory + "/" + name for name in filenames]
+        return [os.path.join(directory, filename) for name in filenames]
 
     if directory is None:
         print("Uploaded files will be saved in the current working directory.")
+        directory = os.getcwd()
     elif not os.path.isdir(directory):
         print("The directory: " + directory + "does not exist and will be created.")
         os.mkdir(directory)
-    print("test pre hook")
     uploaded_data = create_upload(filetype)
-    uploaded_data._finalization_hook
-    print("test post hook")
+    uploaded_data._finalization_hook = _save_data
+    return uploaded_data
