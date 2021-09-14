@@ -358,7 +358,7 @@ def upload_files(directory=None, filetype=""):
 
     if directory is None:
         print("Uploaded files will be saved in the current working directory.")
-    if not os.path.isdir(directory):
+    elif not os.path.isdir(directory):
         print("The directory: " + directory + "does not exist and will be created.")
         os.mkdir(directory)
 
