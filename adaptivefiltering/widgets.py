@@ -336,7 +336,7 @@ class WidgetForm:
         )
 
 
-def upload_files(directory=None, filetype=""):
+def upload_button(directory=None, filetype=""):
     """
     Create a widget to upload and store files over the jupyter interface.
     This function will be called by the different load functions.
@@ -354,38 +354,23 @@ def upload_files(directory=None, filetype=""):
 
     """
     # this needs to be loaded here to avoid circular imports
-    from adaptivefiltering.apps import block_until_button_click
+    from adaptivefiltering.apps import create_upload
+
+    def _finalization_hook(file):
+        print("test_hook")
+        filenames = []
+        for filename, uploaded_file in uploaded_data.items():
+            filenames.append(filename)
+            with open(directory + "/" + filename, "wb") as fp:
+                fp.write(uploaded_file["content"])
+        return ["./" + directory + "/" + name for name in filenames]
 
     if directory is None:
         print("Uploaded files will be saved in the current working directory.")
     elif not os.path.isdir(directory):
         print("The directory: " + directory + "does not exist and will be created.")
         os.mkdir(directory)
-
-    confirm_button = ipywidgets.Button(
-        description="Confirm upload",
-        disabled=False,
-        button_style="",  # 'success', 'info', 'warning', 'danger' or ''
-        tooltip="Confirm upload",
-        icon="check",  # (FontAwesome names without the `fa-` prefix)
-    )
-    upload = ipywidgets.FileUpload(
-        accept=filetype,  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
-        multiple=True,  # True to accept multiple files upload else False
-    )
-
-    app = ipywidgets.AppLayout(
-        header=None,
-        footer=ipywidgets.Box([upload, confirm_button]),
-        pane_widths=[1, 0, 2],
-    )
-    display(app)
-    block_until_button_click(confirm_button)
-    app.layout.display = "none"
-    uploaded_data = upload.value
-    filenames = []
-    for filename, uploaded_file in uploaded_data.items():
-        filenames.append(filename)
-        with open(directory + "/" + filename, "wb") as fp:
-            fp.write(uploaded_file["content"])
-    return ["./" + directory + "/" + name for name in filenames]
+    print("test pre hook")
+    uploaded_data = create_upload(filetype)
+    uploaded_data._finalization_hook
+    print("test post hook")
