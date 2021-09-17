@@ -62,7 +62,6 @@ class WidgetForm:
 
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
-        display(self.widget)
         w = ipywidgets.VBox(self._form_element.widgets)
         display(w)
 
