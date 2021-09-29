@@ -1,0 +1,1 @@
+{"filters": [{"_backend": "pdal", "scalar": 1.25, "window": 18.0, "returns": "last,only", "slope": 5.0, "cell": 2.0, "threshold": 0.5, "cut": 0.0, "type": "filters.smrf"}], "metadata": {"description": "", "author": "", "example_data_url": ""}, "_backend": "pipeline"}
