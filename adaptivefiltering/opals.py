@@ -307,6 +307,7 @@ class OPALSDataManagerObject(DataSet):
         return OPALSDataManagerObject(
             filename=dm_filename,
             provenance=dataset._provenance + [f"Converted file to ODM format"],
+            georeferenced=dataset.georeferenced,
         )
 
     def save(self, filename, compress=False, overwrite=False):
@@ -343,4 +344,5 @@ class OPALSDataManagerObject(DataSet):
         return DataSet(
             filename=filename,
             provenance=self._provenance + [f"Exported ODM file to {filename}"],
+            georeferenced=self.georeferenced,
         )

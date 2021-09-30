@@ -2,6 +2,7 @@ from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.pdal import PDALInMemoryDataSet
+from adaptivefiltering.segmentation import InteractiveMap, Segmentation
 
 import ipywidgets
 import IPython
@@ -24,7 +25,7 @@ def sized_label(text, size=12):
 
 
 class InteractiveWidgetOutputProxy:
-    def __init__(self, creator):
+    def __init__(self, creator, finalization_hook=lambda obj: obj):
         """An object to capture interactive widget output
 
         :param creator:
@@ -34,6 +35,7 @@ class InteractiveWidgetOutputProxy:
         """
         # Save the creator function for later use
         self._creator = creator
+        self._finalization_hook = finalization_hook
 
         # Try instantiating the object
         try:
@@ -54,6 +56,7 @@ class InteractiveWidgetOutputProxy:
         object are carried out.
         """
         self._obj = self._creator()
+        self._obj = self._finalization_hook(self._obj)
         self._finalized = True
 
     def __getattr__(self, attr):
@@ -230,3 +233,32 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Return the pipeline proxy object
     return pipeline_proxy
+
+
+def create_segmentation(dataset):
+    # Create the necessary widgets
+    map_ = InteractiveMap(dataset=dataset)
+    map_widget = map_.show()
+    finalize = ipywidgets.Button(description="Finalize")
+
+    # Arrange them into one widget
+    layout = ipywidgets.Layout(width="100%")
+    map_widget.layout = layout
+    finalize.layout = layout
+    app = ipywidgets.VBox([map_widget, finalize])
+
+    # Show the final widget
+    IPython.display.display(app)
+
+    # The return proxy object
+    segmentation_proxy = InteractiveWidgetOutputProxy(
+        lambda: Segmentation(map_.return_polygon())
+    )
+
+    def _finalize(_):
+        app.layout.display = "none"
+        segmentation_proxy._finalize()
+
+    finalize.on_click(_finalize)
+
+    return segmentation_proxy
