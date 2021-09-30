@@ -1,10 +1,17 @@
+from pdal import pipeline
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.visualization import vis_hillshade, vis_mesh, vis_pointcloud
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.visualization import (
+    vis_hillshade,
+    vis_mesh,
+    vis_pointcloud,
+    vis_slope,
+)
+from adaptivefiltering.utils import AdaptiveFilteringError, get_angular_resolution
+from adaptivefiltering.widgets import WidgetForm
 
 import functools
 import geodaisy.converters as convert
@@ -15,6 +22,7 @@ import os
 import pdal
 import pyrsistent
 import tempfile
+import richdem
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
@@ -56,11 +64,8 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # We are currently only handling situations with one output array
     assert len(pipeline.arrays) == 1
 
-    # Check whether we should return the full pipeline including e.g. metadata
     # Return the output pipeline
     return pipeline
-    # old
-    # return pipeline.arrays[0]
 
 
 class PDALFilter(Filter, identifier="pdal"):
@@ -103,7 +108,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[]):
+    def __init__(self, pipeline=None, provenance=[], georeferenced=True):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -113,7 +118,10 @@ class PDALInMemoryDataSet(DataSet):
         """
         # Store the given data and provenance array
         self.pipeline = pipeline
-        super(PDALInMemoryDataSet, self).__init__(provenance=provenance)
+
+        super(PDALInMemoryDataSet, self).__init__(
+            provenance=provenance, georeferenced=georeferenced
+        )
 
     @property
     def data(self):
@@ -139,21 +147,38 @@ class PDALInMemoryDataSet(DataSet):
         assert dataset.filename is not None
 
         filename = locate_file(dataset.filename)
+
+        # Conditionally define a reprojection filter
+        reproj_filter = []
+        if dataset.georeferenced:
+            reproj_filter.append(
+                {"type": "filters.reprojection", "out_srs": "EPSG:4326"}
+            )
+
+        # Execute the reader pipeline
         pipeline = execute_pdal_pipeline(
-            config={"type": "readers.las", "filename": filename}
+            config=[{"type": "readers.las", "filename": filename}] + reproj_filter
         )
 
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
+            georeferenced=dataset.georeferenced,
         )
 
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
         # if .tif is already in the filename it will be removed to avoid double file extension
+
+        resolution_options = {}
+        if self.georeferenced:
+            resolution_options["resolution"] = get_angular_resolution(resolution)
+            resolution_options["default_srs"] = "EPSG:4326"
+        else:
+            resolution_options["resolution"] = resolution
+
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
-
         execute_pdal_pipeline(
             dataset=self,
             config=[
@@ -167,8 +192,8 @@ class PDALInMemoryDataSet(DataSet):
                     "filename": filename + ".tif",
                     "gdaldriver": "GTiff",
                     "output_type": "all",
-                    "resolution": resolution,
                     "type": "writers.gdal",
+                    **resolution_options,
                 },
             ],
         )
@@ -179,7 +204,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
     def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
-        # check if a filename is given, if not make a temporary tif file to view data
+        # make a temporary tif file to view data
         if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
@@ -203,6 +228,7 @@ class PDALInMemoryDataSet(DataSet):
         # get height information from
         band = data.GetRasterBand(1)
         z = band.ReadAsArray()
+
         return vis_mesh(x, y, z)
 
     def show_points(self, threshold=750000, classification=asprs["ground"]):
@@ -223,8 +249,23 @@ class PDALInMemoryDataSet(DataSet):
             filtered_data["X"], filtered_data["Y"], filtered_data["Z"]
         )
 
+    def show_slope(self, resolution=2.0, classification=asprs["ground"]):
+        # make a temporary tif file to view data
+
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            self.save_mesh(
+                str(tmp_file.name),
+                resolution=resolution,
+                classification=classification,
+            )
+            shasta_dem = richdem.LoadGDAL(tmp_file.name + ".tif")
+
+        slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
+
+        return vis_slope(slope)
+
     def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
-        # check if a filename is given, if not make a temporary tif file to view data
+        # make a temporary tif file to view data
         if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
             with tempfile.NamedTemporaryFile() as tmp_file:
@@ -262,25 +303,82 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         # Wrap the result in a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(filename=filename, georeferenced=self.georeferenced)
 
-    def restrict(self, segmentation):
+    def restrict(self, segmentation=None):
         # If a single Segment is given, we convert it to a segmentation
+
         if isinstance(segmentation, Segment):
-            segmentation = Segmentation([segmentation])
+            segmentation = Segmentation([segmentation.__geo_interface__])
 
-        # Construct an array of WKT Polygons for the clipping
-        polygons = [convert.geojson_to_wkt(s.polygon) for s in segmentation["features"]]
+        def apply_restriction(seg):
+            # raise an Error if two polygons are given.
+            if len(seg["features"]) > 1:
+                raise NotImplementedError(
+                    "The function to choose multiple segments at the same time is not implemented yet."
+                )
+            # Construct an array of WKT Polygons for the clipping
+            polygons = [convert.geojson_to_wkt(s["geometry"]) for s in seg["features"]]
 
-        from adaptivefiltering.pdal import execute_pdal_pipeline
+            from adaptivefiltering.pdal import execute_pdal_pipeline
 
-        # Apply the cropping filter with all polygons
+            # Apply the cropping filter with all polygons
+            newdata = execute_pdal_pipeline(
+                dataset=self, config={"type": "filters.crop", "polygon": polygons}
+            )
+
+            return PDALInMemoryDataSet(
+                pipeline=newdata,
+                provenance=self._provenance
+                + [
+                    f"Cropping data to only include polygons defined by:\n{str(polygons)}"
+                ],
+            )
+
+        # Maybe create the segmentation
+        if segmentation is None:
+            from adaptivefiltering.apps import create_segmentation
+
+            restricted = create_segmentation(self)
+            restricted._finalization_hook = apply_restriction
+
+            return restricted
+        else:
+            return apply_restriction(segmentation)
+
+    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
+        """Convert the dataset from one spatial reference into another.
+        :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
+        :type spatial_ref_out: string
+
+        :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
+        :type spatial_ref_in: string
+
+        """
+
+        # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
+
+        if spatial_ref_in is None:
+            for keys, dictionary in json.loads(self.pipeline.metadata)[
+                "metadata"
+            ].items():
+                spatial_ref_in = dictionary.get("comp_spatialreference", None)
+
         newdata = execute_pdal_pipeline(
-            dataset=self, config={"type": "filters.crop", "polygon": polygons}
+            dataset=self,
+            config={
+                "type": "filters.reprojection",
+                "in_srs": spatial_ref_in,
+                "out_srs": spatial_ref_out,
+            },
         )
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
             provenance=self._provenance
-            + [f"Cropping data to only include polygons defined by:\n{str(polygons)}"],
+            + [
+                "converted the dataset to the {} spatial reference.".format(
+                    spatial_ref_out
+                )
+            ],
         )

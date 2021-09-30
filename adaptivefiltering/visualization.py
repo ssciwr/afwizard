@@ -2,7 +2,6 @@ import IPython
 import ipyvolume.pylab as vis
 import matplotlib.pyplot as plt
 import numpy as np
-
 from matplotlib import cm
 
 
@@ -102,6 +101,37 @@ def vis_hillshade(z):
     plt.ioff()
     fig, ax = plt.subplots()
     ax.imshow(hs_array, cmap=cm.gray)
+
+    # Make sure that we get the "raw" image and no axes, whitespace etc.
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    fig.set_tight_layout(True)
+
+    # Set some properties on the canvas that fit our use case
+    fig.canvas.toolbar_visible = False
+    fig.canvas.header_visible = False
+    fig.canvas.footer_visible = False
+    fig.canvas.resizable = False
+    fig.canvas.capture_scroll = False
+
+    # Return the figure object. The widget can be extracted from this using
+    # the canvas property
+    return fig
+
+
+def vis_slope(slope):
+    """Visualize a slope model in Jupyter Notebook
+
+    :param slope:
+        richdem slope object GeoTiff export.
+    :type z: richdem.rdarray
+    """
+
+    # Plot the image
+    plt.ioff()
+    fig, ax = plt.subplots()
+    # colour is subject to change and discussion.
+    ax.imshow(slope, cmap=cm.RdBu)
 
     # Make sure that we get the "raw" image and no axes, whitespace etc.
     ax.get_xaxis().set_visible(False)
