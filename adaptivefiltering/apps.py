@@ -9,6 +9,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import os
 
 
 def sized_label(text, size=12):
@@ -262,3 +263,32 @@ def create_segmentation(dataset):
     finalize.on_click(_finalize)
 
     return segmentation_proxy
+
+
+def create_upload(filetype):
+
+    confirm_button = ipywidgets.Button(
+        description="Confirm upload",
+        disabled=False,
+        button_style="",  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip="Confirm upload",
+        icon="check",  # (FontAwesome names without the `fa-` prefix)
+    )
+    upload = ipywidgets.FileUpload(
+        accept=filetype,  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
+        multiple=True,  # True to accept multiple files upload else False
+    )
+
+    layout = ipywidgets.Layout(width="100%")
+    confirm_button.layout = layout
+    upload.layout = layout
+    app = ipywidgets.VBox([upload, confirm_button])
+    IPython.display.display(app)
+    upload_proxy = InteractiveWidgetOutputProxy(lambda: upload)
+
+    def _finalize(_):
+        app.layout.display = "none"
+        upload_proxy._finalize()
+
+    confirm_button.on_click(_finalize)
+    return upload_proxy

@@ -64,11 +64,8 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # We are currently only handling situations with one output array
     assert len(pipeline.arrays) == 1
 
-    # Check whether we should return the full pipeline including e.g. metadata
     # Return the output pipeline
     return pipeline
-    # old
-    # return pipeline.arrays[0]
 
 
 class PDALFilter(Filter, identifier="pdal"):

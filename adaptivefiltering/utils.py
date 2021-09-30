@@ -1,5 +1,12 @@
+import collections
+
+
 class AdaptiveFilteringError(Exception):
     pass
+
+
+def is_iterable(object):
+    return isinstance(object, collections.abc.Iterable) and not isinstance(object, str)
 
 
 def get_angular_resolution(res_meter):

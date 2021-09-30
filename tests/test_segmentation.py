@@ -28,9 +28,12 @@ def test_save_load_segmentation(tmpdir):
 
     s = Segmentation([Segment(p1), Segment(p2)])
     filename = os.path.join(tmpdir, "testsave.geojson")
-
     s.save(filename)
-    s2 = Segmentation.load(filename)
+    s2 = Segmentation.load(filename=filename)
+    s3 = Segmentation.load(filename=[filename, filename])
+    s4 = Segmentation.load(filename=(filename, filename))
+    with pytest.raises(TypeError):
+        s5 = Segmentation.load(filename=4)
 
     assert geojson.dumps(s) == geojson.dumps(s2)
 
