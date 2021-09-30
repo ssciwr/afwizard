@@ -84,7 +84,7 @@ def flex_square_layout(widgets):
     return grid
 
 
-def classification_widget(datasets):
+def classification_widget(datasets, selected=None):
     """Create a widget to select classification values"""
 
     def get_classes(dataset):
@@ -97,11 +97,17 @@ def classification_widget(datasets):
     # Join the classes in all datasets
     classes = set().union(*tuple(set(get_classes(d)) for d in datasets))
 
+    # Determine selection - either all or the ones that were passed and exist
+    if selected is None:
+        selected = list(sorted(classes))
+    else:
+        selected = [s for s in selected if s in classes]
+
     return ipywidgets.SelectMultiple(
         options=[
             (f"{asprs_class_name(code)} ({code})", code) for code in sorted(classes)
         ],
-        value=list(sorted(classes)),
+        value=selected,
     )
 
 
@@ -129,7 +135,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
     form = pipeline.widget_form()
 
     # Get the classification value selection widget
-    class_widget = classification_widget(datasets)
+    _class_widget = classification_widget(datasets)
+    class_widget = ipywidgets.Box([_class_widget])
 
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview")
@@ -140,11 +147,19 @@ def pipeline_tuning(datasets=[], pipeline=None):
         nonlocal pipeline
         pipeline = pipeline.copy(**form.data)
 
-        # Update all widgets one after another
+        # Apply the pipeline to all datasets
         # TODO: Do this in parallel!
-        for d, w in zip(datasets, widgets):
-            transformed = pipeline.execute(d)
-            newfig = transformed.show_hillshade(classification=class_widget.value)
+        transformed_datasets = [pipeline.execute(d) for d in datasets]
+
+        # Update the classification widget with the classes now present in datasets
+        selected = class_widget.children[0].value
+        class_widget.children = (
+            classification_widget(transformed_datasets, selected=selected),
+        )
+
+        # Update the widgets
+        for d, w in zip(transformed_datasets, widgets):
+            newfig = d.show_hillshade(classification=class_widget.children[0].value)
             w.figure.axes[0].images[0].set_data(newfig.axes[0].images[0].get_array())
             w.draw()
             w.flush_events()
@@ -164,10 +179,16 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Create the center widget including layout tweaks
     if len(widgets) > 1:
+        # We use the Tab widget to allow switching between different datasets
         center = ipywidgets.Tab()
-        center.children = widgets
-        center.titles = tuple(f"Dataset #{i}" for i in range(len(widgets)))
-        print(center.titles)
+
+        # The wrapping in Box works around a known bug in ipympl:
+        # https://github.com/matplotlib/ipympl/issues/126
+        center.children = tuple(ipywidgets.Box([w]) for w in widgets)
+
+        # Set titles for the different tabs
+        for i in range(len(widgets)):
+            center.set_title(i, f"Dataset #{i}")
     else:
         center = widgets[0]
     center.layout = layout
