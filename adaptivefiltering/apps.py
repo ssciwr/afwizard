@@ -2,12 +2,14 @@ from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.pdal import PDALInMemoryDataSet
+from adaptivefiltering.segmentation import InteractiveMap, Segmentation
 
 import ipywidgets
 import IPython
 import itertools
 import math
 import numpy as np
+import os
 
 
 def sized_label(text, size=12):
@@ -24,7 +26,7 @@ def sized_label(text, size=12):
 
 
 class InteractiveWidgetOutputProxy:
-    def __init__(self, creator):
+    def __init__(self, creator, finalization_hook=lambda obj: obj):
         """An object to capture interactive widget output
 
         :param creator:
@@ -34,6 +36,7 @@ class InteractiveWidgetOutputProxy:
         """
         # Save the creator function for later use
         self._creator = creator
+        self._finalization_hook = finalization_hook
 
         # Try instantiating the object
         try:
@@ -54,6 +57,7 @@ class InteractiveWidgetOutputProxy:
         object are carried out.
         """
         self._obj = self._creator()
+        self._obj = self._finalization_hook(self._obj)
         self._finalized = True
 
     def __getattr__(self, attr):
@@ -230,3 +234,61 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Return the pipeline proxy object
     return pipeline_proxy
+
+
+def create_segmentation(dataset):
+    # Create the necessary widgets
+    map_ = InteractiveMap(dataset=dataset)
+    map_widget = map_.show()
+    finalize = ipywidgets.Button(description="Finalize")
+
+    # Arrange them into one widget
+    layout = ipywidgets.Layout(width="100%")
+    map_widget.layout = layout
+    finalize.layout = layout
+    app = ipywidgets.VBox([map_widget, finalize])
+
+    # Show the final widget
+    IPython.display.display(app)
+
+    # The return proxy object
+    segmentation_proxy = InteractiveWidgetOutputProxy(
+        lambda: Segmentation(map_.return_polygon())
+    )
+
+    def _finalize(_):
+        app.layout.display = "none"
+        segmentation_proxy._finalize()
+
+    finalize.on_click(_finalize)
+
+    return segmentation_proxy
+
+
+def create_upload(filetype):
+
+    confirm_button = ipywidgets.Button(
+        description="Confirm upload",
+        disabled=False,
+        button_style="",  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip="Confirm upload",
+        icon="check",  # (FontAwesome names without the `fa-` prefix)
+    )
+    upload = ipywidgets.FileUpload(
+        accept=filetype,  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
+        multiple=True,  # True to accept multiple files upload else False
+    )
+
+    layout = ipywidgets.Layout(width="100%")
+    confirm_button.layout = layout
+    upload.layout = layout
+    app = ipywidgets.VBox([upload, confirm_button])
+    IPython.display.display(app)
+    upload_proxy = InteractiveWidgetOutputProxy(lambda: upload)
+
+    def _finalize(_):
+        app.layout.display = "none"
+        upload_proxy._finalize()
+
+    confirm_button.on_click(_finalize)
+    return upload_proxy

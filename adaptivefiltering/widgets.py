@@ -62,7 +62,8 @@ class WidgetForm:
 
     def show(self):
         """Show the resulting combined widget in the Jupyter notebook"""
-        display(self.widget)
+        w = ipywidgets.VBox(self._form_element.widgets)
+        display(w)
 
     @property
     def data(self):
@@ -204,7 +205,7 @@ class WidgetForm:
         def add_entry(_):
             # if we are at the specified maximum, add should be ignored
             if "maxItems" in schema:
-                if len(vbox.children) == schema["maxItems"] + 1:
+                if len(vbox.children) is schema["maxItems"] + 1:
                     return
 
             elements.insert(0, self._construct(schema["items"], label=None))
@@ -216,7 +217,7 @@ class WidgetForm:
             def remove_entry(b):
                 # If we are at the specified minimum, remove should be ignored
                 if "minItems" in schema:
-                    if len(vbox.children) == schema["minItems"]:
+                    if len(vbox.children) is schema["minItems"]:
                         return
 
                 # Identify the current list index of the entry
@@ -251,9 +252,7 @@ class WidgetForm:
             up.on_click(move(-1))
             down.on_click(move(1))
 
-            vbox.children = (
-                ipywidgets.VBox([item, ipywidgets.HBox([trash, up, down])]),
-            ) + vbox.children
+            vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
 
         button.on_click(add_entry)
 
@@ -335,3 +334,44 @@ class WidgetForm:
             setter=_setter,
             widgets=[widget],
         )
+
+
+def upload_button(directory=None, filetype=""):
+    """
+    Create a widget to upload and store files over the jupyter interface.
+    This function will be called by the different load functions.
+
+    :param directory:
+        The directory on the server where the files will be saved.
+        This will be set by the function calling upload_files and be representive of the different upload types.
+        eg. Pipelines will be saved in a differend directory than datasets or segmentations.
+    :type directory: string
+    :param filetype:
+        Set the filetype filter for the upload widget
+    :type filetype: string
+
+    :return: The name(s) of the uploaded file(s)
+
+    """
+    # this needs to be loaded here to avoid circular imports
+    from adaptivefiltering.apps import create_upload
+
+    def _save_data(uploaded_files):
+        # print(uploaded_files)
+        filenames = []
+        for filename, uploaded_file in uploaded_files.value.items():
+            filenames.append(filename)
+            print(filename)
+            with open(os.path.join(directory, filename), "wb") as fp:
+                fp.write(uploaded_file["content"])
+        return [os.path.join(directory, filename) for name in filenames]
+
+    if directory is None:
+        print("Uploaded files will be saved in the current working directory.")
+        directory = os.getcwd()
+    elif not os.path.isdir(directory):
+        print("The directory: " + directory + "does not exist and will be created.")
+        os.mkdir(directory)
+    uploaded_data = create_upload(filetype)
+    uploaded_data._finalization_hook = _save_data
+    return uploaded_data

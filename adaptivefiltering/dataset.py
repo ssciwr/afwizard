@@ -8,7 +8,7 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[]):
+    def __init__(self, filename=None, provenance=[], georeferenced=True):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -19,6 +19,10 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
+        :param georeferenced:
+            Whether the dataset is geo-referenced. Defaults to true. Manually
+            disable this when working e.g. with synthetic data.
+        :type georeferenced: bool
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -26,6 +30,7 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
+        self.georeferenced = georeferenced
 
         # Make the path absolute
         if self.filename is not None:
@@ -117,6 +122,13 @@ class DataSet:
             resolution=resolution, classification=classification
         )
 
+    def show_slope(self, resolution=2.0, classification=asprs[:]):
+        """Visualize the point cloud as slope model in Jupyter notebook"""
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+        return dataset.show_slope(resolution=resolution)
+
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
 
@@ -156,9 +168,9 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename)
+        return DataSet(filename=filename, georeferenced=self.georeferenced)
 
-    def restrict(self, segmentation):
+    def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
 
         :param segmentation:
@@ -167,7 +179,23 @@ class DataSet:
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
+
         return dataset.restrict(segmentation)
+
+    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
+        """Convert the dataset from one spatial reference into another using the pdal reprojection filter.
+        :param spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
+        :type spatial_ref_out: string
+
+        :param spatial_ref_in: The input format from wich the conversation is starting. The default is the spatial reference in the current metadata.
+        :type spatial_ref_in: string
+
+        """
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+
+        return dataset.convert_georef(spatial_ref_out, spatial_ref_in)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set

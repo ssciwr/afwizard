@@ -1,6 +1,7 @@
 from adaptivefiltering.paths import load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 from adaptivefiltering.dataset import DataSet
+
 import geojson
 import jsonschema
 import ipyleaflet
@@ -8,6 +9,7 @@ import ipywidgets
 import pdal
 import json
 import numpy as np
+import collections
 
 
 class Segment:
@@ -37,7 +39,7 @@ class Segment:
 
 class Segmentation(geojson.FeatureCollection):
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename=None):
         """Load segmentation from a filename
 
         :param filename:
@@ -45,8 +47,24 @@ class Segmentation(geojson.FeatureCollection):
             w.r.t. the current working directory.
         :type filename: str
         """
-        with open(filename, "r") as f:
-            return Segmentation(geojson.load(f))
+
+        if not isinstance(filename, collections.abc.Iterable):
+            error = "filename needs to be a string, a list or a tuple, but is" + str(
+                type(filename)
+            )
+            raise TypeError(error)
+
+        # if a list of files is given a list of segmentations will be returned.
+        if is_iterable(filename):
+            segmentations = []
+            for file in filename:
+                with open(file, "r") as f:
+                    segmentations.append(Segmentation(geojson.load(f)))
+            return segmentations
+
+        elif isinstance(filename, str):
+            with open(filename, "r") as f:
+                return Segmentation(geojson.load(f))
 
     def save(self, filename):
         """Save the segmentation to disk
@@ -68,7 +86,7 @@ class Segmentation(geojson.FeatureCollection):
                 self.show() to show the map without interacting with it.
         :param grid:
              The grid object which holds the map and the right side interface
-         :type grid: ipyleaflet.grid
+        :type grid: ipyleaflet.grid
         """
 
         segmentation_map = InteractiveMap(segmentation=self)
@@ -99,14 +117,15 @@ class InteractiveMap:
 
         """
 
-        # handle exeptions
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
+        # handle exeptions
         if dataset and segmentation:
             raise Exception(
                 "A dataset and a segmentation can't be loaded at the same time."
             )
 
-        if dataset is None and segmentation["features"] == []:
+        if dataset is None and segmentation["features"] is []:
             raise Exception("an empty segmention was given.")
 
         if dataset is None and segmentation is None:
@@ -114,14 +133,13 @@ class InteractiveMap:
             self.coordinates_mean = np.asarray([49.41745, 8.67529])
             self.segmentation = None
 
-        if dataset is not None and type(dataset) is not DataSet:
+        if dataset is not None and not isinstance(dataset, DataSet):
             raise TypeError(
                 "Dataset must be of type DataSet, but is " + str(type(dataset))
             )
-
         # prepare the map data
 
-        # if a dataset is given the boundry of the data set is calculated via the hexbin function
+        # if a dataset is given the boundary of the data set is calculated via the hexbin function
         # and the in memory dataset is converted into EPSG:4326.
         if dataset and segmentation is None:
             self.segmentation = self.get_boundary(dataset)
@@ -133,10 +151,10 @@ class InteractiveMap:
         boundary_coordinates = self.segmentation["features"][0]["geometry"][
             "coordinates"
         ]
-
         self.coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
         self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
         # for ipleaflet we need to change the order of the center coordinates
+
         self.m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(self.coordinates_mean[1], self.coordinates_mean[0]),
@@ -144,7 +162,6 @@ class InteractiveMap:
             scroll_wheel_zoom=True,
             max_zoom=20,
         )
-
         self.m.add_layer(self.boundary_geoJSON)
 
         # add polygon draw tool and zoom slider
@@ -155,7 +172,7 @@ class InteractiveMap:
         self.setup_grid([self.m])
 
     def get_boundary(self, dataset):
-        """Takes the boundry coordinates of the  given dataset
+        """Takes the boundary coordinates of the  given dataset
             through the pdal hexbin filter and returns them as a segmentation.
 
         :param dataset:
@@ -164,7 +181,7 @@ class InteractiveMap:
         :type dataset: Dataset
 
         :return:
-        :param hexbin_segmentation:
+            hexbin_segmentation:
             The Segmentation of the area from the dataset
         :type hexbin_segmentation: Segmentation
 
@@ -174,22 +191,11 @@ class InteractiveMap:
         # convert dataset to in memory pdal dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
 
-        # get spaciel_ref frome pipeline to specify this as in_srs in the pipeline
-        # unfortunatly I can't find a way to include this metadata in the pdal.Pipeline as it only has the config and an array as options.
-        dataset_spaciaL_ref = json.loads(dataset.pipeline.metadata)["metadata"][
-            "readers.las"
-        ]["comp_spatialreference"]
-
         # execute the reprojection and hexbin filter.
         # this is nessesary for the map to function properly.
         hexbin_pipeline = execute_pdal_pipeline(
             dataset=dataset,
             config=[
-                {
-                    "type": "filters.reprojection",
-                    "in_srs": dataset_spaciaL_ref,
-                    "out_srs": "EPSG:4326",
-                },
                 {"type": "filters.hexbin"},
             ],
         )
@@ -200,7 +206,7 @@ class InteractiveMap:
             "filters.hexbin"
         ]["boundary_json"]["coordinates"]
 
-        # set up the segnemtation object to later load into the map
+        # set up the segmentation object to later load into the map
         hexbin_segmentation = Segmentation(
             [
                 {
@@ -224,10 +230,6 @@ class InteractiveMap:
                 }
             ]
         )
-        # flip the coordinates to reflect proper geojson format
-        hexbin_segmentation["features"][0]["geometry"]["coordinates"] = np.flip(
-            np.asarray(hexbin_segmentation["features"][0]["geometry"]["coordinates"])
-        ).tolist()
 
         return hexbin_segmentation
 
