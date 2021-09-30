@@ -284,7 +284,7 @@ class WidgetForm:
 
     def _construct_enum(self, schema, label=None, root=False):
         # We omit trivial enums, but make sure that they end up in the result
-        if len(schema["enum"]) is 1:
+        if len(schema["enum"]) == 1:
             return WidgetFormElement(
                 getter=lambda: schema["enum"][0], setter=lambda _: None, widgets=[]
             )
