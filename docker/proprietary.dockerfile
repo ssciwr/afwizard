@@ -14,4 +14,4 @@ WORKDIR ${HOME}
 ADD --chown=${NB_UID} opals.key /opt/opals/opals_2.3.2/cfg
 
 # Export the location of OPALS
-ENV OPALS_DIR=/opt/opals
+ENV OPALS_DIR=/opt/opals/opals_2.3.2

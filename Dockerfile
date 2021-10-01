@@ -1,5 +1,15 @@
 FROM jupyter/base-notebook:396024a4ddc1
 
+# Install some system dependencies - mainly because OPALS does
+# not find required shared libraries from Conda
+USER root
+RUN apt update && \
+    apt install --no-install-recommends --yes \
+      libcurl4 && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
+USER ${NB_USER}
+
 # Copy the repository into the container
 COPY --chown=${NB_UID} . /opt/adaptivefiltering
 
