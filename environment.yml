@@ -13,6 +13,7 @@ dependencies:
   - pdal=2.3.0
   - python-pdal=2.4.2
   - pip
+  - richdem
   - pip:
     - Click
     - geodaisy
@@ -23,4 +24,3 @@ dependencies:
     - pyrsistent
     - xdg
     - xmltodict
-    - richdem

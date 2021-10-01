@@ -5,10 +5,9 @@ from adaptivefiltering.paths import (
     get_temporary_workspace,
     load_schema,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
-import collections
 import json
 import jsonschema
 import os
@@ -191,7 +190,7 @@ def _automated_opals_schema(mod):
 
 
 def _stringify_value(value):
-    if isinstance(value, collections.abc.Iterable):
+    if is_iterable(value):
         return " ".join(value)
 
     return str(value)
@@ -203,7 +202,14 @@ def execute_opals_module(dataset=None, config=None):
     module = config.pop("type")
     executable = get_opals_module_executable(module)
     fileargs = ["-inFile", dataset.filename]
-    args = sum(([f"--{k}", _stringify_value(v)] for k, v in config.items()), [])
+
+    # Build the argument list
+    args = []
+    for k, v in config.items():
+        strv = _stringify_value(v)
+        if strv != "":
+            args.append(f"--{k}")
+            args.append(strv)
 
     # Execute the module
     result = subprocess.run(
