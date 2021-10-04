@@ -15,13 +15,13 @@ from adaptivefiltering.version import __version__, print_version
 # The order of objects in this list defines the order in
 # the Sphinx documentation.
 __all__ = [
-    "asprs",
     "DataSet",
-    "print_version",
-    "load_filter",
     "pipeline_tuning",
     "remove_classification",
+    "load_filter",
     "save_filter",
     "set_data_directory",
     "set_opals_directory",
+    "asprs",
+    "print_version",
 ]
