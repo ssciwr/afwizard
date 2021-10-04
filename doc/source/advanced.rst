@@ -1,4 +1,9 @@
 Advanced Usage Tutorials
 ========================
 
-We will add notebooks for advanced use cases here.
+These notebooks describe advanced use cases - they might be relevant to you, but the library
+can also be used without understanding these workflows.
+
+.. toctree::
+
+    filtering
