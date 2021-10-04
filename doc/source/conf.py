@@ -67,4 +67,8 @@ lfs_content_post_commands = ["python -m pip install ../.."]
 # This is an extension that allows us to preserve the default arguments of functions
 # as written in code without evaluating them. Without this, the default value "asprs[:]"
 # gets expanded into a tuple of 256 entries.
+# NB: Currently not working: https://github.com/sphinx-doc/sphinx/issues/9704
 autodoc_preserve_defaults = True
+
+# This is kind of unfortunate, but we get errors that are specific to the documentation build:
+nbsphinx_allow_errors = True
