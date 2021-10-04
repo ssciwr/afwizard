@@ -1,6 +1,17 @@
 # The image with proprietary filter frameworks is an extension of the free one
 FROM ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest
 
+# Install some system dependencies - mainly because OPALS does
+# not find required shared libraries from Conda
+USER root
+RUN apt update && \
+    apt install --no-install-recommends --yes \
+      libcurl4 \
+      libxml2 && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
+USER ${NB_USER}
+
 # Copy the tarball into the container
 COPY --chown=${NB_UID} ./opals_nightly_linux64.tar.gz /opt/opals/opals_nightly_linux64.tar.gz
 
