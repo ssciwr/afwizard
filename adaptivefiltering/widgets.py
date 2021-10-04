@@ -198,21 +198,29 @@ class WidgetForm:
             raise WidgetFormError("Expecting 'items' key for 'array' type")
 
         # Construct a widget that allows to add an array entry
-        button = ipywidgets.Button(description="Add entry", icon="plus")
+        button = ipywidgets.Button(
+            description="Add entry", icon="plus", layout=ipywidgets.Layout(width="100%")
+        )
         vbox = ipywidgets.VBox([button])
         elements = []
 
         def add_entry(_):
             # if we are at the specified maximum, add should be ignored
             if "maxItems" in schema:
-                if len(vbox.children) is schema["maxItems"] + 1:
+                if len(vbox.children) == schema["maxItems"] + 1:
                     return
 
             elements.insert(0, self._construct(schema["items"], label=None))
             item = elements[0].widgets[0]
-            trash = ipywidgets.Button(icon="trash")
-            up = ipywidgets.Button(icon="arrow-up")
-            down = ipywidgets.Button(icon="arrow-down")
+            trash = ipywidgets.Button(
+                icon="trash", layout=ipywidgets.Layout(width="33%")
+            )
+            up = ipywidgets.Button(
+                icon="arrow-up", layout=ipywidgets.Layout(width="33%")
+            )
+            down = ipywidgets.Button(
+                icon="arrow-down", layout=ipywidgets.Layout(width="33%")
+            )
 
             def remove_entry(b):
                 # If we are at the specified minimum, remove should be ignored
@@ -252,7 +260,16 @@ class WidgetForm:
             up.on_click(move(-1))
             down.on_click(move(1))
 
-            vbox.children = (ipywidgets.HBox([item, trash, up, down]),) + vbox.children
+            vbox.children = (
+                ipywidgets.VBox(
+                    [
+                        item,
+                        ipywidgets.HBox(
+                            [trash, up, down], layout=ipywidgets.Layout(width="100%")
+                        ),
+                    ]
+                ),
+            ) + vbox.children
 
         button.on_click(add_entry)
 
