@@ -56,7 +56,7 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ["_static"]
 
 # Make sure that classes are documented by their init method
 autoclass_content = "init"
@@ -72,3 +72,8 @@ autodoc_preserve_defaults = True
 
 # This is kind of unfortunate, but we get errors that are specific to the documentation build:
 nbsphinx_allow_errors = True
+
+# Modify the width of the layout. Taken from:
+# https://stackoverflow.com/a/43186995/2819459
+def setup(app):
+    app.add_css_file("style.css")
