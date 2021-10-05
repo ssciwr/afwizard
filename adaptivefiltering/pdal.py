@@ -79,6 +79,8 @@ class PDALFilter(Filter, identifier="pdal"):
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
             provenance=dataset._provenance
             + [f"Applying PDAL filter with the following configuration:\n{config}"],
+            georeferenced=dataset.georeferenced,
+            spatial_ref=dataset.spatial_ref,
         )
 
     @classmethod
@@ -104,11 +106,15 @@ class PDALPipeline(
             + [
                 f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
             ],
+            georeferenced=dataset.georeferenced,
+            spatial_ref=dataset.spatial_ref,
         )
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[], georeferenced=True):
+    def __init__(
+        self, pipeline=None, provenance=[], georeferenced=True, spatial_ref=None
+    ):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -120,7 +126,7 @@ class PDALInMemoryDataSet(DataSet):
         self.pipeline = pipeline
 
         super(PDALInMemoryDataSet, self).__init__(
-            provenance=provenance, georeferenced=georeferenced
+            provenance=provenance, georeferenced=georeferenced, spatial_ref=spatial_ref
         )
 
     @property
@@ -148,7 +154,7 @@ class PDALInMemoryDataSet(DataSet):
 
         filename = locate_file(dataset.filename)
 
-        # Conditionally define a reprojection filter
+        # Conditionally define a reprojection filter to EPSG:4326
         reproj_filter = []
         if dataset.georeferenced:
             reproj_filter.append(
@@ -159,12 +165,20 @@ class PDALInMemoryDataSet(DataSet):
         pipeline = execute_pdal_pipeline(
             config=[{"type": "readers.las", "filename": filename}] + reproj_filter
         )
+        # conditionally get the spatial ref data after the reprojection
+        if dataset.georeferenced:
+            spatial_ref = json.loads(pipeline.metadata)["metadata"][
+                "filters.reprojection"
+            ]["comp_spatialreference"]
+        else:
+            spatial_ref = None
 
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
             georeferenced=dataset.georeferenced,
+            spatial_ref=spatial_ref,
         )
 
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
@@ -333,6 +347,8 @@ class PDALInMemoryDataSet(DataSet):
                 + [
                     f"Cropping data to only include polygons defined by:\n{str(polygons)}"
                 ],
+                georeferenced=self.georeferenced,
+                spatial_ref=self.spatial_ref,
             )
 
         # Maybe create the segmentation
@@ -359,19 +375,23 @@ class PDALInMemoryDataSet(DataSet):
         # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
 
         if spatial_ref_in is None:
-            for keys, dictionary in json.loads(self.pipeline.metadata)[
-                "metadata"
-            ].items():
-                spatial_ref_in = dictionary.get("comp_spatialreference", None)
+            spatial_ref_in = self.get_comp_spatial_ref()
 
-        newdata = execute_pdal_pipeline(
-            dataset=self,
-            config={
-                "type": "filters.reprojection",
-                "in_srs": spatial_ref_in,
-                "out_srs": spatial_ref_out,
-            },
-        )
+        # check if input and output format are identical:
+        if spatial_ref_in is spatial_ref_out:
+            newdata = self.pipeline
+            print("skip reprojection")
+
+        else:
+            print("do reprojection")
+            newdata = execute_pdal_pipeline(
+                dataset=self,
+                config={
+                    "type": "filters.reprojection",
+                    "in_srs": spatial_ref_in,
+                    "out_srs": spatial_ref_out,
+                },
+            )
 
         return PDALInMemoryDataSet(
             pipeline=newdata,
@@ -381,4 +401,26 @@ class PDALInMemoryDataSet(DataSet):
                     spatial_ref_out
                 )
             ],
+            georeferenced=self.georeferenced,
+            spatial_ref=self.spatial_ref,
         )
+
+    def get_comp_spatial_ref(self):
+        # this function works with either just the pdalInMemoryDataset or with any given pdal metadata
+
+        if self.spatial_ref is None:
+            for keys, dictionary in json.loads(self.pipeline.metadata)[
+                "metadata"
+            ].items():
+                spatial_ref_in = dictionary.get("comp_spatialreference", None)
+        else:
+            spatial_ref_in = self.spatial_ref["spatial_ref"]
+
+        print("print spatial ref", spatial_ref_in)
+
+        # check if spatial ref has been found
+        if spatial_ref_in is None:
+            raise Exception(
+                "No comp_spatialreference has been found in the metadata. Conversion of georeference system can not commence."
+            )
+        return spatial_ref_in

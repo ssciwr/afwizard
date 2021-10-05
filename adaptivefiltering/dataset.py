@@ -1,14 +1,16 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
-
+import pyrsistent
 import os
 import shutil
 import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[], georeferenced=True):
+    def __init__(
+        self, filename=None, provenance=[], georeferenced=True, spatial_ref=None
+    ):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -31,6 +33,13 @@ class DataSet:
         self._provenance = provenance
         self.filename = filename
         self.georeferenced = georeferenced
+
+        # initilize the variable to hold the georef system.
+        if spatial_ref is None or isinstance(spatial_ref, str):
+            self.spatial_ref = pyrsistent.m(spatial_ref=spatial_ref)
+
+        else:
+            self.spatial_ref = spatial_ref
 
         # Make the path absolute
         if self.filename is not None:
