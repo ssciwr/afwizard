@@ -68,6 +68,26 @@ def execute_pdal_pipeline(dataset=None, config=None):
     return pipeline
 
 
+def get_spatial_ref_from_file(filename):
+    """Open a file with the pdal reader and return its spatial reference.
+
+    :param filename:
+        The filename of the file.
+    :type filename: string
+
+    :return:
+        The spatial reference string.
+    :rtype: string
+    """
+    filename = locate_file(filename)
+    pipeline = execute_pdal_pipeline(
+        config=[{"type": "readers.las", "filename": filename}]
+    )
+    return json.loads(pipeline.metadata)["metadata"]["readers.las"][
+        "comp_spatialreference"
+    ]
+
+
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
@@ -145,6 +165,9 @@ class PDALInMemoryDataSet(DataSet):
         # Conversion should be itempotent
         if isinstance(dataset, PDALInMemoryDataSet):
             return dataset
+        # save spatial_ref and georeferenced variables separately
+        spatial_ref = dataset.spatial_ref
+        georeferenced = dataset.georeferenced
 
         # If dataset is of unknown type, we should first dump it to disk
         dataset = dataset.save(get_temporary_filename("las"))
@@ -156,28 +179,45 @@ class PDALInMemoryDataSet(DataSet):
 
         # Conditionally define a reprojection filter to EPSG:4326
         reproj_filter = []
+
+        # this checks if a reprojection was needed
+        was_reprojected = False
+        # if data is not georeferenced no type of reprojection will be done
         if dataset.georeferenced:
-            reproj_filter.append(
-                {"type": "filters.reprojection", "out_srs": "EPSG:4326"}
-            )
+            # if a spatial_ref is already given
+            if spatial_ref["spatial_ref"] is not None:
+                # only do a reprojection if the data is not already in the EPSG:4326 format
+                if "EPSG:4326" not in spatial_ref["spatial_ref"]:
+                    reproj_filter.append(
+                        {
+                            "type": "filters.reprojection",
+                            "in_srs": spatial_ref["spatial_ref"],
+                            "out_srs": "EPSG:4326",
+                        }
+                    )
+                    was_reprojected = True
+            else:
+                reproj_filter.append(
+                    {"type": "filters.reprojection", "out_srs": "EPSG:4326"}
+                )
+                was_reprojected = True
 
         # Execute the reader pipeline
         pipeline = execute_pdal_pipeline(
             config=[{"type": "readers.las", "filename": filename}] + reproj_filter
         )
         # conditionally get the spatial ref data after the reprojection
-        if dataset.georeferenced:
+        # if no reprojection was needed the spatial_ref of the source will be used.
+        if was_reprojected:
             spatial_ref = json.loads(pipeline.metadata)["metadata"][
                 "filters.reprojection"
             ]["comp_spatialreference"]
-        else:
-            spatial_ref = None
 
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
-            georeferenced=dataset.georeferenced,
+            georeferenced=georeferenced,
             spatial_ref=spatial_ref,
         )
 
@@ -380,10 +420,8 @@ class PDALInMemoryDataSet(DataSet):
         # check if input and output format are identical:
         if spatial_ref_in is spatial_ref_out:
             newdata = self.pipeline
-            print("skip reprojection")
 
         else:
-            print("do reprojection")
             newdata = execute_pdal_pipeline(
                 dataset=self,
                 config={
@@ -415,8 +453,6 @@ class PDALInMemoryDataSet(DataSet):
                 spatial_ref_in = dictionary.get("comp_spatialreference", None)
         else:
             spatial_ref_in = self.spatial_ref["spatial_ref"]
-
-        print("print spatial ref", spatial_ref_in)
 
         # check if spatial ref has been found
         if spatial_ref_in is None:

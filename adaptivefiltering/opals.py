@@ -1,4 +1,5 @@
 from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.pdal import get_spatial_ref_from_file
 from adaptivefiltering.filter import Filter
 from adaptivefiltering.paths import (
     get_temporary_filename,
@@ -245,7 +246,12 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
             final_filter = self.copy(outFile=outFile)
         except jsonschema.ValidationError:
             shutil.copy(dataset.filename, outFile)
-            dataset = OPALSDataManagerObject(filename=outFile)
+            # here the current value of georeferenced and spatial_res is lost
+            dataset = OPALSDataManagerObject(
+                filename=outFile,
+                georeferenced=dataset.georeferenced,
+                spatial_ref=dataset.spatial_ref,
+            )
 
         # Actually run the CLI
         execute_opals_module(dataset=dataset, config=final_filter.config)
@@ -256,6 +262,8 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
             + [
                 f"Applying OPALS module with the following configuration: {self._serialize()}"
             ],
+            georeferenced=dataset.georeferenced,
+            spatial_ref=dataset.spatial_ref,
         )
 
     @classmethod
@@ -305,6 +313,9 @@ class OPALSDataManagerObject(DataSet):
             stderr=subprocess.STDOUT,
         )
 
+        if dataset.spatial_ref["spatial_ref"] is None:
+            spatial_ref = get_spatial_ref_from_file(dataset.filename)
+
         # If the OPALS run was not successful, we raise an error
         if result.returncode != 0:
             raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
@@ -314,6 +325,7 @@ class OPALSDataManagerObject(DataSet):
             filename=dm_filename,
             provenance=dataset._provenance + [f"Converted file to ODM format"],
             georeferenced=dataset.georeferenced,
+            spatial_ref=spatial_ref,
         )
 
     def save(self, filename, compress=False, overwrite=False):
