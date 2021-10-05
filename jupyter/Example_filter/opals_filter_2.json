@@ -1,0 +1,22 @@
+{
+  "_backend": "pipeline",
+  "filters": [
+    {
+      "_backend": "opals",
+      "filter": "",
+      "interpolation": "plane",
+      "maxIter": 100,
+      "maxSigma": 0.2,
+      "penetration": 50,
+      "robustWFAdpation": "adapting",
+      "searchRadius": 1,
+      "sigmaApriori": "0.15",
+      "type": "RobFilter"
+    }
+  ],
+  "metadata": {
+    "author": "",
+    "description": "",
+    "example_data_url": ""
+  }
+}
