@@ -7,4 +7,4 @@ be run directly as presented here.
 
 .. toctree::
 
-    demo
+    datasets
