@@ -26,3 +26,8 @@ def dataset():
 @pytest.fixture
 def minimal_dataset():
     return adaptivefiltering.DataSet(filename="data/minimal.las", georeferenced=False)
+
+
+@pytest.fixture
+def example_pipeline():
+    return adaptivefiltering.load_filter("jupyter/Example_filter/Example_pdal_1.json")

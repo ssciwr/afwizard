@@ -1,7 +1,7 @@
 from adaptivefiltering.pdal import *
 from adaptivefiltering.paths import get_temporary_filename
-
-from . import dataset, minimal_dataset
+from adaptivefiltering import load_filter
+from . import dataset, minimal_dataset, example_pipeline
 
 import jsonschema
 import os
@@ -47,6 +47,7 @@ def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     # We run this test from within a temporary directory.
     # This is better because some PDAL filter produce spurious
     # intermediate files.
+    cwd = os.getcwd()
     os.chdir(tmp_path)
 
     # And execute the filter in default configuration on it
@@ -65,6 +66,7 @@ def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     form = pipeline.widget_form()
     pipeline = pipeline.copy(**form.data)
     dataset = pipeline.execute(minimal_dataset)
+    os.chdir(cwd)
 
 
 @pytest.mark.slow
@@ -73,11 +75,14 @@ def test_filter_default_settings(f, tmp_path, dataset):
     # We run this test from within a temporary directory.
     # This is better because some PDAL filter produce spurious
     # intermediate files.
+    cwd = os.getcwd()
+
     os.chdir(tmp_path)
 
     # And execute the filter in default configuration on it
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(dataset)
+    os.chdir(cwd)
 
 
 def test_pdal_inmemory_dataset(minimal_dataset):
@@ -98,3 +103,16 @@ def test_pdal_inmemory_dataset(minimal_dataset):
     saved = dataset.save(get_temporary_filename("laz"), compress=True)
     reloaded = PDALInMemoryDataSet.convert(saved)
     assert dataset.data.shape == reloaded.data.shape
+
+
+def test_pdal_maintain_metadata(dataset, example_pipeline):
+    pdal_dataset = PDALInMemoryDataSet.convert(dataset)
+    pdal_dataset_1 = example_pipeline.execute(pdal_dataset)
+
+    assert dataset.spatial_ref["spatial_ref"] is None
+    assert pdal_dataset.spatial_ref["spatial_ref"] is not None
+    assert "4326" in pdal_dataset.spatial_ref["spatial_ref"]
+    assert (
+        pdal_dataset_1.spatial_ref["spatial_ref"]
+        is pdal_dataset.spatial_ref["spatial_ref"]
+    )
