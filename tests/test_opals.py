@@ -19,15 +19,14 @@ _availableOpalsModules = [
 
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
-def test_set_opals_directory():
-    with mock_environment():
-        # Remove the OPALS directory from the environment
-        dir = os.environ.pop("OPALS_DIR")
-        assert not opals_is_present()
+def test_set_opals_directory(monkeypatch):
+    # Remove the OPALS directory from the environment
+    monkeypatch.delenv("OPALS_DIR")
+    assert not opals_is_present()
 
-        set_opals_directory(dir)
-        assert opals_is_present()
-        set_opals_directory(None)
+    set_opals_directory(dir)
+    assert opals_is_present()
+    set_opals_directory(None)
 
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
@@ -41,13 +40,13 @@ def test_get_opals_module_executable():
         assert os.path.exists(get_opals_module_executable(mod))
 
 
-def test_get_opals_module_executable_failure():
+def test_get_opals_module_executable_failure(monkeypatch):
     # In the absence of OPALS, asking for a module should throw
-    with mock_environment():
-        os.environ.pop("OPALS_DIR", None)
-        for mod in _availableOpalsModules:
-            with pytest.raises(AdaptiveFilteringError):
-                get_opals_module_executable(mod)
+    monkeypatch.delenv("OPALS_DIR")
+
+    for mod in _availableOpalsModules:
+        with pytest.raises(AdaptiveFilteringError):
+            get_opals_module_executable(mod)
 
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")

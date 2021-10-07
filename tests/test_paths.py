@@ -8,7 +8,7 @@ import pytest
 import tempfile
 
 
-def test_paths(tmp_path):
+def test_paths(tmp_path, monkeypatch):
     # An absolute path is preserved
     abspath = os.path.abspath(__file__)
     assert abspath == locate_file(abspath)
@@ -19,10 +19,10 @@ def test_paths(tmp_path):
 
     # Check that XDG paths are correctly recognized
     if platform.system() in ["Linux", "Darwin"]:
-        with mock_environment(XDG_DATA_DIRS=str(tmp_path)):
-            abspath = os.path.join(tmp_path, "somefile.txt")
-            open(abspath, "w").close()
-            assert abspath == locate_file("somefile.txt")
+        monkeypatch.setenv("XDG_DATA_DIRS", str(tmp_path))
+        abspath = os.path.join(tmp_path, "somefile.txt")
+        open(abspath, "w").close()
+        assert abspath == locate_file("somefile.txt")
 
     # Check that we always find the data provided by the package
     assert os.path.exists(locate_file("data/500k_NZ20_Westport.laz"))
