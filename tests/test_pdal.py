@@ -43,12 +43,12 @@ def test_pdal_pipeline():
 
 
 @pytest.mark.parametrize("f", _pdal_filter_list)
-def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
+def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset, monkeypatch):
     # We run this test from within a temporary directory.
     # This is better because some PDAL filter produce spurious
     # intermediate files.
-    cwd = os.getcwd()
-    os.chdir(tmp_path)
+
+    monkeypatch.chdir(tmp_path)
 
     # And execute the filter in default configuration on it
     filter_ = PDALFilter(type=f)
@@ -66,23 +66,20 @@ def test_minimal_filter_default_settings(f, tmp_path, minimal_dataset):
     form = pipeline.widget_form()
     pipeline = pipeline.copy(**form.data)
     dataset = pipeline.execute(minimal_dataset)
-    os.chdir(cwd)
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("f", _pdal_filter_list)
-def test_filter_default_settings(f, tmp_path, dataset):
+def test_filter_default_settings(f, tmp_path, dataset, monkeypatch):
     # We run this test from within a temporary directory.
     # This is better because some PDAL filter produce spurious
     # intermediate files.
-    cwd = os.getcwd()
 
-    os.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
 
     # And execute the filter in default configuration on it
     filter_ = PDALFilter(type=f)
     dataset = filter_.execute(dataset)
-    os.chdir(cwd)
 
 
 def test_pdal_inmemory_dataset(minimal_dataset):
