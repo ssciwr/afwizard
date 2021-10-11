@@ -15,7 +15,7 @@ ENV JUPYTER_ENABLE_LAB=yes
 
 # Copy all the notebook files into the home directory
 RUN rm -rf ${HOME}/work && \
-    cp /opt/adaptivefiltering/jupyter/* ${HOME}
+    cp -r /opt/adaptivefiltering/jupyter/* ${HOME}
 
 # Remove the redundant data from /opt/adaptivefiltering
 RUN rm -rf /opt/adaptivefiltering/*
