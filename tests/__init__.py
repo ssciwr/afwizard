@@ -24,5 +24,10 @@ def dataset():
 
 
 @pytest.fixture
+def dataset_thingstaette():
+    return adaptivefiltering.DataSet(filename="data/uls_thingstaette.las")
+
+
+@pytest.fixture
 def minimal_dataset():
     return adaptivefiltering.DataSet(filename="data/minimal.las", georeferenced=False)
