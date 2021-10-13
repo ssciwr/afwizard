@@ -15,3 +15,11 @@ def get_angular_resolution(res_meter):
     https://www.usna.edu/Users/oceano/pguth/md_help/html/approx_equivalents.htm
     """
     return res_meter * 0.00001 / 1.11
+
+
+def stringify_value(value):
+    """Stringify a value, making sequence space delimited"""
+    if is_iterable(value):
+        return " ".join(value)
+
+    return str(value)

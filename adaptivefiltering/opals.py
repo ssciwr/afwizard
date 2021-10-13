@@ -5,7 +5,7 @@ from adaptivefiltering.paths import (
     get_temporary_workspace,
     load_schema,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from adaptivefiltering.utils import AdaptiveFilteringError, stringify_value
 
 import click
 import json
@@ -189,13 +189,6 @@ def _automated_opals_schema(mod):
     print(json.dumps(result))
 
 
-def _stringify_value(value):
-    if is_iterable(value):
-        return " ".join(value)
-
-    return str(value)
-
-
 def execute_opals_module(dataset=None, config=None):
     # Create the command line
     config = pyrsistent.thaw(config)
@@ -206,7 +199,7 @@ def execute_opals_module(dataset=None, config=None):
     # Build the argument list
     args = []
     for k, v in config.items():
-        strv = _stringify_value(v)
+        strv = stringify_value(v)
         if strv != "":
             args.append(f"--{k}")
             args.append(strv)

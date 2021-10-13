@@ -1,4 +1,5 @@
 # Make sure to import modules that register filter backends
+import adaptivefiltering.lastools
 import adaptivefiltering.opals
 import adaptivefiltering.pdal
 
@@ -7,6 +8,7 @@ from adaptivefiltering.apps import pipeline_tuning
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet, remove_classification
 from adaptivefiltering.filter import load_filter, save_filter
+from adaptivefiltering.lastools import set_lastools_directory
 from adaptivefiltering.opals import set_opals_directory
 from adaptivefiltering.paths import set_data_directory
 from adaptivefiltering.version import __version__, print_version
@@ -21,6 +23,7 @@ __all__ = [
     "load_filter",
     "save_filter",
     "set_data_directory",
+    "set_lastools_directory",
     "set_opals_directory",
     "asprs",
     "print_version",

@@ -36,6 +36,11 @@ jobs:
       run: |
         echo "ssc-jupyter.iwr.uni-heidelberg.de ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlEBwr7Qv0expAPxukZOmIUcVI1erVPya+GkzCd+iQK" >> ~/.ssh/known_hosts
 
+    - name: Install Wine to test lastools backend
+      run: |
+        sudo apt update
+        sudo apt install unzip wget wine
+
     - name: Install conda dependencies
       run: |
         conda env update -n base --file environment.yml
@@ -44,12 +49,20 @@ jobs:
       run: |
         python -m pip install -r requirements-dev.txt
 
-    - name: Install OPALS (Linux)
+    - name: Install OPALS
       working-directory: ${{ runner.workspace }}
       run: |
         scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
         tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
         echo "OPALS_DIR=${{ runner.workspace }}/opals_2.3.2" >> $GITHUB_ENV
+
+    - name: Install LAStools
+      working-directory: ${{ runner.workspace }}
+      run: |
+        wget https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_210628.zip
+        unzip LAStools_210628.zip
+        rm LAStools_210628.zip
+        echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $GITHUB_ENV
 
     - name: Install Python package
       run: |
@@ -113,6 +126,14 @@ jobs:
       run: |
         Start-Process -FilePath ${{ runner.workspace }}\opals_nightly_win64-setup.exe -ArgumentList /S,/TYPE=typical,/DATA=,/D=${{ runner.workspace }}\opalsInstallation -Wait
         echo "OPALS_DIR=${{ runner.workspace }}\opalsInstallation" >> $env:GITHUB_ENV
+
+    - name: Install LAStools
+      working-directory: ${{ runner.workspace }}
+      shell: powershell
+      run: |
+        Invoke-WebRequest https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_210628.zip -OutFile ${{ runner.workspace }}\LAStools.zip
+        Expand-Archive -LiteralPath ${{ runner.workspace }}\LAStools.zip -DestinationPath ${{ runner.workspace }}
+        echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $env:GITHUB_ENV
 
     - name: Install the adaptivefiltering Python package
       run: |
