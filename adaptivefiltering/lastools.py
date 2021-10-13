@@ -48,32 +48,6 @@ def lastools_is_present():
     return get_lastools_directory() is not None
 
 
-def execute_lasground(config):
-    # Determine the name of the executable (32 vs. 64 Bit)
-    execname = "lasground_new.exe"
-    if platform.architecture()[0] == "64bit":
-        execname = "lasground_new64.exe"
-
-    # Maybe add wine to the command line to execute
-    executable = []
-    if platform.system() in ["Linux", "Darwin"]:
-        executable.append(shutil.which("wine"))
-
-    # Add the full path to the lasground_new executable
-    executable.append(os.path.join(get_lastools_directory(), "bin", execname))
-
-    # Build the argument list
-    args = []
-    for k, v in config.items():
-        strv = stringify_value(v)
-        if strv != "":
-            args.append(f"-{k}")
-            args.append(strv)
-
-    # Call the executable
-    subprocess.run(executable)
-
-
 class LASToolsFilter(Filter, identifier="lastools", backend=True):
     def execute(self, dataset):
         # The lasground executable operates on raw LAS/LAZ input
@@ -122,15 +96,3 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
     @classmethod
     def schema(cls):
         return load_schema("lastools.json")
-
-    @classmethod
-    def form_schema(cls):
-        schema = cls.schema()
-        for subschema in schema.get("anyOf", []):
-            newprops = {}
-            for param, val in subschema.get("properties").items():
-                if param not in ["i", "o"]:
-                    newprops[param] = val
-            subschema["properties"] = newprops
-
-        return schema
