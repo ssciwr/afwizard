@@ -38,8 +38,8 @@ jobs:
 
     - name: Install Wine to test lastools backend
       run: |
-        apt update
-        apt install unzip wget wine
+        sudo apt update
+        sudo apt install unzip wget wine
 
     - name: Install conda dependencies
       run: |
