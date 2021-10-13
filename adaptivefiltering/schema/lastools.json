@@ -1,0 +1,33 @@
+{
+  "anyOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "_backend": {
+          "const": "lastools",
+          "type": "string"
+        },
+        "i": {
+          "type": "string"
+        },
+        "o": {
+          "type": "string"
+        },
+        "offset": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "spike": {
+          "default": 0.5,
+          "type": "number"
+        },
+        "step": {
+          "default": 1.0,
+          "type": "number"
+        }
+      },
+      "title": "lasground_new (LASTools)",
+      "type": "object"
+    }
+  ]
+}
