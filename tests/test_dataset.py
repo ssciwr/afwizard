@@ -41,7 +41,6 @@ def test_show_slope(dataset):
     dataset.show_slope()
     dataset.show_slope(resolution=5)
     dataset.show_slope(classification=asprs[5])
-    dataset.show_slope(resolution=3.1, classification=asprs["low_point"])
 
 
 def test_restriction(dataset):

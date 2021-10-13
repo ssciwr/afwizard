@@ -123,11 +123,18 @@ class DataSet:
         )
 
     def show_slope(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as slope model in Jupyter notebook"""
+        """Visualize the point cloud as slope model in Jupyter notebook.
+
+        :param resolution:
+            The mesh resolution to use for the visualization in meters.
+        :type resolution: float
+        :param classification:
+            The classification values to include into the visualization
+        :type classification: tuple"""
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_slope(resolution=resolution)
+        return dataset.show_slope(resolution=resolution, classification=classification)
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
