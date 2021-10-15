@@ -23,8 +23,14 @@ jobs:
       with:
         lfs: true
 
-    - name: Set up Conda with Python ${{ matrix.python-version }}
-      uses: s-weigand/setup-conda@v1
+    - name: Create conda environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        auto-activate-base: false
+        python-version: 3.9
+        activate-environment: adaptivefiltering
+        environment-file: environment.yml
 
     - name: SSH setup
       uses: webfactory/ssh-agent@v0.5.3
@@ -40,10 +46,6 @@ jobs:
       run: |
         sudo apt update
         sudo apt install unzip wget wine
-
-    - name: Install conda dependencies
-      run: |
-        conda env update -n base --file environment.yml
 
     - name: Install development dependencies
       run: |
@@ -93,8 +95,14 @@ jobs:
       with:
         lfs: true
 
-    - name: Set up Conda
-      uses: s-weigand/setup-conda@v1
+    - name: Create conda environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        auto-activate-base: false
+        python-version: 3.9
+        activate-environment: adaptivefiltering
+        environment-file: environment.yml
 
     - name: SSH setup
       uses: webfactory/ssh-agent@v0.5.3
@@ -105,10 +113,6 @@ jobs:
     - name: Add known host
       run: |
         echo "ssc-jupyter.iwr.uni-heidelberg.de ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlEBwr7Qv0expAPxukZOmIUcVI1erVPya+GkzCd+iQK" >> ~/.ssh/known_hosts
-
-    - name: Install conda dependencies
-      run: |
-        conda env update -n base --file environment.yml
 
     - name: Install development dependencies
       run: |
