@@ -147,3 +147,8 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+adaptivefiltering/data/gruben12.las
+adaptivefiltering/data/pkgebk_all.las
+.gitignore
+adaptivefiltering/data/uls_thingstaette.las
+adaptivefiltering/data/pkgebmodern_last.las

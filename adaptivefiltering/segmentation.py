@@ -100,6 +100,72 @@ class Segmentation(geojson.FeatureCollection):
         }
 
 
+class Map:
+    def __init__(self, dataset=None, segmentation=None):
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        # handle exeptions
+        if dataset and segmentation:
+            raise Exception(
+                "A dataset and a segmentation can't be loaded at the same time."
+            )
+
+        if dataset is None and segmentation["features"] is []:
+            raise Exception("an empty segmention was given.")
+
+        if dataset is None and segmentation is None:
+            # if no dataset or segmentation is given, the map will be centered at the SSC office
+            self.coordinates_mean = np.asarray([49.41745, 8.67529])
+            self.segmentation = None
+
+        # convert to pdal dataset
+        self.dataset = PDALInMemoryDataSet.convert(dataset)
+
+    def check_spatial_reference(self):
+        if (
+            self.dataset.spatial_reference is None
+            or self.dataset.spatial_reference == ""
+        ):
+            #
+            pass
+
+    def setup_grid(self):
+        """
+        Setup the grid layout to allow the color bar and
+        more on the right side of the map.
+        """
+        grid = ipywidgets.GridBox(
+            # children=objects, add them later
+            layout=ipywidgets.Layout(
+                width="100%",
+                grid_template_columns="70% 30%",
+                grid_template_areas="""
+                        "main sidebar "
+                    """,
+            ),
+        )
+        return grid
+
+    def setup_tabs(self, grids):
+        """
+        Setup the tab overlay to display different map types.
+        grids should be given as a list of grids.
+        Currently Satelite, Hillshade and Slope are implemented.
+        :param grids:
+            A list of grids in the order Satelite, Hillstade, Slope. This order is important!
+        :type grids:
+            dict
+
+
+        """
+        tab = ipywidgets.Tab()
+        tab.children = list(grids.values())
+        for i, title in enumerate(grids.keys()):
+            tab.set_title(i, title)
+
+        return tab
+
+
 class InteractiveMap:
     def __init__(self, dataset=None, segmentation=None):
         """This class manages the interactive map on which one can choose the segmentation.
