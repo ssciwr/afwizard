@@ -165,7 +165,6 @@ class PDALInMemoryDataSet(DataSet):
         # Execute the reader pipeline
         config = {"type": "readers.las", "filename": filename}
         if spatial_reference is not None:
-            print("do stuff")
             config["override_srs"] = spatial_reference
             config["nosrs"] = True
 
@@ -173,15 +172,16 @@ class PDALInMemoryDataSet(DataSet):
             # config=[{"type": "readers.las", "filename": filename}]   + reproj_filter
             config=[config]
         )
-        if dataset.spatial_reference is None:
+        if spatial_reference is None:
             spatial_reference = json.loads(pipeline.metadata)["metadata"][
                 "readers.las"
             ]["comp_spatialreference"]
-            # if spatial_reference == "":
-            #    spatial_reference="test"
+            # hanlde empty metadata
+            if spatial_reference.strip() == "":
+                raise Warning(
+                    "No SRS was detected, please include one manually if non is present in the LAS file."
+                )
 
-        else:
-            spatial_reference = dataset.spatial_reference
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
