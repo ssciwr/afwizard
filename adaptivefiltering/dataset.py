@@ -8,7 +8,9 @@ import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[], georeferenced=True):
+    def __init__(
+        self, filename=None, provenance=[], georeferenced=True, spatial_reference=None
+    ):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -31,7 +33,7 @@ class DataSet:
         self._provenance = provenance
         self.filename = filename
         self.georeferenced = georeferenced
-
+        self.spatial_reference = spatial_reference
         # Make the path absolute
         if self.filename is not None:
             self.filename = locate_file(self.filename)

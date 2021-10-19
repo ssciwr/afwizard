@@ -108,7 +108,9 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[], georeferenced=True):
+    def __init__(
+        self, pipeline=None, provenance=[], georeferenced=True, spatial_reference=None
+    ):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -120,7 +122,9 @@ class PDALInMemoryDataSet(DataSet):
         self.pipeline = pipeline
 
         super(PDALInMemoryDataSet, self).__init__(
-            provenance=provenance, georeferenced=georeferenced
+            provenance=provenance,
+            georeferenced=georeferenced,
+            spatial_reference=spatial_reference,
         )
 
     @property
@@ -157,14 +161,21 @@ class PDALInMemoryDataSet(DataSet):
 
         # Execute the reader pipeline
         pipeline = execute_pdal_pipeline(
-            config=[{"type": "readers.las", "filename": filename}] + reproj_filter
+            config=[{"type": "readers.las", "filename": filename}]  # + reproj_filter
         )
 
+        if dataset.spatial_reference is None:
+            spatial_reference = json.loads(pipeline.metadata)["metadata"][
+                "readers.las"
+            ]["comp_spatialreference"]
+        else:
+            spatial_reference = dataset.spatial_reference
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
             georeferenced=dataset.georeferenced,
+            spatial_reference=spatial_reference,
         )
 
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
