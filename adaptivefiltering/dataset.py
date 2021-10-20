@@ -177,7 +177,11 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename, georeferenced=self.georeferenced)
+        return DataSet(
+            filename=filename,
+            georeferenced=self.georeferenced,
+            spatial_reference=self.spatial_reference,
+        )
 
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
