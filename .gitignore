@@ -1,4 +1,4 @@
-# Ignore las files unless explicitly forcef with -f
+# Ignore las files unless explicitly forced with -f
 *.las
 *.laz
 

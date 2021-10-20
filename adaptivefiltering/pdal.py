@@ -1,5 +1,3 @@
-from typing import Counter
-from pdal import pipeline
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
@@ -11,8 +9,7 @@ from adaptivefiltering.visualization import (
     vis_pointcloud,
     vis_slope,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, get_angular_resolution
-from adaptivefiltering.widgets import WidgetForm
+from adaptivefiltering.utils import AdaptiveFilteringError
 
 import functools
 import geodaisy.converters as convert
