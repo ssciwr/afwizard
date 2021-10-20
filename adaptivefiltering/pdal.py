@@ -172,6 +172,7 @@ class PDALInMemoryDataSet(DataSet):
             # config=[{"type": "readers.las", "filename": filename}]   + reproj_filter
             config=[config]
         )
+
         if spatial_reference is None:
             spatial_reference = json.loads(pipeline.metadata)["metadata"][
                 "readers.las"
@@ -368,40 +369,3 @@ class PDALInMemoryDataSet(DataSet):
             return restricted
         else:
             return apply_restriction(segmentation)
-
-    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
-        """Convert the dataset from one spatial reference into another.
-        :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
-        :type spatial_ref_out: string
-
-        :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
-        :type spatial_ref_in: string
-
-        """
-
-        # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
-
-        if spatial_ref_in is None:
-            for keys, dictionary in json.loads(self.pipeline.metadata)[
-                "metadata"
-            ].items():
-                spatial_ref_in = dictionary.get("comp_spatialreference", None)
-
-        newdata = execute_pdal_pipeline(
-            dataset=self,
-            config={
-                "type": "filters.reprojection",
-                "in_srs": spatial_ref_in,
-                "out_srs": spatial_ref_out,
-            },
-        )
-
-        return PDALInMemoryDataSet(
-            pipeline=newdata,
-            provenance=self._provenance
-            + [
-                "converted the dataset to the {} spatial reference.".format(
-                    spatial_ref_out
-                )
-            ],
-        )
