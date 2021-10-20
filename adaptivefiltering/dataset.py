@@ -251,16 +251,16 @@ def remove_classification(dataset):
 
 def reproject_dataset(dataset, out_srs, in_srs=None):
     """
-    Standalone function to reproject a given dataset with the option of forcing a input_srs
+    Standalone function to reproject a given dataset with the option of forcing an input reference system
 
-    :parma out_srs: The desired output format. The default is the same one as in the interactive map.
-    :type out_srs: string
+    :param out_srs: The desired output format in WKT.
+    :type out_srs: str
 
-    :param in_srs: The input format from wich the conversation is starting. The default is the the current srs.
-    :type in_srs: string
+    :param in_srs: The input format in WKT from which to convert. The default is the dataset's current reference system.
+    :type in_srs: str
 
     :return: A reprojected dataset
-    :rtype: pdalInMemorydataset
+    :rtype: PDALInMemoryDataset
 
     """
     from adaptivefiltering.pdal import execute_pdal_pipeline
@@ -282,6 +282,6 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance
-        + ["converted the dataset to the {} spatial reference.".format(out_srs)],
+        + [f"Converted the dataset to spatial reference system '{out_srs}'"],
         spatial_reference=spatial_reference,
     )
