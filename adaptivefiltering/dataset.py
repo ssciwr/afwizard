@@ -2,16 +2,14 @@ from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
 
+import json
 import os
 import shutil
 import sys
-import json
 
 
 class DataSet:
-    def __init__(
-        self, filename=None, provenance=[], georeferenced=True, spatial_reference=None
-    ):
+    def __init__(self, filename=None, provenance=[], spatial_reference=None):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -22,14 +20,11 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
-        :param georeferenced:
-            Whether the dataset is geo-referenced. Defaults to true. Manually
-            disable this when working e.g. with synthetic data.
-        :type georeferenced: bool
         :param spatial_reference:
-            A spatial reference in WKT. This will override the srs found in the metadata and is nessecarry if no srs is present in the metadata.
-            Th default None will try to extract this information from the metadata when converted to a PdalInMemorydataset.
-        :type spatial_reference:
+            A spatial reference in WKT. This will override the reference system found in the metadata
+            and is required if no reference system is present in the metadata of the LAS/LAZ file.
+            If this parameter is not provided, this information is extracted from the metadata.
+        :type spatial_reference: str
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -37,8 +32,8 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
-        self.georeferenced = georeferenced
         self.spatial_reference = spatial_reference
+
         # Make the path absolute
         if self.filename is not None:
             self.filename = locate_file(self.filename)
@@ -185,7 +180,6 @@ class DataSet:
         return DataSet(
             filename=filename,
             provenance=self._provenance,
-            georeferenced=self.georeferenced,
             spatial_reference=self.spatial_reference,
         )
 
@@ -251,7 +245,6 @@ def remove_classification(dataset):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance + ["Removed all point classifications"],
-        georeferenced=dataset.georeferenced,
         spatial_reference=dataset.spatial_reference,
     )
 
@@ -290,6 +283,5 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
         pipeline=pipeline,
         provenance=dataset._provenance
         + ["converted the dataset to the {} spatial reference.".format(out_srs)],
-        georeferenced=dataset.georeferenced,
         spatial_reference=spatial_reference,
     )

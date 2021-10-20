@@ -109,9 +109,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(
-        self, pipeline=None, provenance=[], georeferenced=True, spatial_reference=None
-    ):
+    def __init__(self, pipeline=None, provenance=[], spatial_reference=None):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -124,7 +122,6 @@ class PDALInMemoryDataSet(DataSet):
 
         super(PDALInMemoryDataSet, self).__init__(
             provenance=provenance,
-            georeferenced=georeferenced,
             spatial_reference=spatial_reference,
         )
 
@@ -157,41 +154,29 @@ class PDALInMemoryDataSet(DataSet):
 
         filename = locate_file(dataset.filename)
 
-        # Conditionally define a reprojection filter
-        reproj_filter = []
-        if dataset.georeferenced:
-            reproj_filter.append(
-                {"type": "filters.reprojection", "out_srs": "EPSG:4326"}
-            )
-
         # Execute the reader pipeline
         config = {"type": "readers.las", "filename": filename}
         if spatial_reference is not None:
             config["override_srs"] = spatial_reference
             config["nosrs"] = True
 
-        pipeline = execute_pdal_pipeline(
-            # config=[{"type": "readers.las", "filename": filename}]   + reproj_filter
-            config=[config]
-        )
+        pipeline = execute_pdal_pipeline(config=[config])
 
         if spatial_reference is None:
             spatial_reference = json.loads(pipeline.metadata)["metadata"][
                 "readers.las"
             ]["comp_spatialreference"]
 
-            # Raise Warning when no srs is present. This is subject to change in the future. It might be plausible ot skip this warning if georeferenced is False.
-            # That would allow user to purpusfully use datasets without a srs.
+            # Raise Warning when no srs is present. This is subject to change in the future.
             if spatial_reference.strip() == "":
                 raise Warning(
-                    "No SRS was detected, please include one manually if non is present in the LAS file."
+                    "No SRS was detected, please include one manually if none is present in the LAS file."
                 )
 
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
-            georeferenced=dataset.georeferenced,
             spatial_reference=spatial_reference,
         )
 
@@ -325,7 +310,6 @@ class PDALInMemoryDataSet(DataSet):
         # Wrap the result in a DataSet instance
         return DataSet(
             filename=filename,
-            georeferenced=self.georeferenced,
             spatial_reference=self.spatial_reference,
         )
 
@@ -357,7 +341,6 @@ class PDALInMemoryDataSet(DataSet):
                 + [
                     f"Cropping data to only include polygons defined by:\n{str(polygons)}"
                 ],
-                georeferenced=self.georeferenced,
                 spatial_reference=self.spatial_reference,
             )
 
