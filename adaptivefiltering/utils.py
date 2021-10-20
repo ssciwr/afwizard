@@ -1,7 +1,5 @@
 import collections
 
-from adaptivefiltering.pdal import execute_pdal_pipeline
-
 
 class AdaptiveFilteringError(Exception):
     pass
@@ -41,6 +39,7 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     :rtype: pdalInMemorydataset
 
     """
+    from adaptivefiltering.pdal import execute_pdal_pipeline
     from adaptivefiltering.pdal import PDALInMemoryDataSet
 
     dataset = PDALInMemoryDataSet.convert(dataset)
