@@ -195,7 +195,7 @@ class PDALInMemoryDataSet(DataSet):
             spatial_reference=spatial_reference,
         )
 
-    def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
+    def save_mesh(self, filename, resolution=2.0, classification=asprs[:]):
 
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
@@ -223,7 +223,7 @@ class PDALInMemoryDataSet(DataSet):
             filename + ".tif", gdal.GA_ReadOnly
         )
 
-    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
+    def show_mesh(self, resolution=2.0, classification=asprs[:]):
         # make a temporary tif file to view data
         if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
@@ -251,7 +251,7 @@ class PDALInMemoryDataSet(DataSet):
 
         return vis_mesh(x, y, z)
 
-    def show_points(self, threshold=750000, classification=asprs["ground"]):
+    def show_points(self, threshold=750000, classification=asprs[:]):
         if len(self.data["X"]) >= threshold:
             error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
                 len(self.data["X"]), threshold
@@ -269,7 +269,7 @@ class PDALInMemoryDataSet(DataSet):
             filtered_data["X"], filtered_data["Y"], filtered_data["Z"]
         )
 
-    def show_slope(self, resolution=2.0, classification=asprs["ground"]):
+    def show_slope(self, resolution=2.0, classification=asprs[:]):
         # make a temporary tif file to view data
 
         with tempfile.NamedTemporaryFile() as tmp_file:
@@ -284,7 +284,7 @@ class PDALInMemoryDataSet(DataSet):
 
         return vis_slope(slope)
 
-    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
+    def show_hillshade(self, resolution=2.0, classification=asprs[:]):
         # make a temporary tif file to view data
         if (resolution, classification) not in self._mesh_data_cache:
             # Write a temporary file
