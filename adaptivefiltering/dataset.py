@@ -179,6 +179,7 @@ class DataSet:
         # And return a DataSet instance
         return DataSet(
             filename=filename,
+            provenance=self._provenance,
             georeferenced=self.georeferenced,
             spatial_reference=self.spatial_reference,
         )
