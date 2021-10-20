@@ -5,6 +5,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 import os
 import shutil
 import sys
+import json
 
 
 class DataSet:
@@ -282,11 +283,13 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
         "out_srs": out_srs,
     }
     pipeline = execute_pdal_pipeline(dataset=dataset, config=config)
-
+    spatial_reference = json.loads(pipeline.metadata)["metadata"][
+        "filters.reprojection"
+    ]["comp_spatialreference"]
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance
         + ["converted the dataset to the {} spatial reference.".format(out_srs)],
         georeferenced=dataset.georeferenced,
-        spatial_reference=dataset.spatial_reference,
+        spatial_reference=spatial_reference,
     )
