@@ -288,5 +288,5 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
         provenance=dataset._provenance
         + ["converted the dataset to the {} spatial reference.".format(out_srs)],
         georeferenced=dataset.georeferenced,
-        spatial_reference=dataset.spatial_reference,
+        spatial_reference=out_srs,
     )
