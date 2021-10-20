@@ -101,8 +101,16 @@ class Segmentation(geojson.FeatureCollection):
 
 
 class Map:
-    def __init__(self, dataset=None, segmentation=None):
+
+    # my Idea was to let the map convert the given dataset into something it can use, but return every segmentation in the srs of the original dataset
+    def __init__(self, dataset=None, segmentation=None, in_srs=None):
+        """
+
+        in_srs can be used to override the current srs.
+        """
+
         from adaptivefiltering.pdal import PDALInMemoryDataSet
+        from adaptivefiltering.dataset import reproject_dataset
 
         # handle exeptions
         if dataset and segmentation:
@@ -119,15 +127,12 @@ class Map:
             self.segmentation = None
 
         # convert to pdal dataset
-        self.dataset = PDALInMemoryDataSet.convert(dataset)
+        dataset = PDALInMemoryDataSet.convert(dataset)
+        # preserve the original srs
+        self.original_srs = dataset.spatial_reference
+        # convert to a srs the ipyleaflet map can use.
 
-    def check_spatial_reference(self):
-        if (
-            self.dataset.spatial_reference is None
-            or self.dataset.spatial_reference == ""
-        ):
-            #
-            pass
+        self.dataset = reproject_dataset(dataset, "EPSG:3857", in_srs=in_srs)
 
     def setup_grid(self):
         """
@@ -164,6 +169,71 @@ class Map:
             tab.set_title(i, title)
 
         return tab
+
+    def setup_map(self):
+        """Takes the boundary coordinates of the  given dataset
+        through the pdal hexbin filter and returns them as a segmentation.
+
+        :param dataset:
+            The dataset from which the map should be displayed.
+            This needs to be in
+        :type dataset: Dataset
+
+        :return:
+            hexbin_segmentation:
+            The Segmentation of the area from the dataset
+        :type hexbin_segmentation: Segmentation
+
+        """
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        # execute the reprojection and hexbin filter.
+        # this is nessesary for the map to function properly.
+        hexbin_pipeline = execute_pdal_pipeline(
+            dataset=self.dataset,
+            config=[
+                {"type": "filters.hexbin"},
+            ],
+        )
+
+        # get the coordinates from the metadata:
+        # this gives us lat, lon but for geojson we need lon, lat
+        boundary_json = json.loads(hexbin_pipeline.metadata)["metadata"][
+            "filters.hexbin"
+        ]["boundary_json"]
+
+        hexbin_segmentation = Segmentation(
+            [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "style": {
+                            "stroke": True,
+                            "color": "#add8e6",
+                            "weight": 4,
+                            "opacity": 0.5,
+                            "fill": True,
+                            "fillColor": "#add8e6",
+                            "fillOpacity": 0.1,
+                            "clickable": True,
+                        }
+                    },
+                    "geometry": boundary_json,
+                }
+            ]
+        )
+        boundary_coordinates = boundary_json["coordinates"]
+        coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
+        print(coordinates_mean)
+        print(self.dataset.spatial_reference)
+        m = ipyleaflet.Map(
+            basemap=ipyleaflet.basemaps.Esri.WorldImagery,
+            center=(coordinates_mean[0], coordinates_mean[1]),
+            crs=ipyleaflet.projections.EPSG3857,
+            scroll_wheel_zoom=True,
+            max_zoom=20,
+        )
+        return m
 
 
 class InteractiveMap:
