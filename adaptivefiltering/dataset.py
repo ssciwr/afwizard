@@ -188,27 +188,13 @@ class DataSet:
 
         :param segmentation:
         :type: adaptivefiltering.segmentation.Segmentation
+
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
 
         return dataset.restrict(segmentation)
-
-    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
-        """Convert the dataset from one spatial reference into another using the pdal reprojection filter.
-        :param spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
-        :type spatial_ref_out: string
-
-        :param spatial_ref_in: The input format from wich the conversation is starting. The default is the spatial reference in the current metadata.
-        :type spatial_ref_in: string
-
-        """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-
-        return dataset.convert_georef(spatial_ref_out, spatial_ref_in)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
@@ -259,4 +245,43 @@ def remove_classification(dataset):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance + ["Removed all point classifications"],
+        georeferenced=dataset.georeferenced,
+        spatial_reference=dataset.spatial_reference,
+    )
+
+
+def reproject_dataset(dataset, out_srs, in_srs=None):
+    """
+    Standalone function to reproject a given dataset with the option of forcing a input_srs
+
+    :parma out_srs: The desired output format. The default is the same one as in the interactive map.
+    :type out_srs: string
+
+    :param in_srs: The input format from wich the conversation is starting. The default is the the current srs.
+    :type in_srs: string
+
+    :return: A reprojected dataset
+    :rtype: pdalInMemorydataset
+
+    """
+    from adaptivefiltering.pdal import execute_pdal_pipeline
+    from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+    if in_srs is None:
+        in_srs = dataset.spatial_reference
+
+    config = {
+        "type": "filters.reprojection",
+        "in_srs": in_srs,
+        "out_srs": out_srs,
+    }
+    pipeline = execute_pdal_pipeline(dataset=dataset, config=config)
+
+    return PDALInMemoryDataSet(
+        pipeline=pipeline,
+        provenance=dataset._provenance
+        + ["converted the dataset to the {} spatial reference.".format(out_srs)],
+        georeferenced=dataset.georeferenced,
+        spatial_reference=dataset.spatial_reference,
     )
