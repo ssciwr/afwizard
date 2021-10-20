@@ -232,7 +232,7 @@ def remove_classification(dataset):
     :type dataset: adaptivefiltering.Dataset
     :return:
         A transformed dataset with unclassified points
-    :rtype:
+    :rtype: adaptivefiltering.DataSet
     """
     from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
 
@@ -260,8 +260,7 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     :type in_srs: str
 
     :return: A reprojected dataset
-    :rtype: PDALInMemoryDataset
-
+    :rtype: adaptivefiltering.DataSet
     """
     from adaptivefiltering.pdal import execute_pdal_pipeline
     from adaptivefiltering.pdal import PDALInMemoryDataSet
