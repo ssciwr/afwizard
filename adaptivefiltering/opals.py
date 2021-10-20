@@ -279,6 +279,12 @@ class OPALSDataManagerObject(DataSet):
         if isinstance(dataset, OPALSDataManagerObject):
             return dataset
 
+        # OPALS requires manual specification of the reference system
+        if dataset.spatial_reference is None:
+            raise AdaptiveFilteringError(
+                "OPALS requires manual setting of the spatial_reference parameter of the DataSet."
+            )
+
         # If dataset is of unknown type, we should first dump it to disk
         dataset = dataset.save(get_temporary_filename("las"))
 
@@ -306,6 +312,7 @@ class OPALSDataManagerObject(DataSet):
         return OPALSDataManagerObject(
             filename=dm_filename,
             provenance=dataset._provenance + [f"Converted file to ODM format"],
+            spatial_reference=dataset.spatial_reference,
         )
 
     def save(self, filename, compress=False, overwrite=False):
@@ -342,4 +349,5 @@ class OPALSDataManagerObject(DataSet):
         return DataSet(
             filename=filename,
             provenance=self._provenance + [f"Exported ODM file to {filename}"],
+            spatial_reference=self.spatial_reference,
         )
