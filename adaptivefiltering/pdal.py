@@ -138,6 +138,8 @@ class PDALInMemoryDataSet(DataSet):
 
         This might involve file system based operations.
 
+        Warning: if no srs was specified and no comp_spatialreference entry is found in the metadata this function will exit with a Warning.
+
         :param dataset:
             The data set instance to convert.
         """
@@ -177,7 +179,9 @@ class PDALInMemoryDataSet(DataSet):
             spatial_reference = json.loads(pipeline.metadata)["metadata"][
                 "readers.las"
             ]["comp_spatialreference"]
-            # hanlde empty metadata
+
+            # Raise Warning when no srs is present. This is subject to change in the future. It might be plausible ot skip this warning if georeferenced is False.
+            # That would allow user to purpusfully use datasets without a srs.
             if spatial_reference.strip() == "":
                 raise Warning(
                     "No SRS was detected, please include one manually if non is present in the LAS file."
@@ -192,15 +196,7 @@ class PDALInMemoryDataSet(DataSet):
         )
 
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
-        # if .tif is already in the filename it will be removed to avoid double file extension
 
-        # resolution_options = {}
-        # if self.georeferenced:
-        #     resolution_options["resolution"] = get_angular_resolution(resolution)
-        #     resolution_options["default_srs"] = "EPSG:4326"
-        # else:
-        #     resolution_options["resolution"] = resolution
-        print(resolution)
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
         execute_pdal_pipeline(

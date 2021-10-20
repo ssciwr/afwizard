@@ -25,6 +25,10 @@ class DataSet:
             Whether the dataset is geo-referenced. Defaults to true. Manually
             disable this when working e.g. with synthetic data.
         :type georeferenced: bool
+        :param spatial_reference:
+            A spatial reference in WKT. This will override the srs found in the metadata and is nessecarry if no srs is present in the metadata.
+            Th default None will try to extract this information from the metadata when converted to a PdalInMemorydataset.
+        :type spatial_reference:
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
