@@ -82,5 +82,11 @@ def test_restrict(dataset):
     dataset.restrict()
 
 
-def test_convert_georef(dataset):
-    dataset.convert_georef("EPSG:25832")
+def test_reproject_dataset(dataset):
+    from adaptivefiltering.dataset import reproject_dataset
+
+    dataset2 = reproject_dataset(dataset, "EPSG:4362")
+    dataset3 = reproject_dataset(dataset2, "EPSG:25833 - ETRS89 / UTM zone 33N")
+    dataset3 = reproject_dataset(
+        dataset2, "EPSG:25833 - ETRS89 / UTM zone 33N", in_srs="EPSG:4362"
+    )
