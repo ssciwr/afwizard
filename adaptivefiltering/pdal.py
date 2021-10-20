@@ -327,7 +327,11 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         # Wrap the result in a DataSet instance
-        return DataSet(filename=filename, georeferenced=self.georeferenced)
+        return DataSet(
+            filename=filename,
+            georeferenced=self.georeferenced,
+            spatial_reference=self.spatial_reference,
+        )
 
     def restrict(self, segmentation=None):
         # If a single Segment is given, we convert it to a segmentation
@@ -357,6 +361,8 @@ class PDALInMemoryDataSet(DataSet):
                 + [
                     f"Cropping data to only include polygons defined by:\n{str(polygons)}"
                 ],
+                georeferenced=self.georeferenced,
+                spatial_reference=self.spatial_reference,
             )
 
         # Maybe create the segmentation
