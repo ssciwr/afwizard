@@ -1,4 +1,3 @@
-from pdal import pipeline
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
@@ -10,8 +9,7 @@ from adaptivefiltering.visualization import (
     vis_pointcloud,
     vis_slope,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, get_angular_resolution
-from adaptivefiltering.widgets import WidgetForm
+from adaptivefiltering.utils import AdaptiveFilteringError
 
 import functools
 import geodaisy.converters as convert
@@ -108,7 +106,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[], georeferenced=True):
+    def __init__(self, pipeline=None, provenance=[], spatial_reference=None):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -120,7 +118,8 @@ class PDALInMemoryDataSet(DataSet):
         self.pipeline = pipeline
 
         super(PDALInMemoryDataSet, self).__init__(
-            provenance=provenance, georeferenced=georeferenced
+            provenance=provenance,
+            spatial_reference=spatial_reference,
         )
 
     @property
@@ -133,6 +132,8 @@ class PDALInMemoryDataSet(DataSet):
 
         This might involve file system based operations.
 
+        Warning: if no srs was specified and no comp_spatialreference entry is found in the metadata this function will exit with a Warning.
+
         :param dataset:
             The data set instance to convert.
         """
@@ -140,6 +141,8 @@ class PDALInMemoryDataSet(DataSet):
         if isinstance(dataset, PDALInMemoryDataSet):
             return dataset
 
+        # save spatial reference of dataset before it is lost
+        spatial_reference = dataset.spatial_reference
         # If dataset is of unknown type, we should first dump it to disk
         dataset = dataset.save(get_temporary_filename("las"))
 
@@ -148,34 +151,33 @@ class PDALInMemoryDataSet(DataSet):
 
         filename = locate_file(dataset.filename)
 
-        # Conditionally define a reprojection filter
-        reproj_filter = []
-        if dataset.georeferenced:
-            reproj_filter.append(
-                {"type": "filters.reprojection", "out_srs": "EPSG:4326"}
-            )
-
         # Execute the reader pipeline
-        pipeline = execute_pdal_pipeline(
-            config=[{"type": "readers.las", "filename": filename}] + reproj_filter
-        )
+        config = {"type": "readers.las", "filename": filename}
+        if spatial_reference is not None:
+            config["override_srs"] = spatial_reference
+            config["nosrs"] = True
+
+        pipeline = execute_pdal_pipeline(config=[config])
+
+        if spatial_reference is None:
+            spatial_reference = json.loads(pipeline.metadata)["metadata"][
+                "readers.las"
+            ]["comp_spatialreference"]
+
+            # Raise Warning when no srs is present. This is subject to change in the future.
+            if spatial_reference.strip() == "":
+                raise Warning(
+                    "No SRS was detected, please include one manually if none is present in the LAS file."
+                )
 
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
             + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
-            georeferenced=dataset.georeferenced,
+            spatial_reference=spatial_reference,
         )
 
     def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
-        # if .tif is already in the filename it will be removed to avoid double file extension
-
-        resolution_options = {}
-        if self.georeferenced:
-            resolution_options["resolution"] = get_angular_resolution(resolution)
-            resolution_options["default_srs"] = "EPSG:4326"
-        else:
-            resolution_options["resolution"] = resolution
 
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]
@@ -193,7 +195,7 @@ class PDALInMemoryDataSet(DataSet):
                     "gdaldriver": "GTiff",
                     "output_type": "all",
                     "type": "writers.gdal",
-                    **resolution_options,
+                    "resolution": resolution,
                 },
             ],
         )
@@ -303,7 +305,10 @@ class PDALInMemoryDataSet(DataSet):
         )
 
         # Wrap the result in a DataSet instance
-        return DataSet(filename=filename, georeferenced=self.georeferenced)
+        return DataSet(
+            filename=filename,
+            spatial_reference=self.spatial_reference,
+        )
 
     def restrict(self, segmentation=None):
         # If a single Segment is given, we convert it to a segmentation
@@ -333,6 +338,7 @@ class PDALInMemoryDataSet(DataSet):
                 + [
                     f"Cropping data to only include polygons defined by:\n{str(polygons)}"
                 ],
+                spatial_reference=self.spatial_reference,
             )
 
         # Maybe create the segmentation
@@ -345,40 +351,3 @@ class PDALInMemoryDataSet(DataSet):
             return restricted
         else:
             return apply_restriction(segmentation)
-
-    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
-        """Convert the dataset from one spatial reference into another.
-        :parma spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
-        :type spatial_ref_out: string
-
-        :param spatial_ref_in: The input format from wich the conversation is starting. The faufalt is the last transformation output.
-        :type spatial_ref_in: string
-
-        """
-
-        # if no spatial reference input is given, iterate through the metadata and search for the spatial reference input.
-
-        if spatial_ref_in is None:
-            for keys, dictionary in json.loads(self.pipeline.metadata)[
-                "metadata"
-            ].items():
-                spatial_ref_in = dictionary.get("comp_spatialreference", None)
-
-        newdata = execute_pdal_pipeline(
-            dataset=self,
-            config={
-                "type": "filters.reprojection",
-                "in_srs": spatial_ref_in,
-                "out_srs": spatial_ref_out,
-            },
-        )
-
-        return PDALInMemoryDataSet(
-            pipeline=newdata,
-            provenance=self._provenance
-            + [
-                "converted the dataset to the {} spatial reference.".format(
-                    spatial_ref_out
-                )
-            ],
-        )

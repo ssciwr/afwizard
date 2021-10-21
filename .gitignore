@@ -1,3 +1,7 @@
+# Ignore las files unless explicitly forced with -f
+*.las
+*.laz
+
 # Ignore VSCode setting
 .vscode
 

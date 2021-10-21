@@ -109,7 +109,7 @@ class InteractiveMap:
 
 
         :param dataset:
-            The dataset from which the map should be displayed. This needs to be in a valid georeferenced format. Eg.: EPSG:4326
+            The dataset from which the map should be displayed.
         :type dataset: Dataset
         :param segmentation:
             A premade segmentation can can be loaded and shown on a map without the need to load a dataset.
@@ -177,7 +177,6 @@ class InteractiveMap:
 
         :param dataset:
             The dataset from which the map should be displayed.
-            This needs to be in a valid georeferenced format. Eg.: EPSG:4326
         :type dataset: Dataset
 
         :return:

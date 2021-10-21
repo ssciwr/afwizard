@@ -2,13 +2,14 @@ from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename
 from adaptivefiltering.utils import AdaptiveFilteringError
 
+import json
 import os
 import shutil
 import sys
 
 
 class DataSet:
-    def __init__(self, filename=None, provenance=[], georeferenced=True):
+    def __init__(self, filename=None, provenance=[], spatial_reference=None):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -19,10 +20,11 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
-        :param georeferenced:
-            Whether the dataset is geo-referenced. Defaults to true. Manually
-            disable this when working e.g. with synthetic data.
-        :type georeferenced: bool
+        :param spatial_reference:
+            A spatial reference in WKT. This will override the reference system found in the metadata
+            and is required if no reference system is present in the metadata of the LAS/LAZ file.
+            If this parameter is not provided, this information is extracted from the metadata.
+        :type spatial_reference: str
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -30,7 +32,7 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
-        self.georeferenced = georeferenced
+        self.spatial_reference = spatial_reference
 
         # Make the path absolute
         if self.filename is not None:
@@ -175,34 +177,24 @@ class DataSet:
         shutil.copy(self.filename, filename)
 
         # And return a DataSet instance
-        return DataSet(filename=filename, georeferenced=self.georeferenced)
+        return DataSet(
+            filename=filename,
+            provenance=self._provenance,
+            spatial_reference=self.spatial_reference,
+        )
 
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
 
         :param segmentation:
         :type: adaptivefiltering.segmentation.Segmentation
+
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
 
         return dataset.restrict(segmentation)
-
-    def convert_georef(self, spatial_ref_out="EPSG:4326", spatial_ref_in=None):
-        """Convert the dataset from one spatial reference into another using the pdal reprojection filter.
-        :param spatial_ref_out: The desired output format. The default is the same one as in the interactive map.
-        :type spatial_ref_out: string
-
-        :param spatial_ref_in: The input format from wich the conversation is starting. The default is the spatial reference in the current metadata.
-        :type spatial_ref_in: string
-
-        """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-
-        return dataset.convert_georef(spatial_ref_out, spatial_ref_in)
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
@@ -240,7 +232,7 @@ def remove_classification(dataset):
     :type dataset: adaptivefiltering.Dataset
     :return:
         A transformed dataset with unclassified points
-    :rtype:
+    :rtype: adaptivefiltering.DataSet
     """
     from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
 
@@ -253,4 +245,42 @@ def remove_classification(dataset):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance + ["Removed all point classifications"],
+        spatial_reference=dataset.spatial_reference,
+    )
+
+
+def reproject_dataset(dataset, out_srs, in_srs=None):
+    """
+    Standalone function to reproject a given dataset with the option of forcing an input reference system
+
+    :param out_srs: The desired output format in WKT.
+    :type out_srs: str
+
+    :param in_srs: The input format in WKT from which to convert. The default is the dataset's current reference system.
+    :type in_srs: str
+
+    :return: A reprojected dataset
+    :rtype: adaptivefiltering.DataSet
+    """
+    from adaptivefiltering.pdal import execute_pdal_pipeline
+    from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+    if in_srs is None:
+        in_srs = dataset.spatial_reference
+
+    config = {
+        "type": "filters.reprojection",
+        "in_srs": in_srs,
+        "out_srs": out_srs,
+    }
+    pipeline = execute_pdal_pipeline(dataset=dataset, config=config)
+    spatial_reference = json.loads(pipeline.metadata)["metadata"][
+        "filters.reprojection"
+    ]["comp_spatialreference"]
+    return PDALInMemoryDataSet(
+        pipeline=pipeline,
+        provenance=dataset._provenance
+        + [f"Converted the dataset to spatial reference system '{out_srs}'"],
+        spatial_reference=spatial_reference,
     )
