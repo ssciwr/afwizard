@@ -11,39 +11,30 @@ import os
 import pytest
 
 
-def test_show_points(dataset):
+def test_show(dataset):
     # Test visualization - this is not actually very good in the absence of a display
     # But it helps in measuring coverage of the test suite.
-    dataset.show_points()
+    dataset.show(visualization_type="hillshade")
+    dataset.show(visualization_type="hillshade", resolution=5.0)
+    dataset.show(visualization_type="hillshade", classification=asprs[5])
+    dataset.show(visualization_type="slopemap")
+    dataset.show(visualization_type="slopemap", resolution=5.0)
+    dataset.show(visualization_type="slopemap", classification=asprs[5])
+    dataset.show(visualization_type="mesh")
+    dataset.show(visualization_type="mesh", resolution=5.0)
+    dataset.show(visualization_type="mesh", classification=asprs[5])
+    dataset.show(visualization_type="scatter")
 
-    # The given Dataset has more than 500 points, this a ValueError is raised.
+    # Scatter plots are subject to a point limit
     with pytest.raises(ValueError):
-        dataset.show_points(threshold=500)
-
-
-def test_show_mesh(dataset):
-    # test different methods of calling show_mesh
-    # generate_geoTif is automatically tested as well
-    dataset.show_mesh()
-    dataset.show_mesh(resolution=5)
-    dataset.show_mesh(classification=asprs[5])
-
-
-def test_show_hillshade(dataset):
-    dataset.show_hillshade()
-    dataset.show_hillshade(resolution=5)
-    dataset.show_hillshade(classification=asprs[5])
-
-
-def test_show_slope(dataset):
-    # test different methods of calling show_mesh
-    # generate_geoTif is automatically tested as well
-    dataset.show_slope()
-    dataset.show_slope(resolution=5)
-    dataset.show_slope(classification=asprs[5])
+        dataset.show(visualization_type="scatter", threshold=500)
 
 
 def test_restriction(dataset):
+    # Trigger generation of the UI
+    dataset.restrict()
+
+    # Programmatically restrict with an artificial segment
     segment = Segment([[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]])
     restricted = dataset.restrict(segment)
 
@@ -75,11 +66,6 @@ def test_provenance(minimal_dataset):
     # For now, only check that output to a stream works
     with io.StringIO() as out:
         minimal_dataset.provenance(out)
-
-
-def test_restrict(dataset):
-    # not really sure how to test this one.
-    dataset.restrict()
 
 
 def test_reproject_dataset(dataset):

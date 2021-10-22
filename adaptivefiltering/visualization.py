@@ -1,7 +1,13 @@
+from adaptivefiltering.asprs import asprs
+
+import functools
 import IPython
 import ipyvolume.pylab as vis
 import matplotlib.pyplot as plt
 import numpy as np
+import richdem
+import tempfile
+
 from matplotlib import cm
 
 
@@ -11,79 +17,29 @@ if ipython is not None:
     ipython.magic("matplotlib widget")
 
 
-def vis_pointcloud(x, y, z):
-    """Visualization of a point cloud in Jupyter notebooks
+def hillshade_visualization(
+    dataset, classification=asprs[:], resolution=1.0, azimuth=315, angle_altitude=45
+):
+    # Convert to PDAL - this should go away when we make DEM's a first class citizen
+    # of our abstractions
+    from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-    :param x: The array x-coordinates of the point cloud
-    :param y: The array y-coordinates of the point cloud
-    :param z: The array z-coordinates of the point cloud
-    :type x: numpy.array
-    :type y: numpy.array
-    :type z: numpy.array
-    """
-    # laspy.read() gives the x,y and z coordinates as a special datatype "laspy.point.dims.ScaledArrayView"
-    # this data type is not compatible with the ipyvolume plot, thus all coordinates are converted to numpy arrays before plotting.
+    dataset = PDALInMemoryDataSet.convert(dataset)
 
-    x = np.asarray(x)
-    y = np.asarray(y)
-    z = np.asarray(z)
+    # Make a temporary tif file to view data
+    if (resolution, classification) not in dataset._mesh_data_cache:
+        # Write a temporary file
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            dataset.save_mesh(
+                str(tmp_file.name),
+                resolution=resolution,
+                classification=classification,
+            )
 
-    fig = vis.figure(width=1000)
-    vis.scatter(
-        x,
-        y,
-        z,
-        color="red",
-        size=0.05,
-    )
-    vis.style.box_off()
-    vis.view(azimuth=180, elevation=90)
-    fig.xlim = (min(x), max(x))
-    fig.ylim = (min(y), max(y))
-    fig.zlim = (min(z), max(z))
-    vis.show()
-
-
-def vis_mesh(x, y, z):
-    """Visualization of a point cloud in Jupyter notebooks
-
-    :param x: The array x-coordinates of the point cloud
-    :param y: The array y-coordinates of the point cloud
-    :param z: The array z-coordinates of the point cloud
-    :type x: numpy.array
-    :type y: numpy.array
-    :type z: numpy.array
-    """
-
-    X, Y = np.meshgrid(x, y)
-
-    # define the color map
-    colormap = cm.terrain
-    znorm = z / (np.max(z) + 100)
-    znorm.min(), znorm.max()
-    color = colormap(znorm)
-
-    fig = vis.figure(width=1000)
-    vis.plot_surface(X, Y, z, color=color[..., :3])
-    vis.style.box_off()
-    vis.view(azimuth=0, elevation=-90)
-    fig.xlim = (np.min(x), np.max(x))
-    fig.ylim = (np.min(y), np.max(y))
-    fig.zlim = (np.min(z), np.max(z))
-    vis.show()
-
-
-def vis_hillshade(z):
-    """Visualize a hillshade model in Jupyter Notebook
-
-    :param z:
-        The z-coordinates on a given raster produced by e.g.
-        GeoTiff export.
-    :type z: numpy.array
-    """
-    # These two values might be worth exposing
-    azimuth = 315
-    angle_altitude = 45
+    # Retrieve the raster data from cache
+    data = dataset._mesh_data_cache[resolution, classification]
+    band = data.GetRasterBand(1)
+    z = band.ReadAsArray()
 
     # Calculcate the hillshade values. Code taken from here
     # http://rnovitsky.blogspot.com/2010/04/using-hillshade-image-as-intensity.html
@@ -119,13 +75,24 @@ def vis_hillshade(z):
     return fig
 
 
-def vis_slope(slope):
-    """Visualize a slope model in Jupyter Notebook
+def slopemap_visualization(dataset, classification=asprs[:], resolution=1.0):
+    # Convert to PDAL - this should go away when we make DEM's a first class citizen
+    # of our abstractions
+    from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-    :param slope:
-        richdem slope object GeoTiff export.
-    :type z: richdem.rdarray
-    """
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
+    # make a temporary tif file to view data
+    with tempfile.NamedTemporaryFile() as tmp_file:
+        dataset.save_mesh(
+            str(tmp_file.name),
+            resolution=resolution,
+            classification=classification,
+        )
+        shasta_dem = richdem.LoadGDAL(tmp_file.name + ".tif")
+
+    # Have richdem calculate the slope map
+    slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
 
     # Plot the image
     plt.ioff()
@@ -148,3 +115,94 @@ def vis_slope(slope):
     # Return the figure object. The widget can be extracted from this using
     # the canvas property
     return fig
+
+
+def scatter_visualization(dataset, classification=asprs[:], threshold=1000000):
+    # Convert to PDAL - this should go away when we make DEM's a first class citizen
+    # of our abstractions
+    from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
+    if len(dataset.data["X"]) >= threshold:
+        raise ValueError(
+            f"Too many Datapoints loaded for visualisation.{len(dataset.data['X'])} points are loaded, but only {threshold} allowed"
+        )
+
+    # Filter classification data - could also be done with PDAL
+    filtered_data = dataset.data[
+        functools.reduce(
+            np.logical_or,
+            (dataset.data["Classification"] == c for c in classification),
+        )
+    ]
+
+    # Extract coordinate arrays
+    x = np.asarray(filtered_data["X"])
+    y = np.asarray(filtered_data["Y"])
+    z = np.asarray(filtered_data["Z"])
+
+    fig = vis.figure(width=1000)
+    vis.scatter(
+        x,
+        y,
+        z,
+        color="red",
+        size=0.05,
+    )
+    vis.style.box_off()
+    vis.view(azimuth=180, elevation=90)
+    fig.xlim = (min(x), max(x))
+    fig.ylim = (min(y), max(y))
+    fig.zlim = (min(z), max(z))
+    vis.show()
+
+
+def mesh_visualization(dataset, classification=asprs[:], resolution=1.0):
+    # Convert to PDAL - this should go away when we make DEM's a first class citizen
+    # of our abstractions
+    from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
+    # make a temporary tif file to view data
+    if (resolution, classification) not in dataset._mesh_data_cache:
+        # Write a temporary file
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            dataset.save_mesh(
+                str(tmp_file.name),
+                resolution=resolution,
+                classification=classification,
+            )
+
+    # Retrieve the raster data from cache
+    data = dataset._mesh_data_cache[resolution, classification]
+
+    # use the number of x and y points to generate a grid.
+    x = np.arange(0, data.RasterXSize)
+    y = np.arange(0, data.RasterYSize)
+
+    # multiply x and y with the given resolution for comparable plot.
+    x = x * data.GetGeoTransform()[1]
+    y = y * data.GetGeoTransform()[1]
+
+    # get height information from
+    band = data.GetRasterBand(1)
+    z = band.ReadAsArray()
+
+    X, Y = np.meshgrid(x, y)
+
+    # define the color map
+    colormap = cm.terrain
+    znorm = z / (np.max(z) + 100)
+    znorm.min(), znorm.max()
+    color = colormap(znorm)
+
+    fig = vis.figure(width=1000)
+    vis.plot_surface(X, Y, z, color=color[..., :3])
+    vis.style.box_off()
+    vis.view(azimuth=0, elevation=-90)
+    fig.xlim = (np.min(x), np.max(x))
+    fig.ylim = (np.min(y), np.max(y))
+    fig.zlim = (np.min(z), np.max(z))
+    vis.show()
