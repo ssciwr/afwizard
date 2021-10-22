@@ -125,7 +125,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         datasets = [datasets]
 
     # Create widgets from the datasets
-    widgets = [ds.show_hillshade().canvas for ds in datasets]
+    widgets = [ds.show() for ds in datasets]
 
     # If no datasets were given, we add a dummy widget that explains the situation
     if not widgets:
@@ -137,6 +137,12 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+    visualization_form = WidgetForm(schema)
+    visualization_form_widget = visualization_form.widget
+    visualization_form_widget.layout = fullwidth
 
     # Get the classification value selection widget
     _class_widget = classification_widget(datasets)
@@ -161,12 +167,16 @@ def pipeline_tuning(datasets=[], pipeline=None):
             classification_widget(transformed_datasets, selected=selected),
         )
 
-        # Update the widgets
-        for d, w in zip(transformed_datasets, widgets):
-            newfig = d.show_hillshade(classification=class_widget.children[0].value)
-            w.figure.axes[0].images[0].set_data(newfig.axes[0].images[0].get_array())
-            w.draw()
-            w.flush_events()
+        # Write new widgets
+        new_widgets = [
+            ds.show(
+                classification=class_widget.children[0].value, **visualization_form.data
+            )
+            for ds in transformed_datasets
+        ]
+
+        nonlocal app
+        app.center = create_center_widget(new_widgets)
 
     preview.on_click(_update_preview)
 
@@ -178,21 +188,26 @@ def pipeline_tuning(datasets=[], pipeline=None):
         ]
     )
 
-    # Create the center widget including layout tweaks
-    if len(widgets) > 1:
-        # We use the Tab widget to allow switching between different datasets
-        center = ipywidgets.Tab()
+    def create_center_widget(widgets):
+        # Create the center widget including layout tweaks
+        if len(widgets) > 1:
+            # We use the Tab widget to allow switching between different datasets
+            center = ipywidgets.Tab()
 
-        # The wrapping in Box works around a known bug in ipympl:
-        # https://github.com/matplotlib/ipympl/issues/126
-        center.children = tuple(ipywidgets.Box([w]) for w in widgets)
+            # The wrapping in Box works around a known bug in ipympl:
+            # https://github.com/matplotlib/ipympl/issues/126
+            center.children = tuple(ipywidgets.Box([w]) for w in widgets)
 
-        # Set titles for the different tabs
-        for i in range(len(widgets)):
-            center.set_title(i, f"Dataset #{i}")
-    else:
-        center = widgets[0]
-    center.layout = fullwidth
+            # Set titles for the different tabs
+            for i in range(len(widgets)):
+                center.set_title(i, f"Dataset #{i}")
+
+            center.layout = fullwidth
+
+            return center
+        else:
+            widgets[0].layout = fullwidth
+            return widgets[0]
 
     # Create the right sidebar including layout tweaks
     preview.layout = fullwidth
@@ -203,6 +218,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
             ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
             preview,
             finalize,
+            ipywidgets.HTML("Visualization options:", layout=fullwidth),
+            visualization_form_widget,
             ipywidgets.HTML(
                 "Point classifications to include in the hillshade visualization (click preview to update):",
                 layout=fullwidth,
@@ -215,10 +232,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
     app = ipywidgets.AppLayout(
         header=None,
         left_sidebar=left_sidebar,
-        center=center,
+        center=create_center_widget(widgets),
         right_sidebar=right_sidebar,
         footer=None,
-        pane_widths=[2, 3, 1],
+        pane_widths=[3, 6, 3],
     )
 
     # Show the app in Jupyter notebook
