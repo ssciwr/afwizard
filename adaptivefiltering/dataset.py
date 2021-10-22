@@ -80,7 +80,34 @@ class DataSet:
         )
 
     def show(self, visualization_type="hillshade", classification=asprs[:], **kwargs):
-        """Visualize the dataset in JupyterLab"""
+        """Visualize the dataset in JupyterLab
+
+        Several visualization options can be chosen via the *visualization_type* parameter.
+        Some of the arguments given below are only available for specific visualization
+        types. To explore the visualization capabilities, you can also use the interactive
+        user interface with :func:`~adaptivefiltering.DataSet.show_interactive`.
+
+        :param visualization_type:
+            Which visualization to use. Current implemented values are:
+            * `hillshade` for a greyscale 2D map
+            * `slopemap` for a 2D map color-coded by the slope
+            * `scatter` for a 3D scatter plot of the point cloud
+            * `mesh` for a 2.5D surface plot
+        :type visualization_type: str
+        :param classification:
+            Which classification values to include into the visualization. By default,
+            all classes are considered. The best interface to provide this information is
+            using :ref:`~adaptivefilter.asprs`.
+        :type classification: tuple
+        :param resolution:
+            The spatial resolution in meters (needed for all types except `scatter`).
+        :type resolution: float
+        :param azimuth:
+            The angle in the xy plane where the sun is from [0, 360] (`hillshade` only)
+        :type azimuth: float
+        :param angle_altitude:
+            The angle altitude of the sun from [0, 90] (`hillshade` only)
+        """
 
         # Validate the visualization input
         kwargs["visualization_type"] = visualization_type
