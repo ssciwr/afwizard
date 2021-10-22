@@ -123,16 +123,29 @@ class Map:
 
         if dataset is None and segmentation is None:
             # if no dataset or segmentation is given, the map will be centered at the SSC office
-            self.coordinates_mean = np.asarray([49.41745, 8.67529])
-            self.segmentation = None
+            raise Exception(
+                "Please use either a dataset or a segmentation. None were given."
+            )
 
         # convert to pdal dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
+        print(dataset.spatial_reference)
         # preserve the original srs
-        self.original_srs = dataset.spatial_reference
-        # convert to a srs the ipyleaflet map can use.
 
-        self.dataset = reproject_dataset(dataset, "EPSG:3857", in_srs=in_srs)
+        if in_srs is None:
+            self.original_srs = dataset.spatial_reference
+        else:
+            self.original_srs = in_srs
+
+        print("original", self.original_srs)
+        # convert to a srs the ipyleaflet map can use.
+        self.dataset = reproject_dataset(dataset, "EPSG:3857", in_srs=self.original_srs)
+        print(
+            "new",
+            json.loads(self.dataset.pipeline.metadata)["metadata"][
+                "filters.reprojection"
+            ]["comp_spatialreference"],
+        )
 
     def setup_grid(self):
         """
@@ -223,14 +236,16 @@ class Map:
             ]
         )
         boundary_coordinates = boundary_json["coordinates"]
+
+        print(boundary_coordinates)
         coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
-        print(coordinates_mean)
-        print(self.dataset.spatial_reference)
+
         m = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(coordinates_mean[0], coordinates_mean[1]),
+            # center = ( 0, 221194),
             crs=ipyleaflet.projections.EPSG3857,
-            scroll_wheel_zoom=True,
+            scroll_wheel_zoom=False,
             max_zoom=20,
         )
         return m
