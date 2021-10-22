@@ -3,24 +3,14 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.visualization import (
-    vis_hillshade,
-    vis_mesh,
-    vis_pointcloud,
-    vis_slope,
-)
 from adaptivefiltering.utils import AdaptiveFilteringError
 
-import functools
 import geodaisy.converters as convert
 from osgeo import gdal
 import json
-import numpy as np
 import os
 import pdal
 import pyrsistent
-import tempfile
-import richdem
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
@@ -204,85 +194,6 @@ class PDALInMemoryDataSet(DataSet):
         self._mesh_data_cache[resolution, classification] = gdal.Open(
             filename + ".tif", gdal.GA_ReadOnly
         )
-
-    def show_mesh(self, resolution=2.0, classification=asprs["ground"]):
-        # make a temporary tif file to view data
-        if (resolution, classification) not in self._mesh_data_cache:
-            # Write a temporary file
-            with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(
-                    str(tmp_file.name),
-                    resolution=resolution,
-                    classification=classification,
-                )
-
-        # Retrieve the raster data from cache
-        data = self._mesh_data_cache[resolution, classification]
-
-        # use the number of x and y points to generate a grid.
-        x = np.arange(0, data.RasterXSize)
-        y = np.arange(0, data.RasterYSize)
-
-        # multiplay x and y with the given resolution for comparable plot.
-        x = x * data.GetGeoTransform()[1]
-        y = y * data.GetGeoTransform()[1]
-
-        # get height information from
-        band = data.GetRasterBand(1)
-        z = band.ReadAsArray()
-
-        return vis_mesh(x, y, z)
-
-    def show_points(self, threshold=750000, classification=asprs["ground"]):
-        if len(self.data["X"]) >= threshold:
-            error_text = "Too many Datapoints loaded for visualisation.{} points are loaded, but only {} allowed".format(
-                len(self.data["X"]), threshold
-            )
-            raise ValueError(error_text)
-
-        filtered_data = self.data[
-            functools.reduce(
-                np.logical_or,
-                (self.data["Classification"] == c for c in classification),
-            )
-        ]
-
-        return vis_pointcloud(
-            filtered_data["X"], filtered_data["Y"], filtered_data["Z"]
-        )
-
-    def show_slope(self, resolution=2.0, classification=asprs["ground"]):
-        # make a temporary tif file to view data
-
-        with tempfile.NamedTemporaryFile() as tmp_file:
-            self.save_mesh(
-                str(tmp_file.name),
-                resolution=resolution,
-                classification=classification,
-            )
-            shasta_dem = richdem.LoadGDAL(tmp_file.name + ".tif")
-
-        slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
-
-        return vis_slope(slope)
-
-    def show_hillshade(self, resolution=2.0, classification=asprs["ground"]):
-        # make a temporary tif file to view data
-        if (resolution, classification) not in self._mesh_data_cache:
-            # Write a temporary file
-            with tempfile.NamedTemporaryFile() as tmp_file:
-                self.save_mesh(
-                    str(tmp_file.name),
-                    resolution=resolution,
-                    classification=classification,
-                )
-
-        # Retrieve the raster data from cache
-        data = self._mesh_data_cache[resolution, classification]
-
-        band = data.GetRasterBand(1)
-
-        return vis_hillshade(band.ReadAsArray())
 
     def save(self, filename, compress=False, overwrite=False):
         # Check if we would overwrite an input file

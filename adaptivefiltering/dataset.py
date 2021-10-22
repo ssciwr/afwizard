@@ -1,8 +1,15 @@
 from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import locate_file, get_temporary_filename
+from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.visualization import (
+    hillshade_visualization,
+    mesh_visualization,
+    scatter_visualization,
+    slopemap_visualization,
+)
 
 import json
+import jsonschema
 import os
 import shutil
 import sys
@@ -72,71 +79,60 @@ class DataSet:
             filename, resolution=resolution, classification=classification
         )
 
-    def show_mesh(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as a digital terrain model in JupyterLab
+    def show(self, visualization_type="hillshade", classification=asprs[:], **kwargs):
+        """Visualize the dataset in JupyterLab
 
-        It is important to note that for archaelogic applications, the mesh is not
-        a traditional DEM/DTM (Digitial Elevation/Terrain Model), but rather a DFM
-        (Digital Feature Model) which consists of ground and all potentially relevant
-        structures like buildings etc. but always excludes vegetation.
+        Several visualization options can be chosen via the *visualization_type* parameter.
+        Some of the arguments given below are only available for specific visualization
+        types. To explore the visualization capabilities, you can also use the interactive
+        user interface with :func:`~adaptivefiltering.DataSet.show_interactive`.
 
-        :param resolution:
-            The mesh resolution in meters. Adapt this depending on the scale
-            of the features you are looking for and the point density of your
-            Lidar data.
-        :type resolution: float
+        :param visualization_type:
+            Which visualization to use. Current implemented values are:
+            * `hillshade` for a greyscale 2D map
+            * `slopemap` for a 2D map color-coded by the slope
+            * `scatter` for a 3D scatter plot of the point cloud
+            * `mesh` for a 2.5D surface plot
+        :type visualization_type: str
         :param classification:
-            The classification values to include into the visualization
+            Which classification values to include into the visualization. By default,
+            all classes are considered. The best interface to provide this information is
+            using :ref:`~adaptivefilter.asprs`.
         :type classification: tuple
-        """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_mesh(resolution=resolution, classification=classification)
-
-    def show_points(self, threshold=750000, classification=asprs[:]):
-        """Visualize the point cloud in Jupyter notebook
-        Will give a warning if too many data points are present.
-        Non-operational if called outside of Jupyter Notebook.
-
-        :param classification:
-            The classification values to include into the visualization
-        :type classification: tuple
-        """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_points(threshold=threshold, classification=classification)
-
-    def show_hillshade(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as hillshade model in Jupyter notebook
-
         :param resolution:
-            The mesh resolution to use for the visualization in meters.
+            The spatial resolution in meters (needed for all types except `scatter`).
         :type resolution: float
-        :param classification:
-            The classification values to include into the visualization
-        :type classification: tuple"""
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
+        :param azimuth:
+            The angle in the xy plane where the sun is from [0, 360] (`hillshade` only)
+        :type azimuth: float
+        :param angle_altitude:
+            The angle altitude of the sun from [0, 90] (`hillshade` only)
+        """
 
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_hillshade(
-            resolution=resolution, classification=classification
+        # Validate the visualization input
+        kwargs["visualization_type"] = visualization_type
+        schema = load_schema("visualization.json")
+        jsonschema.validate(kwargs, schema=schema)
+        kwargs.pop("visualization_type")
+
+        # Create a mapping of types to implementations
+        visualization_functions = {
+            "hillshade": hillshade_visualization,
+            "mesh": mesh_visualization,
+            "scatter": scatter_visualization,
+            "slopemap": slopemap_visualization,
+        }
+
+        # Call the correct visualization function
+        return visualization_functions[visualization_type](
+            self, classification=classification, **kwargs
         )
 
-    def show_slope(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as slope model in Jupyter notebook.
+    def show_interactive(self):
+        """Visualize the dataset with interactive visualization controls"""
+        from adaptivefiltering.apps import show_interactive
 
-        :param resolution:
-            The mesh resolution to use for the visualization in meters.
-        :type resolution: float
-        :param classification:
-            The classification values to include into the visualization
-        :type classification: tuple"""
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_slope(resolution=resolution, classification=classification)
+        return show_interactive(self)
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file

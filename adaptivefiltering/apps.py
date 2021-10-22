@@ -1,15 +1,16 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import InteractiveMap, Segmentation
+from adaptivefiltering.widgets import WidgetForm
 
 import ipywidgets
 import IPython
 import itertools
 import math
 import numpy as np
-import os
 
 
 def sized_label(text, size=12):
@@ -23,6 +24,9 @@ def sized_label(text, size=12):
     :type size: int
     """
     return ipywidgets.HTML(value=f"<h3 style='font-size: {str(size)}px'>{text}</h>")
+
+
+fullwidth = ipywidgets.Layout(width="100%")
 
 
 class InteractiveWidgetOutputProxy:
@@ -121,7 +125,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         datasets = [datasets]
 
     # Create widgets from the datasets
-    widgets = [ds.show_hillshade().canvas for ds in datasets]
+    widgets = [ds.show() for ds in datasets]
 
     # If no datasets were given, we add a dummy widget that explains the situation
     if not widgets:
@@ -133,6 +137,12 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+    visualization_form = WidgetForm(schema)
+    visualization_form_widget = visualization_form.widget
+    visualization_form_widget.layout = fullwidth
 
     # Get the classification value selection widget
     _class_widget = classification_widget(datasets)
@@ -157,54 +167,62 @@ def pipeline_tuning(datasets=[], pipeline=None):
             classification_widget(transformed_datasets, selected=selected),
         )
 
-        # Update the widgets
-        for d, w in zip(transformed_datasets, widgets):
-            newfig = d.show_hillshade(classification=class_widget.children[0].value)
-            w.figure.axes[0].images[0].set_data(newfig.axes[0].images[0].get_array())
-            w.draw()
-            w.flush_events()
+        # Write new widgets
+        new_widgets = [
+            ds.show(
+                classification=class_widget.children[0].value, **visualization_form.data
+            )
+            for ds in transformed_datasets
+        ]
+
+        nonlocal app
+        app.center = create_center_widget(new_widgets)
 
     preview.on_click(_update_preview)
-
-    # Define the most commonly used layout classes
-    layout = ipywidgets.Layout(width="100%")
 
     # Create the filter configuration widget including layout tweaks
     left_sidebar = ipywidgets.VBox(
         [
-            ipywidgets.HTML("Interactive pipeline configuration:", layout=layout),
+            ipywidgets.HTML("Interactive pipeline configuration:", layout=fullwidth),
             form.widget,
         ]
     )
 
-    # Create the center widget including layout tweaks
-    if len(widgets) > 1:
-        # We use the Tab widget to allow switching between different datasets
-        center = ipywidgets.Tab()
+    def create_center_widget(widgets):
+        # Create the center widget including layout tweaks
+        if len(widgets) > 1:
+            # We use the Tab widget to allow switching between different datasets
+            center = ipywidgets.Tab()
 
-        # The wrapping in Box works around a known bug in ipympl:
-        # https://github.com/matplotlib/ipympl/issues/126
-        center.children = tuple(ipywidgets.Box([w]) for w in widgets)
+            # The wrapping in Box works around a known bug in ipympl:
+            # https://github.com/matplotlib/ipympl/issues/126
+            center.children = tuple(ipywidgets.Box([w]) for w in widgets)
 
-        # Set titles for the different tabs
-        for i in range(len(widgets)):
-            center.set_title(i, f"Dataset #{i}")
-    else:
-        center = widgets[0]
-    center.layout = layout
+            # Set titles for the different tabs
+            for i in range(len(widgets)):
+                center.set_title(i, f"Dataset #{i}")
+
+            center.layout = fullwidth
+
+            return center
+        else:
+            widgets[0].layout = fullwidth
+            return widgets[0]
 
     # Create the right sidebar including layout tweaks
-    preview.layout = layout
-    finalize.layout = layout
-    class_widget.layout = layout
+    preview.layout = fullwidth
+    finalize.layout = fullwidth
+    class_widget.layout = fullwidth
     right_sidebar = ipywidgets.VBox(
         [
-            ipywidgets.HTML("Ground point filtering controls:", layout=layout),
+            ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
             preview,
             finalize,
+            ipywidgets.HTML("Visualization options:", layout=fullwidth),
+            visualization_form_widget,
             ipywidgets.HTML(
                 "Point classifications to include in the hillshade visualization (click preview to update):",
-                layout=layout,
+                layout=fullwidth,
             ),
             class_widget,
         ]
@@ -214,10 +232,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
     app = ipywidgets.AppLayout(
         header=None,
         left_sidebar=left_sidebar,
-        center=center,
+        center=create_center_widget(widgets),
         right_sidebar=right_sidebar,
         footer=None,
-        pane_widths=[2, 3, 1],
+        pane_widths=[3, 6, 3],
     )
 
     # Show the app in Jupyter notebook
@@ -292,3 +310,52 @@ def create_upload(filetype):
 
     confirm_button.on_click(_finalize)
     return upload_proxy
+
+
+def show_interactive(dataset):
+    # Convert to PDAL - this should go away when we make DEM's a first class citizen
+    # of our abstractions. We do this here instead of the visualization functions to
+    # reuse the converted dataset across the interactive session
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+    form = WidgetForm(schema)
+    formwidget = form.widget
+    formwidget.layout = fullwidth
+
+    # Create the classification widget
+    classification = classification_widget([dataset])
+    classification.layout = fullwidth
+
+    # Get a visualization button and add it to the control panel
+    button = ipywidgets.Button(description="Visualize", layout=fullwidth)
+    controls = ipywidgets.VBox([button, formwidget, classification])
+
+    # Get a container widget for the visualization itself
+    content = ipywidgets.Box([ipywidgets.Label("Currently rendering visualization...")])
+
+    # Create the overall app layout
+    app = ipywidgets.AppLayout(
+        header=None,
+        left_sidebar=controls,
+        center=content,
+        right_sidebar=None,
+        footer=None,
+        pane_widths=[1, 3, 0],
+    )
+
+    def trigger_visualization(_):
+        # This is necessary to work around matplotlib weirdness
+        app.center.children[0].layout.display = "none"
+        app.center.children = (
+            dataset.show(classification=classification.value, **form.data),
+        )
+
+    # Get a visualization button
+    button.on_click(trigger_visualization)
+
+    # Click the button once to trigger initial visualization
+    button.click()
+
+    return app
