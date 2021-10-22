@@ -129,23 +129,22 @@ class Map:
 
         # convert to pdal dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
-        print(dataset.spatial_reference)
-        # preserve the original srs
 
+        # preserve the original srs
         if in_srs is None:
             self.original_srs = dataset.spatial_reference
         else:
             self.original_srs = in_srs
 
-        print("original", self.original_srs)
         # convert to a srs the ipyleaflet map can use.
-        self.dataset = reproject_dataset(dataset, "EPSG:3857", in_srs=self.original_srs)
-        print(
-            "new",
-            json.loads(self.dataset.pipeline.metadata)["metadata"][
-                "filters.reprojection"
-            ]["comp_spatialreference"],
-        )
+        # the only way this seems to work is to convert the dataset to EPSG:4326 and set the map to expect EPSG:3857
+        # https://gis.stackexchange.com/questions/48949/epsg-3857-or-4326-for-googlemaps-openstreetmap-and-leaflet/48952#48952
+        self.dataset = reproject_dataset(dataset, "EPSG:4326", in_srs=self.original_srs)
+
+        self.setup_map()
+
+    def show_map(self):
+        return self.map
 
     def setup_grid(self):
         """
@@ -237,14 +236,12 @@ class Map:
         )
         boundary_coordinates = boundary_json["coordinates"]
 
-        print(boundary_coordinates)
         coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
 
-        m = ipyleaflet.Map(
+        self.map = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
-            center=(coordinates_mean[0], coordinates_mean[1]),
-            # center = ( 0, 221194),
-            crs=ipyleaflet.projections.EPSG3857,
+            center=(coordinates_mean[1], coordinates_mean[0]),
+            crs=ipyleaflet.projections.EPSG3857,  # we have to use epsg 3857 see comment in init
             scroll_wheel_zoom=False,
             max_zoom=20,
         )
