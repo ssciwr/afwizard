@@ -182,6 +182,50 @@ class Map:
 
         return tab
 
+    def setup_draw_control(self):
+        """Adds the polygon draw control."""
+        draw_control = ipyleaflet.DrawControl(
+            layout=ipywidgets.Layout(width="auto", grid_area="main")
+        )
+        # deactivate polyline and circlemarker
+        draw_control.polyline = {}
+        draw_control.circlemarker = {}
+
+        draw_control.polygon = {
+            "shapeOptions": {
+                "fillColor": "black",
+                "color": "black",
+                "fillOpacity": 0.1,
+            },
+            "drawError": {"color": "#dd253b", "message": "Oups!"},
+            "allowIntersection": False,
+        }
+        return draw_control
+
+    def load_polygon(self, segmentation):
+        """imports a segmentation object onto the map.
+            The function also checks for doubles.
+
+        :param segmentation:
+            A segmentation object which is to be loaded.
+        :type segmentation: Segmentation
+
+        """
+
+        # save current polygon data
+        current_data = self.draw_control.data
+
+        # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
+        new_polygons = [
+            new_polygon
+            for new_polygon in segmentation["features"]
+            if not new_polygon["geometry"]
+            in [data["geometry"] for data in current_data]
+        ]
+        # adds the new polygons to the current data
+        new_data = current_data + new_polygons
+        self.draw_control.data = new_data
+
     def setup_map(self):
         """Takes the boundary coordinates of the  given dataset
         through the pdal hexbin filter and returns them as a segmentation.
@@ -245,7 +289,9 @@ class Map:
             scroll_wheel_zoom=False,
             max_zoom=20,
         )
-        return m
+        self.draw_control = self.setup_draw_control()
+        self.map.add_control(self.draw_control)
+        self.load_polygon(hexbin_segmentation)
 
 
 class InteractiveMap:
