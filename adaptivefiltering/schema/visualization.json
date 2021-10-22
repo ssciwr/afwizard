@@ -5,27 +5,27 @@
       "properties": {
         "angle_altitude": {
           "default": 45,
-          "max": 90,
-          "min": 0,
+          "maximum": 90,
+          "minimum": 0,
           "type": "number"
         },
         "azimuth": {
           "default": 315,
-          "max": 360,
-          "min": 0,
+          "maximum": 360,
+          "minimum": 0,
           "type": "number"
         },
         "resolution": {
           "default": 1.0,
           "type": "number"
         },
-        "type": {
+        "visualization_type": {
           "const": "hillshade",
           "type": "string"
         }
       },
       "required": [
-        "type"
+        "visualization_type"
       ],
       "title": "Hillshade Model",
       "type": "object"
@@ -34,16 +34,16 @@
       "additionalProperties": false,
       "properties": {
         "resolution": {
-          "resolution": 1.0,
+          "default": 1.0,
           "type": "number"
         },
-        "type": {
+        "visualization_type": {
           "const": "slopemap",
           "type": "string"
         }
       },
       "required": [
-        "type"
+        "visualization_type"
       ],
       "title": "Slope Map",
       "type": "object"
@@ -55,13 +55,13 @@
           "default": 1000000,
           "type": "integer"
         },
-        "type": {
+        "visualization_type": {
           "const": "scatter",
           "type": "string"
         }
       },
       "required": [
-        "type"
+        "visualization_type"
       ],
       "title": "3D Scatter Plot",
       "type": "object"
@@ -70,16 +70,16 @@
       "additionalProperties": false,
       "properties": {
         "resolution": {
-          "resolution": 1.0,
+          "default": 1.0,
           "type": "number"
         },
-        "type": {
+        "visualization_type": {
           "const": "mesh",
           "type": "string"
         }
       },
       "required": [
-        "type"
+        "visualization_type"
       ],
       "title": "2.5D Surface Mesh",
       "type": "object"

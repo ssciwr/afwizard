@@ -1,15 +1,16 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import InteractiveMap, Segmentation
+from adaptivefiltering.widgets import WidgetForm
 
 import ipywidgets
 import IPython
 import itertools
 import math
 import numpy as np
-import os
 
 
 def sized_label(text, size=12):
@@ -23,6 +24,9 @@ def sized_label(text, size=12):
     :type size: int
     """
     return ipywidgets.HTML(value=f"<h3 style='font-size: {str(size)}px'>{text}</h>")
+
+
+fullwidth = ipywidgets.Layout(width="100%")
 
 
 class InteractiveWidgetOutputProxy:
@@ -166,13 +170,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     preview.on_click(_update_preview)
 
-    # Define the most commonly used layout classes
-    layout = ipywidgets.Layout(width="100%")
-
     # Create the filter configuration widget including layout tweaks
     left_sidebar = ipywidgets.VBox(
         [
-            ipywidgets.HTML("Interactive pipeline configuration:", layout=layout),
+            ipywidgets.HTML("Interactive pipeline configuration:", layout=fullwidth),
             form.widget,
         ]
     )
@@ -191,20 +192,20 @@ def pipeline_tuning(datasets=[], pipeline=None):
             center.set_title(i, f"Dataset #{i}")
     else:
         center = widgets[0]
-    center.layout = layout
+    center.layout = fullwidth
 
     # Create the right sidebar including layout tweaks
-    preview.layout = layout
-    finalize.layout = layout
-    class_widget.layout = layout
+    preview.layout = fullwidth
+    finalize.layout = fullwidth
+    class_widget.layout = fullwidth
     right_sidebar = ipywidgets.VBox(
         [
-            ipywidgets.HTML("Ground point filtering controls:", layout=layout),
+            ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
             preview,
             finalize,
             ipywidgets.HTML(
                 "Point classifications to include in the hillshade visualization (click preview to update):",
-                layout=layout,
+                layout=fullwidth,
             ),
             class_widget,
         ]
@@ -292,3 +293,46 @@ def create_upload(filetype):
 
     confirm_button.on_click(_finalize)
     return upload_proxy
+
+
+def show_interactive(dataset):
+    # Convert to PDAL - this should go away when we make DEM's a first class citizen
+    # of our abstractions. We do this here instead of the visualization functions to
+    # reuse the converted dataset across the interactive session
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+    form = WidgetForm(schema)
+    formwidget = form.widget
+    formwidget.layout = fullwidth
+
+    # Get a visualization button and add it to the control panel
+    button = ipywidgets.Button(description="Visualize", layout=fullwidth)
+    controls = ipywidgets.VBox([button, formwidget])
+
+    # Get a container widget for the visualization itself
+    content = ipywidgets.Box([ipywidgets.Label("Currently rendering visualization...")])
+
+    # Create the overall app layout
+    app = ipywidgets.AppLayout(
+        header=None,
+        left_sidebar=controls,
+        center=content,
+        right_sidebar=None,
+        footer=None,
+        pane_widths=[1, 3, 0],
+    )
+
+    def trigger_visualization(_):
+        # This is necessary to work around matplotlib weirdness
+        app.center.children[0].layout.display = "none"
+        app.center.children = (dataset.show(**form.data),)
+
+    # Get a visualization button
+    button.on_click(trigger_visualization)
+
+    # Click the button once to trigger initial visualization
+    button.click()
+
+    return app

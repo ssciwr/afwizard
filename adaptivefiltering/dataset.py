@@ -7,6 +7,7 @@ from adaptivefiltering.visualization import (
     scatter_visualization,
     slopemap_visualization,
 )
+from adaptivefiltering.widgets import WidgetForm
 
 import json
 import jsonschema
@@ -83,10 +84,10 @@ class DataSet:
         """Visualize the dataset in JupyterLab"""
 
         # Validate the visualization input
-        kwargs["type"] = visualization_type
+        kwargs["visualization_type"] = visualization_type
         schema = load_schema("visualization.json")
         jsonschema.validate(kwargs, schema=schema)
-        kwargs.pop("type")
+        kwargs.pop("visualization_type")
 
         # Create a mapping of types to implementations
         visualization_functions = {
@@ -103,7 +104,9 @@ class DataSet:
 
     def show_interactive(self):
         """Visualize the dataset with interactive visualization controls"""
-        pass
+        from adaptivefiltering.apps import show_interactive
+
+        return show_interactive(self)
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file

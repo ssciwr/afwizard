@@ -26,6 +26,9 @@ def hillshade_visualization(
 
     dataset = PDALInMemoryDataSet.convert(dataset)
 
+    # Make sure that classification is hashable
+    classification = tuple(classification)
+
     # Make a temporary tif file to view data
     if (resolution, classification) not in dataset._mesh_data_cache:
         # Write a temporary file
@@ -72,7 +75,7 @@ def hillshade_visualization(
 
     # Return the figure object. The widget can be extracted from this using
     # the canvas property
-    return fig
+    return fig.canvas
 
 
 def slopemap_visualization(dataset, classification=asprs[:], resolution=1.0):
@@ -81,6 +84,9 @@ def slopemap_visualization(dataset, classification=asprs[:], resolution=1.0):
     from adaptivefiltering.pdal import PDALInMemoryDataSet
 
     dataset = PDALInMemoryDataSet.convert(dataset)
+
+    # Make sure that classification is hashable
+    classification = tuple(classification)
 
     # make a temporary tif file to view data
     with tempfile.NamedTemporaryFile() as tmp_file:
@@ -114,7 +120,7 @@ def slopemap_visualization(dataset, classification=asprs[:], resolution=1.0):
 
     # Return the figure object. The widget can be extracted from this using
     # the canvas property
-    return fig
+    return fig.canvas
 
 
 def scatter_visualization(dataset, classification=asprs[:], threshold=1000000):
@@ -155,7 +161,8 @@ def scatter_visualization(dataset, classification=asprs[:], threshold=1000000):
     fig.xlim = (min(x), max(x))
     fig.ylim = (min(y), max(y))
     fig.zlim = (min(z), max(z))
-    vis.show()
+
+    return vis.gcc()
 
 
 def mesh_visualization(dataset, classification=asprs[:], resolution=1.0):
@@ -164,6 +171,9 @@ def mesh_visualization(dataset, classification=asprs[:], resolution=1.0):
     from adaptivefiltering.pdal import PDALInMemoryDataSet
 
     dataset = PDALInMemoryDataSet.convert(dataset)
+
+    # Make sure that classification is hashable
+    classification = tuple(classification)
 
     # make a temporary tif file to view data
     if (resolution, classification) not in dataset._mesh_data_cache:
@@ -205,4 +215,5 @@ def mesh_visualization(dataset, classification=asprs[:], resolution=1.0):
     fig.xlim = (np.min(x), np.max(x))
     fig.ylim = (np.min(y), np.max(y))
     fig.zlim = (np.min(z), np.max(z))
-    vis.show()
+
+    return vis.gcc()
