@@ -172,10 +172,13 @@ class WidgetForm:
         def _setter(_d):
             widget.value = _d
 
+        # Make sure the widget adapts to the outer layout
+        widget.layout = ipywidgets.Layout(width="100%")
+
         return WidgetFormElement(
             getter=lambda: widget.value,
             setter=_setter,
-            widgets=[ipywidgets.Box(box)],
+            widgets=[ipywidgets.VBox(box)],
         )
 
     def _construct_string(self, schema, label=None, root=False):
