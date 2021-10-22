@@ -5,15 +5,12 @@ from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_
 from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.utils import AdaptiveFilteringError
 
-import functools
 import geodaisy.converters as convert
 from osgeo import gdal
 import json
-import numpy as np
 import os
 import pdal
 import pyrsistent
-import tempfile
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
