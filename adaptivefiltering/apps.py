@@ -307,9 +307,13 @@ def show_interactive(dataset):
     formwidget = form.widget
     formwidget.layout = fullwidth
 
+    # Create the classification widget
+    classification = classification_widget([dataset])
+    classification.layout = fullwidth
+
     # Get a visualization button and add it to the control panel
     button = ipywidgets.Button(description="Visualize", layout=fullwidth)
-    controls = ipywidgets.VBox([button, formwidget])
+    controls = ipywidgets.VBox([button, formwidget, classification])
 
     # Get a container widget for the visualization itself
     content = ipywidgets.Box([ipywidgets.Label("Currently rendering visualization...")])
@@ -327,7 +331,9 @@ def show_interactive(dataset):
     def trigger_visualization(_):
         # This is necessary to work around matplotlib weirdness
         app.center.children[0].layout.display = "none"
-        app.center.children = (dataset.show(**form.data),)
+        app.center.children = (
+            dataset.show(classification=classification.value, **form.data),
+        )
 
     # Get a visualization button
     button.on_click(trigger_visualization)

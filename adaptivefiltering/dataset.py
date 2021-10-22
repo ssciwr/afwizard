@@ -7,7 +7,6 @@ from adaptivefiltering.visualization import (
     scatter_visualization,
     slopemap_visualization,
 )
-from adaptivefiltering.widgets import WidgetForm
 
 import json
 import jsonschema
