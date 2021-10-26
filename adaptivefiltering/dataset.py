@@ -1,17 +1,22 @@
 from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import locate_file, get_temporary_filename
+from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.visualization import (
+    hillshade_visualization,
+    mesh_visualization,
+    scatter_visualization,
+    slopemap_visualization,
+)
 
+import json
+import jsonschema
 import os
 import shutil
 import sys
-import json
 
 
 class DataSet:
-    def __init__(
-        self, filename=None, provenance=[], georeferenced=True, spatial_reference=None
-    ):
+    def __init__(self, filename=None, provenance=[], spatial_reference=None):
         """The main class that represents a Lidar data set.
 
         :param filename:
@@ -22,14 +27,11 @@ class DataSet:
             installation directory.
             Will give a warning if too many data points are present.
         :type filename: str
-        :param georeferenced:
-            Whether the dataset is geo-referenced. Defaults to true. Manually
-            disable this when working e.g. with synthetic data.
-        :type georeferenced: bool
         :param spatial_reference:
-            A spatial reference in WKT. This will override the srs found in the metadata and is nessecarry if no srs is present in the metadata.
-            Th default None will try to extract this information from the metadata when converted to a PdalInMemorydataset.
-        :type spatial_reference:
+            A spatial reference in WKT. This will override the reference system found in the metadata
+            and is required if no reference system is present in the metadata of the LAS/LAZ file.
+            If this parameter is not provided, this information is extracted from the metadata.
+        :type spatial_reference: str
         """
         # Initialize a cache data structure for rasterization operations on this data set
         self._mesh_data_cache = {}
@@ -37,8 +39,8 @@ class DataSet:
         # Store the given parameters
         self._provenance = provenance
         self.filename = filename
-        self.georeferenced = georeferenced
         self.spatial_reference = spatial_reference
+
         # Make the path absolute
         if self.filename is not None:
             self.filename = locate_file(self.filename)
@@ -77,71 +79,60 @@ class DataSet:
             filename, resolution=resolution, classification=classification
         )
 
-    def show_mesh(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as a digital terrain model in JupyterLab
+    def show(self, visualization_type="hillshade", classification=asprs[:], **kwargs):
+        """Visualize the dataset in JupyterLab
 
-        It is important to note that for archaelogic applications, the mesh is not
-        a traditional DEM/DTM (Digitial Elevation/Terrain Model), but rather a DFM
-        (Digital Feature Model) which consists of ground and all potentially relevant
-        structures like buildings etc. but always excludes vegetation.
+        Several visualization options can be chosen via the *visualization_type* parameter.
+        Some of the arguments given below are only available for specific visualization
+        types. To explore the visualization capabilities, you can also use the interactive
+        user interface with :func:`~adaptivefiltering.DataSet.show_interactive`.
 
-        :param resolution:
-            The mesh resolution in meters. Adapt this depending on the scale
-            of the features you are looking for and the point density of your
-            Lidar data.
-        :type resolution: float
+        :param visualization_type:
+            Which visualization to use. Current implemented values are:
+            * `hillshade` for a greyscale 2D map
+            * `slopemap` for a 2D map color-coded by the slope
+            * `scatter` for a 3D scatter plot of the point cloud
+            * `mesh` for a 2.5D surface plot
+        :type visualization_type: str
         :param classification:
-            The classification values to include into the visualization
+            Which classification values to include into the visualization. By default,
+            all classes are considered. The best interface to provide this information is
+            using :ref:`~adaptivefilter.asprs`.
         :type classification: tuple
-        """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_mesh(resolution=resolution, classification=classification)
-
-    def show_points(self, threshold=750000, classification=asprs[:]):
-        """Visualize the point cloud in Jupyter notebook
-        Will give a warning if too many data points are present.
-        Non-operational if called outside of Jupyter Notebook.
-
-        :param classification:
-            The classification values to include into the visualization
-        :type classification: tuple
-        """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_points(threshold=threshold, classification=classification)
-
-    def show_hillshade(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as hillshade model in Jupyter notebook
-
         :param resolution:
-            The mesh resolution to use for the visualization in meters.
+            The spatial resolution in meters (needed for all types except `scatter`).
         :type resolution: float
-        :param classification:
-            The classification values to include into the visualization
-        :type classification: tuple"""
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
+        :param azimuth:
+            The angle in the xy plane where the sun is from [0, 360] (`hillshade` only)
+        :type azimuth: float
+        :param angle_altitude:
+            The angle altitude of the sun from [0, 90] (`hillshade` only)
+        """
 
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_hillshade(
-            resolution=resolution, classification=classification
+        # Validate the visualization input
+        kwargs["visualization_type"] = visualization_type
+        schema = load_schema("visualization.json")
+        jsonschema.validate(kwargs, schema=schema)
+        kwargs.pop("visualization_type")
+
+        # Create a mapping of types to implementations
+        visualization_functions = {
+            "hillshade": hillshade_visualization,
+            "mesh": mesh_visualization,
+            "scatter": scatter_visualization,
+            "slopemap": slopemap_visualization,
+        }
+
+        # Call the correct visualization function
+        return visualization_functions[visualization_type](
+            self, classification=classification, **kwargs
         )
 
-    def show_slope(self, resolution=2.0, classification=asprs[:]):
-        """Visualize the point cloud as slope model in Jupyter notebook.
+    def show_interactive(self):
+        """Visualize the dataset with interactive visualization controls"""
+        from adaptivefiltering.apps import show_interactive
 
-        :param resolution:
-            The mesh resolution to use for the visualization in meters.
-        :type resolution: float
-        :param classification:
-            The classification values to include into the visualization
-        :type classification: tuple"""
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.show_slope(resolution=resolution, classification=classification)
+        return show_interactive(self)
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
@@ -185,7 +176,6 @@ class DataSet:
         return DataSet(
             filename=filename,
             provenance=self._provenance,
-            georeferenced=self.georeferenced,
             spatial_reference=self.spatial_reference,
         )
 
@@ -238,7 +228,7 @@ def remove_classification(dataset):
     :type dataset: adaptivefiltering.Dataset
     :return:
         A transformed dataset with unclassified points
-    :rtype:
+    :rtype: adaptivefiltering.DataSet
     """
     from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
 
@@ -251,24 +241,22 @@ def remove_classification(dataset):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance + ["Removed all point classifications"],
-        georeferenced=dataset.georeferenced,
         spatial_reference=dataset.spatial_reference,
     )
 
 
 def reproject_dataset(dataset, out_srs, in_srs=None):
     """
-    Standalone function to reproject a given dataset with the option of forcing a input_srs
+    Standalone function to reproject a given dataset with the option of forcing an input reference system
 
-    :parma out_srs: The desired output format. The default is the same one as in the interactive map.
-    :type out_srs: string
+    :param out_srs: The desired output format in WKT.
+    :type out_srs: str
 
-    :param in_srs: The input format from wich the conversation is starting. The default is the the current srs.
-    :type in_srs: string
+    :param in_srs: The input format in WKT from which to convert. The default is the dataset's current reference system.
+    :type in_srs: str
 
     :return: A reprojected dataset
-    :rtype: pdalInMemorydataset
-
+    :rtype: adaptivefiltering.DataSet
     """
     from adaptivefiltering.pdal import execute_pdal_pipeline
     from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -289,7 +277,6 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         provenance=dataset._provenance
-        + ["converted the dataset to the {} spatial reference.".format(out_srs)],
-        georeferenced=dataset.georeferenced,
+        + [f"Converted the dataset to spatial reference system '{out_srs}'"],
         spatial_reference=spatial_reference,
     )

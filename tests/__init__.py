@@ -31,5 +31,5 @@ def dataset_thingstaette():
 @pytest.fixture
 def minimal_dataset():
     return adaptivefiltering.DataSet(
-        filename="data/minimal.las", georeferenced=False, spatial_reference="EPSG:4362"
+        filename="data/minimal.las", spatial_reference="EPSG:4362"
     )

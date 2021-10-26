@@ -172,20 +172,43 @@ class WidgetForm:
         def _setter(_d):
             widget.value = _d
 
+        # Make sure the widget adapts to the outer layout
+        widget.layout = ipywidgets.Layout(width="100%")
+
         return WidgetFormElement(
             getter=lambda: widget.value,
             setter=_setter,
-            widgets=[ipywidgets.Box(box)],
+            widgets=[ipywidgets.VBox(box)],
         )
 
     def _construct_string(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Text(), label=label)
 
     def _construct_number(self, schema, label=None, root=False):
-        return self._construct_simple(schema, ipywidgets.FloatText(), label=label)
+        # Inputs bounded only from below or above are currently not supported
+        # in ipywidgets - rather strange
+        if "minimum" in schema and "maximum" in schema:
+            return self._construct_simple(
+                schema,
+                ipywidgets.BoundedFloatText(
+                    min=schema["minimum"], max=schema["maximum"]
+                ),
+                label=label,
+            )
+        else:
+            return self._construct_simple(schema, ipywidgets.FloatText(), label=label)
 
     def _construct_integer(self, schema, label=None, root=False):
-        return self._construct_simple(schema, ipywidgets.IntText(), label=label)
+        # Inputs bounded only from below or above are currently not supported
+        # in ipywidgets - rather strange
+        if "minimum" in schema and "maximum" in schema:
+            return self._construct_simple(
+                schema,
+                ipywidgets.BoundedIntText(min=schema["minimum"], max=schema["maximum"]),
+                label=label,
+            )
+        else:
+            return self._construct_simple(schema, ipywidgets.IntText(), label=label)
 
     def _construct_boolean(self, schema, label=None, root=False):
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
