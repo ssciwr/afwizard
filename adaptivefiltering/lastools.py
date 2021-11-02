@@ -86,6 +86,7 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
         return DataSet(
             filename=outfile,
             provenance=dataset._provenance + [f"Applied LASGround filter"],
+            spatial_reference=dataset.spatial_reference,
         )
 
     @classmethod
