@@ -262,28 +262,10 @@ class Map:
             "filters.hexbin"
         ]["boundary_json"]
 
-        hexbin_segmentation = Segmentation(
-            [
-                {
-                    "type": "Feature",
-                    "properties": {
-                        "style": {
-                            "stroke": True,
-                            "color": "#add8e6",
-                            "weight": 4,
-                            "opacity": 0.5,
-                            "fill": True,
-                            "fillColor": "#add8e6",
-                            "fillOpacity": 0.1,
-                            "clickable": True,
-                        }
-                    },
-                    "geometry": boundary_json,
-                }
-            ]
-        )
         boundary_coordinates = np.squeeze(boundary_json["coordinates"], axis=0)
 
+        # get max and min values to set up square boundary
+        # this should make it easier to preciscly fit the hillshade map
         min_x, max_x = min(np.asarray(boundary_coordinates)[:, 0]), max(
             np.asarray(boundary_coordinates)[:, 0]
         )
@@ -323,16 +305,14 @@ class Map:
         self.map = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(coordinates_mean[1], coordinates_mean[0]),
-            crs=ipyleaflet.projections.EPSG3857,  # we have to use epsg 3857 see comment in init
+            # we have to use epsg 3857 see comment in init
+            crs=ipyleaflet.projections.EPSG3857,
             scroll_wheel_zoom=False,
             max_zoom=20,
         )
         self.draw_control = self.setup_draw_control()
         self.map.add_control(self.draw_control)
         # add boundary marker
-        self.map.add_layer(
-            ipyleaflet.GeoJSON(data=hexbin_segmentation, name="Boundary")
-        )
         self.map.add_layer(
             ipyleaflet.GeoJSON(data=square_segmentation, name="Boundary Square")
         )
