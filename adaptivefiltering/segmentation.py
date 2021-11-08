@@ -1,7 +1,12 @@
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 from adaptivefiltering.dataset import DataSet
-
+from adaptivefiltering.visualization import (
+    hillshade_visualization,
+    mesh_visualization,
+    scatter_visualization,
+    slopemap_visualization,
+)
 import geojson
 import jsonschema
 import ipyleaflet
@@ -142,6 +147,11 @@ class Map:
         self.dataset = reproject_dataset(dataset, "EPSG:4326", in_srs=self.original_srs)
 
         self.setup_map()
+        self.setup_controls()
+
+    def load_hillshade(self):
+        pass
+        # self.dataset.show
 
     def show_map(self):
         return self.map
@@ -163,35 +173,21 @@ class Map:
         )
         return grid
 
-    def setup_tabs(self, grids):
-        """
-        Setup the tab overlay to display different map types.
-        grids should be given as a list of grids.
-        Currently Satelite, Hillshade and Slope are implemented.
-        :param grids:
-            A list of grids in the order Satelite, Hillstade, Slope. This order is important!
-        :type grids:
-            dict
+    def setup_controls(self):
+        """Modifies the polygon draw control to only include polygons, delete and clear all.
+        Also initilizes the zoom slider, and layer control
+
 
 
         """
-        tab = ipywidgets.Tab()
-        tab.children = list(grids.values())
-        for i, title in enumerate(grids.keys()):
-            tab.set_title(i, title)
-
-        return tab
-
-    def setup_draw_control(self):
-        """Adds the polygon draw control."""
-        draw_control = ipyleaflet.DrawControl(
+        self.draw_control = ipyleaflet.DrawControl(
             layout=ipywidgets.Layout(width="auto", grid_area="main")
         )
         # deactivate polyline and circlemarker
-        draw_control.polyline = {}
-        draw_control.circlemarker = {}
+        self.draw_control.polyline = {}
+        self.draw_control.circlemarker = {}
 
-        draw_control.polygon = {
+        self.draw_control.polygon = {
             "shapeOptions": {
                 "fillColor": "black",
                 "color": "black",
@@ -200,7 +196,23 @@ class Map:
             "drawError": {"color": "#dd253b", "message": "Oups!"},
             "allowIntersection": False,
         }
-        return draw_control
+
+        # add draw control
+        self.map.add_control(self.draw_control)
+
+        # add zoom control
+        self.zoom_slider = ipywidgets.IntSlider(
+            description="Zoom level:", min=0, max=20, value=16
+        )
+        ipywidgets.jslink((self.zoom_slider, "value"), (self.map, "zoom"))
+        self.zoom_control1 = ipyleaflet.WidgetControl(
+            widget=self.zoom_slider, position="topright"
+        )
+        self.map.add_control(self.zoom_control1)
+
+        # layer conrtol
+        self.layer_control = ipyleaflet.LayersControl(position="topright")
+        self.map.add_control(self.layer_control)
 
     def load_polygon(self, segmentation):
         """imports a segmentation object onto the map.
@@ -228,16 +240,9 @@ class Map:
     def setup_map(self):
         """Takes the boundary coordinates of the  given dataset
         through the pdal hexbin filter and returns them as a segmentation.
+        From the segmentation it calculates the center point as well as the edge points to implement the starting location of the map.
+        The edge points are used to draw the boundary square of the given dataset.
 
-        :param dataset:
-            The dataset from which the map should be displayed.
-            This needs to be in
-        :type dataset: Dataset
-
-        :return:
-            hexbin_segmentation:
-            The Segmentation of the area from the dataset
-        :type hexbin_segmentation: Segmentation
 
         """
         from adaptivefiltering.pdal import execute_pdal_pipeline
@@ -310,26 +315,10 @@ class Map:
             scroll_wheel_zoom=False,
             max_zoom=20,
         )
-        self.draw_control = self.setup_draw_control()
-        self.map.add_control(self.draw_control)
         # add boundary marker
         self.map.add_layer(
             ipyleaflet.GeoJSON(data=square_segmentation, name="Boundary Square")
         )
-
-        # add zoom control
-        self.zoom_slider = ipywidgets.IntSlider(
-            description="Zoom level:", min=0, max=20, value=16
-        )
-        ipywidgets.jslink((self.zoom_slider, "value"), (self.map, "zoom"))
-        self.zoom_control1 = ipyleaflet.WidgetControl(
-            widget=self.zoom_slider, position="topright"
-        )
-        self.map.add_control(self.zoom_control1)
-
-        # layer conrtol
-        control = ipyleaflet.LayersControl(position="topright")
-        self.map.add_control(control)
 
 
 class InteractiveMap:
