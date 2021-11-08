@@ -7,6 +7,8 @@ from adaptivefiltering.visualization import (
     scatter_visualization,
     slopemap_visualization,
 )
+from adaptivefiltering.asprs import asprs
+from adaptivefiltering.paths import get_temporary_filename
 import geojson
 import jsonschema
 import ipyleaflet
@@ -15,6 +17,7 @@ import pdal
 import json
 import numpy as np
 import collections
+import tempfile
 
 
 class Segment:
@@ -149,8 +152,45 @@ class Map:
         self.setup_map()
         self.setup_controls()
 
-    def load_hillshade(self):
-        pass
+    def load_hillshade(
+        self, classification=asprs[:], resolution=1e-6, azimuth=315, angle_altitude=45
+    ):
+        # try: self.overlay_group.remove_layer(hs_canvas)
+        # try: self.overlay_group.remove_layer(hs_canvas)
+
+        hs_canvas = hillshade_visualization(
+            self.dataset,
+            classification=classification,
+            resolution=resolution,
+            azimuth=azimuth,
+            angle_altitude=angle_altitude,
+        )
+        # slope_canvas = slopemap_visualization(self.dataset)
+
+        # tmp_file =get_temporary_filename("png")
+        tmp_file = "test.png"
+
+        print(tmp_file)
+        hs_canvas.figure.frameon = False
+        hs_canvas.figure.axes[0].get_xaxis().set_visible(False)
+        hs_canvas.figure.axes[0].get_yaxis().set_visible(False)
+
+        hs_canvas.figure.savefig(tmp_file, pad_inches=0, dpi=1200)
+
+        boundary_tuple = tuple(map(tuple, np.squeeze(self.rect_json["coordinates"])))
+        np.set_printoptions(precision=20)
+
+        print(boundary_tuple)
+        # (8.7056495173, 49.4230657293), (8.7056495173, 49.4243715144), (8.7071915761, 49.4243715144), (8.7071915761, 49.4230657293)
+        hs_overlay = ipyleaflet.ImageOverlay(
+            url=tmp_file,
+            bounds=(np.flip(boundary_tuple[0]), np.flip(boundary_tuple[2])),
+            opacity=0.6,
+            name="hillshade",
+        )
+
+        self.map.add_layer(hs_overlay)
+
         # self.dataset.show
 
     def show_map(self):
@@ -254,9 +294,9 @@ class Map:
             config=[
                 {
                     "type": "filters.hexbin",
-                    "precision": "12",
+                    "precision": 10,
                     "threshold": 1,
-                    "sample_size": 50000,
+                    "sample_size": 10000,
                 },
             ],
         )
@@ -278,7 +318,7 @@ class Map:
             np.asarray(boundary_coordinates)[:, 1]
         )
 
-        rect_json = {
+        self.rect_json = {
             "type": "Polygon",
             "coordinates": [
                 [[min_x, min_y], [min_x, max_y], [max_x, max_y], [max_x, min_y]]
@@ -300,7 +340,7 @@ class Map:
                             "clickable": True,
                         }
                     },
-                    "geometry": rect_json,
+                    "geometry": self.rect_json,
                 }
             ]
         )
