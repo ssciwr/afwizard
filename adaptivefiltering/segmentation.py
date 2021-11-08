@@ -153,7 +153,7 @@ class Map:
         self.setup_controls()
 
     def load_hillshade(
-        self, classification=asprs[:], resolution=1e-6, azimuth=315, angle_altitude=45
+        self, classification=asprs[:], resolution=5e-6, azimuth=315, angle_altitude=45
     ):
         # try: self.overlay_group.remove_layer(hs_canvas)
         # try: self.overlay_group.remove_layer(hs_canvas)
