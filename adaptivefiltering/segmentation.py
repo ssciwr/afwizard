@@ -214,7 +214,6 @@ class Map:
 
         # save current polygon data
         current_data = self.draw_control.data
-
         # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
         new_polygons = [
             new_polygon
@@ -248,7 +247,12 @@ class Map:
         hexbin_pipeline = execute_pdal_pipeline(
             dataset=self.dataset,
             config=[
-                {"type": "filters.hexbin"},
+                {
+                    "type": "filters.hexbin",
+                    "precision": "12",
+                    "threshold": 1,
+                    "sample_size": 50000,
+                },
             ],
         )
 
@@ -278,7 +282,41 @@ class Map:
                 }
             ]
         )
-        boundary_coordinates = boundary_json["coordinates"]
+        boundary_coordinates = np.squeeze(boundary_json["coordinates"], axis=0)
+
+        min_x, max_x = min(np.asarray(boundary_coordinates)[:, 0]), max(
+            np.asarray(boundary_coordinates)[:, 0]
+        )
+        min_y, max_y = min(np.asarray(boundary_coordinates)[:, 1]), max(
+            np.asarray(boundary_coordinates)[:, 1]
+        )
+
+        rect_json = {
+            "type": "Polygon",
+            "coordinates": [
+                [[min_x, min_y], [min_x, max_y], [max_x, max_y], [max_x, min_y]]
+            ],
+        }
+        square_segmentation = Segmentation(
+            [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "style": {
+                            "stroke": True,
+                            "color": "#add8e6",
+                            "weight": 4,
+                            "opacity": 0.5,
+                            "fill": True,
+                            "fillColor": "#add8e6",
+                            "fillOpacity": 0.1,
+                            "clickable": True,
+                        }
+                    },
+                    "geometry": rect_json,
+                }
+            ]
+        )
 
         coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
 
@@ -291,7 +329,27 @@ class Map:
         )
         self.draw_control = self.setup_draw_control()
         self.map.add_control(self.draw_control)
-        self.load_polygon(hexbin_segmentation)
+        # add boundary marker
+        self.map.add_layer(
+            ipyleaflet.GeoJSON(data=hexbin_segmentation, name="Boundary")
+        )
+        self.map.add_layer(
+            ipyleaflet.GeoJSON(data=square_segmentation, name="Boundary Square")
+        )
+
+        # add zoom control
+        self.zoom_slider = ipywidgets.IntSlider(
+            description="Zoom level:", min=0, max=20, value=16
+        )
+        ipywidgets.jslink((self.zoom_slider, "value"), (self.map, "zoom"))
+        self.zoom_control1 = ipyleaflet.WidgetControl(
+            widget=self.zoom_slider, position="topright"
+        )
+        self.map.add_control(self.zoom_control1)
+
+        # layer conrtol
+        control = ipyleaflet.LayersControl(position="topright")
+        self.map.add_control(control)
 
 
 class InteractiveMap:
