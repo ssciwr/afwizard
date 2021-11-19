@@ -7,7 +7,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - ipympl=0.7.0
+  - ipympl=0.8.2
   - IPython=7.21.0
   - ipyvolume=0.6.0a8
   - ipywidgets=7.6.3
