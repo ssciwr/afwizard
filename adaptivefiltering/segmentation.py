@@ -156,27 +156,48 @@ class Map:
 
     def load_overlay(
         self,
-        type,
+        _type,
         classification=asprs[:],
         resolution=2,
         azimuth=315,
         angle_altitude=45,
         opacity=0.6,
     ):
-        """ """
+        """
+        Calculates either a hillshade or a slope map of the dataset and layers it ontop the satelite map.
 
-        if type != "Hillshade" and type != "Slope":
-            raise Exception("type can only be 'Hillshade' or 'Slope'.")
+        :param _type: Can either be "Hillshade" or "Slope"
+        :type _type: String
 
-        # set azimuth and angle_altitude to zero for type =="Slope"
+        :param classification: a asprs classification that will be passed on to the visualisation function. Default = asprs[:]
+        :type classification: asprs
+
+        :param resolution:resolution for the visualisation. Default = 2
+        :type resolution: int
+
+        :param azimuth:azimuth for the visualisation. Default = 315
+        :type azimuth: int
+
+        :param angle_altitude: angle_altitude for the visualisation. Default = 45
+        :type angle_altitude: int
+
+        :param opacity: Sets the opacity of the layer, does not trigger recalculation of layers. Default = 0.6
+        :type opacity: float
+
+        """
+
+        if _type != "Hillshade" and _type != "Slope":
+            raise Exception("_type can only be 'Hillshade' or 'Slope'.")
+
+        # set azimuth and angle_altitude to zero for _type =="Slope"
         # This makes it easer to find preexisting slope overlays
-        if type == "Slope":
+        if _type == "Slope":
             azimuth = 0
             angle_altitude = 0
 
         key_from_input = (
-            "type:"
-            + type
+            "_type:"
+            + _type
             + ",class:"
             + str(classification)
             + ",res:"
