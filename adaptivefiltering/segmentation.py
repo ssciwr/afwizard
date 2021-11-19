@@ -1,5 +1,5 @@
 from adaptivefiltering.paths import load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from adaptivefiltering.utils import convert_picture_to_base64, is_iterable, trim
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.visualization import (
     hillshade_visualization,
@@ -13,11 +13,9 @@ import geojson
 import jsonschema
 import ipyleaflet
 import ipywidgets
-import pdal
 import json
 import numpy as np
 import collections
-import tempfile
 
 
 class Segment:
