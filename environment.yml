@@ -15,6 +15,7 @@ dependencies:
   - python-pdal=2.4.2
   - pip
   - richdem
+  - pillow
   - pip:
     - Click
     - geodaisy
