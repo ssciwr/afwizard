@@ -150,12 +150,29 @@ class Map:
         self.setup_map()
         self.setup_controls()
 
-    def load_hillshade(
-        self, classification=asprs[:], resolution=5e-6, azimuth=315, angle_altitude=45
-    ):
-        # try: self.overlay_group.remove_layer(hs_canvas)
-        # try: self.overlay_group.remove_layer(hs_canvas)
+        # setup hs and slope variables
 
+        self.hs_overlay = None
+        self.hs_overlay_dict = {}
+
+    def load_hillshade(
+        self,
+        classification=asprs[:],
+        resolution=2,
+        azimuth=315,
+        angle_altitude=45,
+        name=None,
+    ):
+        """ """
+        key_from_input = (
+            "res:" + str(resolution) + "az:" + str(azimuth) + "ang:" + angle_altitude
+        )
+
+        if self.hs_overlay is not None:
+            self.map.remove_layer(self.hs_overlay)
+            self.hs_overlay = None
+
+        resolution = resolution * 0.00001 / 1.11  # approx formula
         hs_canvas = hillshade_visualization(
             self.dataset,
             classification=classification,
@@ -163,33 +180,27 @@ class Map:
             azimuth=azimuth,
             angle_altitude=angle_altitude,
         )
-        # slope_canvas = slopemap_visualization(self.dataset)
 
-        # tmp_file =get_temporary_filename("png")
-        tmp_file = "test.png"
+        # setup a temporary filename for the picture.
+        tmp_file = get_temporary_filename("png")
 
-        print(tmp_file)
-        hs_canvas.figure.frameon = False
-        hs_canvas.figure.axes[0].get_xaxis().set_visible(False)
-        hs_canvas.figure.axes[0].get_yaxis().set_visible(False)
-
-        hs_canvas.figure.savefig(tmp_file, pad_inches=0, dpi=1200)
+        # save figure with reduced whitespace
+        hs_canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
+        # trim the remaining whitespace
+        trim(tmp_file)
+        # convert file to a base64 based url for ipyleaflet import
+        tmp_url = convert_picture_to_base64(tmp_file)
 
         boundary_tuple = tuple(map(tuple, np.squeeze(self.rect_json["coordinates"])))
-        np.set_printoptions(precision=20)
 
-        print(boundary_tuple)
-        # (8.7056495173, 49.4230657293), (8.7056495173, 49.4243715144), (8.7071915761, 49.4243715144), (8.7071915761, 49.4230657293)
-        hs_overlay = ipyleaflet.ImageOverlay(
-            url=tmp_file,
+        self.hs_overlay = ipyleaflet.ImageOverlay(
+            url=tmp_url,
             bounds=(np.flip(boundary_tuple[0]), np.flip(boundary_tuple[2])),
             opacity=0.6,
             name="hillshade",
         )
 
-        self.map.add_layer(hs_overlay)
-
-        # self.dataset.show
+        self.map.add_layer(self.hs_overlay)
 
     def show_map(self):
         return self.map
@@ -357,6 +368,20 @@ class Map:
         self.map.add_layer(
             ipyleaflet.GeoJSON(data=square_segmentation, name="Boundary Square")
         )
+
+    def return_polygon(self):
+        """Exports the current polygon list as a Segmentation object
+
+        :return:
+            :param segmentation:
+                All current polygons in one segmentation object
+            :type segmentation: Segmentation
+
+
+        """
+
+        segmentation = Segmentation(self.draw_control.data)
+        return segmentation
 
 
 class InteractiveMap:
