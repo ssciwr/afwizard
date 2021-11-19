@@ -152,17 +152,34 @@ class Map:
 
         self.hs_overlay = None
         self.hs_overlay_dict = {}
+        self.slope_overlay_dict = {}
 
-    def load_hillshade(
+    def load_overlay(
         self,
+        type,
         classification=asprs[:],
         resolution=2,
         azimuth=315,
         angle_altitude=45,
+        opacity=0.6,
     ):
         """ """
+
+        if type != "Hillshade" and type != "Slope":
+            raise Exception("type can only be 'Hillshade' or 'Slope'.")
+
+        # set azimuth and angle_altitude to zero for type =="Slope"
+        # This makes it easer to find preexisting slope overlays
+        if type == "Slope":
+            azimuth = 0
+            angle_altitude = 0
+
         key_from_input = (
-            "res:"
+            "type:"
+            + type
+            + ",class:"
+            + str(classification)
+            + ",res:"
             + str(resolution)
             + ",az:"
             + str(azimuth)
@@ -173,32 +190,37 @@ class Map:
         # if the dict is not empty, try to remove all layers present in the dict.
         if self.hs_overlay_dict != {}:
             for layer in self.hs_overlay_dict.values():
-                try:
-                    self.map.remove_layer(layer)
-                except ipyleaflet.LayerException as e:
-                    continue
+                if layer.name == type:
+                    try:
+                        self.map.remove_layer(layer)
+                    except ipyleaflet.LayerException as e:
+                        continue
 
         # if the desired hs is not already present, calculate it.
         # if it is, it will simply be loaded at the end of the function.
         if key_from_input not in self.hs_overlay_dict.keys():
             resolution = resolution * 0.00001 / 1.11  # approx formula
 
-            # calculate the
-            hs_canvas = hillshade_visualization(
-                self.dataset,
-                classification=classification,
-                resolution=resolution,
-                azimuth=azimuth,
-                angle_altitude=angle_altitude,
-            )
-
+            # calculate the hillshade or slope
+            if type == "Hillshade":
+                canvas = hillshade_visualization(
+                    self.dataset,
+                    classification=classification,
+                    resolution=resolution,
+                    azimuth=azimuth,
+                    angle_altitude=angle_altitude,
+                )
+            elif type == "Slope":
+                canvas = slopemap_visualization(
+                    self.dataset,
+                    classification=classification,
+                    resolution=resolution,
+                )
             # setup a temporary filename for the picture.
             tmp_file = get_temporary_filename("png")
 
             # save figure with reduced whitespace
-            hs_canvas.figure.savefig(
-                tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200
-            )
+            canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
             # trim the remaining whitespace
             trim(tmp_file)
             # convert file to a base64 based url for ipyleaflet import
@@ -211,10 +233,10 @@ class Map:
             self.hs_overlay_dict[key_from_input] = ipyleaflet.ImageOverlay(
                 url=tmp_url,
                 bounds=(np.flip(boundary_tuple[0]), np.flip(boundary_tuple[2])),
-                opacity=0.6,
-                name="Hillshade",
+                name=type,
             )
         # load the desired layer
+        self.hs_overlay_dict[key_from_input].opacity = opacity
         self.map.add_layer(self.hs_overlay_dict[key_from_input])
 
     def show_map(self):
