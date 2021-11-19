@@ -107,8 +107,6 @@ class Segmentation(geojson.FeatureCollection):
 
 
 class Map:
-
-    # my Idea was to let the map convert the given dataset into something it can use, but return every segmentation in the srs of the original dataset
     def __init__(self, dataset=None, segmentation=None, in_srs=None):
         """
 
@@ -161,66 +159,66 @@ class Map:
         resolution=2,
         azimuth=315,
         angle_altitude=45,
-        name=None,
     ):
         """ """
         key_from_input = (
-            "res:" + str(resolution) + "az:" + str(azimuth) + "ang:" + angle_altitude
+            "res:"
+            + str(resolution)
+            + ",az:"
+            + str(azimuth)
+            + ",ang:"
+            + str(angle_altitude)
         )
 
-        if self.hs_overlay is not None:
-            self.map.remove_layer(self.hs_overlay)
-            self.hs_overlay = None
+        # if the dict is not empty, try to remove all layers present in the dict.
+        if self.hs_overlay_dict != {}:
+            for layer in self.hs_overlay_dict.values():
+                try:
+                    self.map.remove_layer(layer)
+                except ipyleaflet.LayerException as e:
+                    continue
 
-        resolution = resolution * 0.00001 / 1.11  # approx formula
-        hs_canvas = hillshade_visualization(
-            self.dataset,
-            classification=classification,
-            resolution=resolution,
-            azimuth=azimuth,
-            angle_altitude=angle_altitude,
-        )
+        # if the desired hs is not already present, calculate it.
+        # if it is, it will simply be loaded at the end of the function.
+        if key_from_input not in self.hs_overlay_dict.keys():
+            resolution = resolution * 0.00001 / 1.11  # approx formula
 
-        # setup a temporary filename for the picture.
-        tmp_file = get_temporary_filename("png")
+            # calculate the
+            hs_canvas = hillshade_visualization(
+                self.dataset,
+                classification=classification,
+                resolution=resolution,
+                azimuth=azimuth,
+                angle_altitude=angle_altitude,
+            )
 
-        # save figure with reduced whitespace
-        hs_canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
-        # trim the remaining whitespace
-        trim(tmp_file)
-        # convert file to a base64 based url for ipyleaflet import
-        tmp_url = convert_picture_to_base64(tmp_file)
+            # setup a temporary filename for the picture.
+            tmp_file = get_temporary_filename("png")
 
-        boundary_tuple = tuple(map(tuple, np.squeeze(self.rect_json["coordinates"])))
+            # save figure with reduced whitespace
+            hs_canvas.figure.savefig(
+                tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200
+            )
+            # trim the remaining whitespace
+            trim(tmp_file)
+            # convert file to a base64 based url for ipyleaflet import
+            tmp_url = convert_picture_to_base64(tmp_file)
 
-        self.hs_overlay = ipyleaflet.ImageOverlay(
-            url=tmp_url,
-            bounds=(np.flip(boundary_tuple[0]), np.flip(boundary_tuple[2])),
-            opacity=0.6,
-            name="hillshade",
-        )
+            boundary_tuple = tuple(
+                map(tuple, np.squeeze(self.rect_json["coordinates"]))
+            )
 
-        self.map.add_layer(self.hs_overlay)
+            self.hs_overlay_dict[key_from_input] = ipyleaflet.ImageOverlay(
+                url=tmp_url,
+                bounds=(np.flip(boundary_tuple[0]), np.flip(boundary_tuple[2])),
+                opacity=0.6,
+                name="Hillshade",
+            )
+        # load the desired layer
+        self.map.add_layer(self.hs_overlay_dict[key_from_input])
 
     def show_map(self):
         return self.map
-
-    def setup_grid(self):
-        """
-        Setup the grid layout to allow the color bar and
-        more on the right side of the map.
-        """
-        grid = ipywidgets.GridBox(
-            # children=objects, add them later
-            layout=ipywidgets.Layout(
-                width="100%",
-                grid_template_columns="70% 30%",
-                grid_template_areas="""
-                        "main sidebar "
-                    """,
-            ),
-        )
-        return grid
 
     def setup_controls(self):
         """Modifies the polygon draw control to only include polygons, delete and clear all.
