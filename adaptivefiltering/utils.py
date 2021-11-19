@@ -1,6 +1,9 @@
 import collections
 from os import pipe
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageSequence
+from io import BytesIO
+from base64 import b64encode
+import os
 
 
 class AdaptiveFilteringError(Exception):
@@ -20,6 +23,8 @@ def stringify_value(value):
 
 
 def trim(path):
+    """Trim the whitespace around pictures from matplotlib"""
+
     im = Image.open(path)
     bg = Image.new(im.mode, im.size, im.getpixel((0, 0)))
     diff = ImageChops.difference(im, bg)
@@ -28,3 +33,14 @@ def trim(path):
     if bbox:
         im = im.crop(bbox)
         im.save(path)
+
+
+def convert_picture_to_base64(path):
+    image = Image.open(path)
+    ext = os.path.splitext(path)[1][1:]  # file extension
+    f = BytesIO()
+    image.save(f, ext)
+    data = b64encode(f.getvalue())
+    data = data.decode("ascii")
+    url = "data:image/{};base64,".format(ext) + data
+    return url
