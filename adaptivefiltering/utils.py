@@ -4,6 +4,8 @@ from PIL import Image, ImageChops, ImageSequence
 from io import BytesIO
 from base64 import b64encode
 import os
+import copy  # I would like to get around this
+import numpy as np
 
 
 class AdaptiveFilteringError(Exception):
@@ -44,3 +46,28 @@ def convert_picture_to_base64(path):
     data = data.decode("ascii")
     url = "data:image/{};base64,".format(ext) + data
     return url
+
+
+def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
+    from adaptivefiltering.segmentation import Segmentation
+
+    from pyproj import Proj, transform
+
+    new_features = copy.deepcopy(segmentation["features"])
+
+    # for just a single srs_in
+    for feature, new_feature in zip(segmentation["features"], new_features):
+
+        p_in = Proj(srs_in)
+        p_out = Proj(srs_out)
+
+        if p_in != p_out:
+            new_feature["geometry"]["coordinates"] = [
+                # The transpose is necessary to keep the segmentation shape, but it introduces a problem with the map boundary visualisation.
+                np.transpose(
+                    transform(p_in, p_out, *zip(*np.squeeze(coordinates)))
+                ).tolist()
+                for coordinates in feature["geometry"]["coordinates"]
+            ]
+
+    return Segmentation(new_features)
