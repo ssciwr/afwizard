@@ -3,7 +3,7 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import InteractiveMap, Segmentation
+from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.widgets import WidgetForm
 
 import ipywidgets
@@ -256,7 +256,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
 def create_segmentation(dataset):
     # Create the necessary widgets
-    map_ = InteractiveMap(dataset=dataset)
+    map_ = Map(dataset=dataset)
     map_widget = map_.show()
     finalize = ipywidgets.Button(description="Finalize")
 
