@@ -153,9 +153,10 @@ def test_load_overlay(dataset_thingstaette, boundary_segmentation):
         test_map2.load_overlay()
 
 
-def test_save_load_map_polygons(dataset):
+def test_save_load_map_polygons(dataset, boundary_segmentation):
     # initiate dataset and map
     test_map = Map(dataset)
+    test_map_seg = Map(segmentation=boundary_segmentation)
 
     # create two example polygons
     polygon_1 = [
@@ -217,6 +218,7 @@ def test_save_load_map_polygons(dataset):
     ]
     # check if empty Segmentation can be returend
     assert test_map.return_segmentation()["features"] == []
+    assert test_map_seg.return_segmentation()["features"] == []
 
     # add polygons manually, check loading to the map
     # and check if they can be corretly returned
@@ -225,14 +227,26 @@ def test_save_load_map_polygons(dataset):
     test_map.load_segmentation(Segmentation(polygon_2))
     returned_polygons = test_map.return_segmentation()
 
+    test_map_seg.draw_control.data = polygon_1
+    test_map_seg.load_segmentation(Segmentation(polygon_2))
+    returned_polygons_seg = test_map_seg.return_segmentation()
+
     assert polygon_1[0] in returned_polygons["features"]
     assert polygon_2[0] in returned_polygons["features"]
+    assert polygon_1[0] in returned_polygons_seg["features"]
+    assert polygon_2[0] in returned_polygons_seg["features"]
 
     # make a second test map
     test_map_2 = Map(dataset)
     # load the previously exportet polygons into the new map
     test_map_2.load_segmentation(returned_polygons)
     assert test_map_2.return_segmentation() == test_map.return_segmentation()
+
+    test_map_seg_2 = Map(segmentation=boundary_segmentation)
+    # load the previously exportet polygons into the new map
+    test_map_seg_2.load_segmentation(returned_polygons_seg)
+    assert test_map_seg_2.return_segmentation() == test_map_seg.return_segmentation()
+    assert test_map_seg.return_segmentation() == test_map.return_segmentation()
 
 
 def test_show_polygon_from_segmentation(boundary_segmentation):
