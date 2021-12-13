@@ -30,4 +30,4 @@ dependencies:
     - xdg
     - ipyleaflet
     - xmltodict
-    - pyproj 
+    - pyproj
