@@ -24,11 +24,6 @@ import collections
 import copy
 
 
-# things to add:
-#   use a dataset and a segmentation for the map and use the segmentation to crop the dataset. -> allows specific hillshade to be viewed.
-#   add dataset option to the show_overlay function to allow the user the later addition of a dataset, that will be cropped to the segmentation.
-
-
 class Segment:
     def __init__(self, polygon, metadata={}):
         self.polygon = geojson.Polygon(polygon)
