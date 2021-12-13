@@ -4,7 +4,7 @@ from PIL import Image, ImageChops, ImageSequence
 from io import BytesIO
 from base64 import b64encode
 import os
-import copy  # I would like to get around this
+import copy
 import numpy as np
 
 
