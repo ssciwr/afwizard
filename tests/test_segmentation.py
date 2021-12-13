@@ -126,6 +126,9 @@ def test_show_map(dataset, boundary_segmentation):
     test_map = Map(segmentation=boundary_segmentation)
     test_map.show()
 
+    # test show of segmentation
+    boundary_segmentation.show()
+
     with pytest.raises(Exception):
         test_map = Map(dataset=dataset, segmentation=boundary_segmentation)
         test_map = Map()
