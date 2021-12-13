@@ -183,8 +183,30 @@ class Map:
                 "Please use either a dataset or a segmentation. None were given."
             )
 
+        # check if dataset and segmentation are of correct type
+        if dataset:
+            if isinstance(dataset, Segmentation):
+                raise Exception(
+                    "A segmentation was given as a dataset, please call Map(segmentation=yourSegmentation)"
+                )
+            elif not isinstance(dataset, DataSet):
+                raise Exception(
+                    f"The given dataset is not of type DataSet, but {type(dataset)}."
+                )
+
+        elif segmentation:
+            if isinstance(segmentation, DataSet):
+                raise Exception(
+                    "A DataSet was given as a Segmentation, please call Map(dataset=yourDataset)"
+                )
+            elif not isinstance(segmentation, Segmentation):
+                raise Exception(
+                    f"The given segmentation is not of type Segmentation, but {type(segmentation)}."
+                )
+
         # convert to pdal dataset
         if dataset:
+
             dataset = PDALInMemoryDataSet.convert(dataset)
             # preserve the original srs from dataset
             if in_srs is None:
