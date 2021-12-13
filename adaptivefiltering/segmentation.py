@@ -107,7 +107,7 @@ class Segmentation(geojson.FeatureCollection):
         """
 
         segmentation_map = Map(segmentation=self)
-        return segmentation_map.show_map()
+        return segmentation_map.show()
 
     @property
     def __geo_interface__(self):
@@ -353,7 +353,7 @@ class Map:
         self.overlay_dict[key_from_input].opacity = opacity
         self.map.add_layer(self.overlay_dict[key_from_input])
 
-    def show_map(self):
+    def show(self):
         return self.map
 
     def setup_controls(self):

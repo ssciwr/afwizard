@@ -120,11 +120,11 @@ def test_show_map(dataset, boundary_segmentation):
     # simple test to verify maps can be opened.
 
     test_map = Map(dataset)
-    test_map.show_map()
+    test_map.show()
     # todo setup test with segmentations.
 
     test_map = Map(segmentation=boundary_segmentation)
-    test_map.show_map()
+    test_map.show()
 
     with pytest.raises(Exception):
         test_map = Map(dataset=dataset, segmentation=boundary_segmentation)
