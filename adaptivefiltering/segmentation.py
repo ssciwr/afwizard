@@ -292,13 +292,12 @@ class Map:
         )
 
         # if the dict is not empty, try to remove all layers present in the dict.
-        if self.overlay_dict != {}:
-            for layer in self.overlay_dict.values():
-                if layer.name == map_type:
-                    try:
-                        self.map.remove_layer(layer)
-                    except ipyleaflet.LayerException as e:
-                        continue
+        for layer in self.overlay_dict.values():
+            if layer.name == map_type:
+                try:
+                    self.map.remove_layer(layer)
+                except ipyleaflet.LayerException as e:
+                    continue
 
         # if the desired hs is not already present, calculate it.
         # if it is, it will simply be loaded at the end of the function.
