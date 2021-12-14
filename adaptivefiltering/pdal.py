@@ -167,7 +167,7 @@ class PDALInMemoryDataSet(DataSet):
             spatial_reference=spatial_reference,
         )
 
-    def save_mesh(self, filename, resolution=2.0, classification=asprs["ground"]):
+    def save_mesh(self, filename, resolution=2.0, classification=asprs[:]):
 
         if os.path.splitext(filename)[1] == ".tif":
             filename = os.path.splitext(filename)[0]

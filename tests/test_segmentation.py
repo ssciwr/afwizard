@@ -1,9 +1,18 @@
-from adaptivefiltering.segmentation import Segment, Segmentation, InteractiveMap
+from adaptivefiltering.segmentation import (
+    Segment,
+    Segmentation,
+    Map,
+    get_min_max_values,
+    swap_coordinates,
+)
 from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.utils import convert_Segmentation
+
 import geojson
 import os
-from . import dataset
+from . import dataset, boundary_segmentation
 import pytest
+import numpy as np
 
 
 def test_segmentation():
@@ -38,58 +47,119 @@ def test_save_load_segmentation(tmpdir):
     assert geojson.dumps(s) == geojson.dumps(s2)
 
 
-def test_show_map(dataset):
-    # simple test to verify maps can be opened.
+def test_convert_segmentation(boundary_segmentation):
 
-    segmentation_1 = Segmentation({"features": [], "type": "FeatureCollection"})
-    segmentation_2 = Segmentation(
-        [
+    test2 = convert_Segmentation(boundary_segmentation, "EPSG:5243")
+    test3 = convert_Segmentation(test2, "EPSG:4326", "EPSG:5243")
+    test3_coord = np.asarray(test3["features"][0]["geometry"]["coordinates"])
+    test_coord = np.asarray(
+        boundary_segmentation["features"][0]["geometry"]["coordinates"]
+    )
+    assert (test3_coord - test_coord).all() < 1e-10
+
+
+def test_swap_coordinates_segmentation():
+    test_json = {
+        "features": [
             {
-                "type": "Feature",
+                "geometry": {
+                    "coordinates": [[[0, 1], [0, 1], [0, 1]]],
+                    "type": "Polygon",
+                },
                 "properties": {
                     "style": {
-                        "stroke": True,
-                        "color": "black",
-                        "weight": 4,
+                        "clickable": "false",
+                        "color": "#add8e6",
+                        "fill": "true",
                         "opacity": 0.5,
-                        "fill": True,
-                        "fillColor": "black",
-                        "fillOpacity": 0.1,
-                        "clickable": True,
+                        "stroke": "true",
+                        "weight": 4,
                     }
                 },
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [171.715394, -41.792157],
-                            [171.710101, -41.802235],
-                            [171.728054, -41.800635],
-                            [171.715394, -41.792157],
-                        ]
-                    ],
-                },
+                "type": "Feature",
             }
-        ]
-    )
-    test_map = InteractiveMap(dataset)
+        ],
+        "type": "FeatureCollection",
+    }
+    test_seg = Segmentation(test_json)
+
+    test_seg_swapped = swap_coordinates(test_seg)
+    assert test_seg_swapped["features"][0]["geometry"]["coordinates"] == [
+        [[1, 0], [1, 0], [1, 0]]
+    ]
+
+
+def test_get_min_max_values():
+    test_json = {
+        "features": [
+            {
+                "geometry": {
+                    "coordinates": [[[0, 3], [1, 1], [4, 1]]],
+                    "type": "Polygon",
+                },
+                "properties": {
+                    "style": {
+                        "clickable": "false",
+                        "color": "#add8e6",
+                        "fill": "true",
+                        "opacity": 0.5,
+                        "stroke": "true",
+                        "weight": 4,
+                    }
+                },
+                "type": "Feature",
+            }
+        ],
+        "type": "FeatureCollection",
+    }
+    test_seg = Segmentation(test_json)
+    assert get_min_max_values(test_seg) == {"minX": 0, "maxX": 4, "minY": 1, "maxY": 3}
+
+
+def test_show_map(dataset, boundary_segmentation):
+    # simple test to verify maps can be opened.
+
+    test_map = Map(dataset)
     test_map.show()
-    test_map = InteractiveMap(segmentation=segmentation_2)
+    # todo setup test with segmentations.
+
+    test_map = Map(segmentation=boundary_segmentation)
     test_map.show()
-    # test segmentation as datatype
-    with pytest.raises(TypeError):
-        test_map = InteractiveMap(segmentation_2)
+
+    # test show of segmentation
+    boundary_segmentation.show()
 
     with pytest.raises(Exception):
-        test_map = InteractiveMap()
-        test_map = InteractiveMap(segmentation_1)
-        test_map = InteractiveMap(dataset, segmentation_1)
-        test_map = InteractiveMap(dataset, segmentation_2)
+        test_map = Map(dataset=dataset, segmentation=boundary_segmentation)
+        test_map = Map()
+
+        test_map = Map(dataset=boundary_segmentation)
+        test_map = Map(dataset=5)
+
+        test_map = Map(segmentation=dataset)
+        test_map = Map(segmentation=5)
 
 
-def test_save_load_map_polygons(dataset):
+def test_load_overlay(dataset, boundary_segmentation):
+    test_map = Map(dataset)
+    # first overlay
+    test_map.load_overlay("Hillshade", resolution=5)
+    test_map.load_overlay("Slope", resolution=2, opacity=0.5)
+    # second overlay
+    test_map.load_overlay("Hillshade", resolution=4, opacity=1)
+    test_map.load_overlay("Slope", resolution=1, opacity=0.6)
+    # return to first overlay with different opacity
+    test_map.load_overlay("Hillshade", resolution=5, opacity=0.1)
+    test_map.load_overlay("Slope", resolution=2, opacity=0.1)
+    test_map2 = Map(segmentation=boundary_segmentation)
+    with pytest.raises(Exception):
+        test_map2.load_overlay()
+
+
+def test_save_load_map_polygons(dataset, boundary_segmentation):
     # initiate dataset and map
-    test_map = InteractiveMap(dataset)
+    test_map = Map(dataset)
+    test_map_seg = Map(segmentation=boundary_segmentation)
 
     # create two example polygons
     polygon_1 = [
@@ -150,54 +220,37 @@ def test_save_load_map_polygons(dataset):
         }
     ]
     # check if empty Segmentation can be returend
-    assert test_map.return_polygon()["features"] == []
+    assert test_map.return_segmentation()["features"] == []
+    assert test_map_seg.return_segmentation()["features"] == []
 
     # add polygons manually, check loading to the map
     # and check if they can be corretly returned
 
     test_map.draw_control.data = polygon_1
-    test_map.load_polygon(Segmentation(polygon_2))
-    returned_polygons = test_map.return_polygon()
+    test_map.load_segmentation(Segmentation(polygon_2))
+    returned_polygons = test_map.return_segmentation()
+
+    test_map_seg.draw_control.data = polygon_1
+    test_map_seg.load_segmentation(Segmentation(polygon_2))
+    returned_polygons_seg = test_map_seg.return_segmentation()
 
     assert polygon_1[0] in returned_polygons["features"]
     assert polygon_2[0] in returned_polygons["features"]
+    assert polygon_1[0] in returned_polygons_seg["features"]
+    assert polygon_2[0] in returned_polygons_seg["features"]
 
     # make a second test map
-    test_map_2 = InteractiveMap(dataset)
+    test_map_2 = Map(dataset)
     # load the previously exportet polygons into the new map
-    test_map_2.load_polygon(returned_polygons)
-    assert test_map_2.return_polygon() == test_map.return_polygon()
+    test_map_2.load_segmentation(returned_polygons)
+    assert test_map_2.return_segmentation() == test_map.return_segmentation()
+
+    test_map_seg_2 = Map(segmentation=boundary_segmentation)
+    # load the previously exportet polygons into the new map
+    test_map_seg_2.load_segmentation(returned_polygons_seg)
+    assert test_map_seg_2.return_segmentation() == test_map_seg.return_segmentation()
+    assert test_map_seg.return_segmentation() == test_map.return_segmentation()
 
 
-def test_show_polygon_from_segmentation():
-    segmentation_1 = Segmentation(
-        [
-            {
-                "type": "Feature",
-                "properties": {
-                    "style": {
-                        "stroke": True,
-                        "color": "black",
-                        "weight": 4,
-                        "opacity": 0.5,
-                        "fill": True,
-                        "fillColor": "black",
-                        "fillOpacity": 0.1,
-                        "clickable": True,
-                    }
-                },
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [171.715394, -41.792157],
-                            [171.710101, -41.802235],
-                            [171.728054, -41.800635],
-                            [171.715394, -41.792157],
-                        ]
-                    ],
-                },
-            }
-        ]
-    )
-    segmentation_1.show()
+def test_show_polygon_from_segmentation(boundary_segmentation):
+    boundary_segmentation.show()

@@ -1,15 +1,27 @@
-from adaptivefiltering.paths import load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from adaptivefiltering.paths import load_schema, locate_file
+from adaptivefiltering.utils import (
+    convert_picture_to_base64,
+    is_iterable,
+    trim,
+    convert_Segmentation,
+)
 from adaptivefiltering.dataset import DataSet
-
+from adaptivefiltering.visualization import (
+    hillshade_visualization,
+    mesh_visualization,
+    scatter_visualization,
+    slopemap_visualization,
+)
+from adaptivefiltering.asprs import asprs
+from adaptivefiltering.paths import get_temporary_filename
 import geojson
 import jsonschema
 import ipyleaflet
 import ipywidgets
-import pdal
 import json
 import numpy as np
 import collections
+import copy
 
 
 class Segment:
@@ -89,7 +101,7 @@ class Segmentation(geojson.FeatureCollection):
         :type grid: ipyleaflet.grid
         """
 
-        segmentation_map = InteractiveMap(segmentation=self)
+        segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
 
     @property
@@ -100,12 +112,42 @@ class Segmentation(geojson.FeatureCollection):
         }
 
 
-class InteractiveMap:
-    def __init__(self, dataset=None, segmentation=None):
+def get_min_max_values(segmentation):
+    # goes over all features in the segmentation and return the min and max coordinates in a dict.
+    min_max_dict = {"minX": [], "maxX": [], "minY": [], "maxY": []}
+    for feature in segmentation["features"]:
+        coord_array = np.asarray(feature["geometry"]["coordinates"])
+        min_max_dict["minX"].append(np.min(coord_array, axis=1)[0, 0])
+        min_max_dict["minY"].append(np.min(coord_array, axis=1)[0, 1])
+        min_max_dict["maxX"].append(np.max(coord_array, axis=1)[0, 0])
+        min_max_dict["maxY"].append(np.max(coord_array, axis=1)[0, 1])
+    for key, value in min_max_dict.items():
+        if "min" in key:
+            min_max_dict[key] = min(value)
+        elif "max" in key:
+            min_max_dict[key] = max(value)
+
+    return min_max_dict
+
+
+def swap_coordinates(segmentation):
+    new_features = copy.deepcopy(segmentation["features"])
+
+    for feature, new_feature in zip(segmentation["features"], new_features):
+        coord_array = np.asarray(feature["geometry"]["coordinates"])
+        coord_array[:, :, [0, 1]] = coord_array[:, :, [1, 0]]
+        new_feature["geometry"]["coordinates"] = coord_array.tolist()
+    return Segmentation(new_features)
+
+
+class Map:
+    def __init__(self, dataset=None, segmentation=None, in_srs=None):
         """This class manages the interactive map on which one can choose the segmentation.
             It can be initilized with a dataset from which it will detect the boundaries and show them on the map.
             Or it can be initilized with a segmentation which will also be visualized on the map.
             There can be multiple polygons in the Segmentation and all will drawn. The
+            depending on the segmentation it might be necessary to first swap the coordinates of the segmentation to fit with the ipyleaflet map
+            in_srs can be used to override the current srs.
 
 
         :param dataset:
@@ -114,9 +156,11 @@ class InteractiveMap:
         :param segmentation:
             A premade segmentation can can be loaded and shown on a map without the need to load a dataset.
         :type segmentation: Segmentation
+        :param in_srs:
+            manually override the srs of the dataset or segmentation, necessary if none are specified in the object.
+        :type in_srs: str
 
         """
-
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         # handle exeptions
@@ -130,124 +174,189 @@ class InteractiveMap:
 
         if dataset is None and segmentation is None:
             # if no dataset or segmentation is given, the map will be centered at the SSC office
-            self.coordinates_mean = np.asarray([49.41745, 8.67529])
-            self.segmentation = None
-
-        if dataset is not None and not isinstance(dataset, DataSet):
-            raise TypeError(
-                "Dataset must be of type DataSet, but is " + str(type(dataset))
+            raise Exception(
+                "Please use either a dataset or a segmentation. None were given."
             )
-        # prepare the map data
 
-        # if a dataset is given the boundary of the data set is calculated via the hexbin function
-        # and the in memory dataset is converted into EPSG:4326.
-        if dataset and segmentation is None:
-            self.segmentation = self.get_boundary(dataset)
+        # check if dataset and segmentation are of correct type
+        if dataset:
+            if isinstance(dataset, Segmentation):
+                raise Exception(
+                    "A segmentation was given as a dataset, please call Map(segmentation=yourSegmentation)"
+                )
+            elif not isinstance(dataset, DataSet):
+                raise Exception(
+                    f"The given dataset is not of type DataSet, but {type(dataset)}."
+                )
 
-        elif dataset is None and segmentation:
-            self.segmentation = segmentation
+        elif segmentation:
+            if isinstance(segmentation, DataSet):
+                raise Exception(
+                    "A DataSet was given as a Segmentation, please call Map(dataset=yourDataset)"
+                )
+            elif not isinstance(segmentation, Segmentation):
+                raise Exception(
+                    f"The given segmentation is not of type Segmentation, but {type(segmentation)}."
+                )
 
-        # setup ipyleaflet GeoJSON object
-        boundary_coordinates = self.segmentation["features"][0]["geometry"][
-            "coordinates"
-        ]
-        self.coordinates_mean = np.mean(np.squeeze(boundary_coordinates), axis=0)
-        self.boundary_geoJSON = ipyleaflet.GeoJSON(data=self.segmentation)
-        # for ipleaflet we need to change the order of the center coordinates
+        # convert to pdal dataset
+        if dataset:
 
-        self.m = ipyleaflet.Map(
-            basemap=ipyleaflet.basemaps.Esri.WorldImagery,
-            center=(self.coordinates_mean[1], self.coordinates_mean[0]),
-            crs=ipyleaflet.projections.EPSG3857,
-            scroll_wheel_zoom=True,
-            max_zoom=20,
-        )
-        self.m.add_layer(self.boundary_geoJSON)
+            dataset = PDALInMemoryDataSet.convert(dataset)
+            # preserve the original srs from dataset
+            if in_srs is None:
+                self.original_srs = dataset.spatial_reference
+            else:
+                if in_srs is None:
+                    raise Exception(
+                        "No srs could be found. Please specify one or use a dataset that includes one."
+                    )
+                self.original_srs = in_srs
 
-        # add polygon draw tool and zoom slider
-        self.add_zoom_slider()
-        self.add_polygon_control()
+        self.dataset = dataset  # needed for overlay function.
 
-        # setup the grid with a list of widgets
-        self.setup_grid([self.m])
+        # convert to a srs the ipyleaflet map can use.
+        # the only way this seems to work is to convert the dataset to EPSG:4326 and set the map to expect EPSG:3857
+        # https://gis.stackexchange.com/questions/48949/epsg-3857-or-4326-for-googlemaps-openstreetmap-and-leaflet/48952#48952
+        boundary_segmentation = self.load_hexbin_boundary(dataset, segmentation)
 
-    def get_boundary(self, dataset):
-        """Takes the boundary coordinates of the  given dataset
-            through the pdal hexbin filter and returns them as a segmentation.
+        # get square edges of the boundary_segmentation for use in hillshade overlay
+        self.boundary_edges = get_min_max_values(boundary_segmentation)
 
-        :param dataset:
-            The dataset from which the map should be displayed.
-        :type dataset: Dataset
+        self.setup_map(boundary_segmentation)
+        self.setup_controls()
 
-        :return:
-            hexbin_segmentation:
-            The Segmentation of the area from the dataset
-        :type hexbin_segmentation: Segmentation
+        # set up overlay dict.
+        # this stores the parameters used in the load_overlay function to avoid multipole calculations of the same overlay
+
+        self.overlay_dict = {}
+
+    def load_overlay(
+        self,
+        map_type,
+        classification=asprs[:],
+        resolution=2,
+        azimuth=315,
+        angle_altitude=45,
+        opacity=0.6,
+    ):
+        """
+        Calculates either a hillshade or a slope map of the dataset and layers it ontop the satelite map.
+        stores the entered parameters in "overlay_dict" to ensure, that the overlays are not calculated, when already present.
+
+
+        :param _type: Can either be "Hillshade" or "Slope"
+        :type _type: String
+
+        :param classification: a asprs classification that will be passed on to the visualisation function. Default = asprs[:]
+        :type classification: asprs
+
+        :param resolution:resolution for the visualisation. Default = 2
+        :type resolution: int
+
+        :param azimuth:azimuth for the visualisation. Default = 315
+        :type azimuth: int
+
+        :param angle_altitude: angle_altitude for the visualisation. Default = 45
+        :type angle_altitude: int
+
+        :param opacity: Sets the opacity of the layer, does not trigger recalculation of layers. Default = 0.6
+        :type opacity: float
 
         """
-        from adaptivefiltering.pdal import execute_pdal_pipeline, PDALInMemoryDataSet
+        from adaptivefiltering.pdal import execute_pdal_pipeline
 
-        # convert dataset to in memory pdal dataset
-        dataset = PDALInMemoryDataSet.convert(dataset)
+        if self.dataset == None:
+            raise Exception("No dataset was given to calculate the hillshade or slope.")
 
-        # execute the reprojection and hexbin filter.
-        # this is nessesary for the map to function properly.
-        hexbin_pipeline = execute_pdal_pipeline(
-            dataset=dataset,
-            config=[
-                {"type": "filters.hexbin"},
-            ],
+        if map_type != "Hillshade" and map_type != "Slope":
+            raise Exception("map_type can only be 'Hillshade' or 'Slope'.")
+
+        # set azimuth and angle_altitude to zero for _type =="Slope"
+        # This makes it easer to find preexisting slope overlays
+        if map_type == "Slope":
+            azimuth = 0
+            angle_altitude = 0
+
+        key_from_input = (
+            "_type:"
+            + map_type
+            + ",class:"
+            + str(classification)
+            + ",res:"
+            + str(resolution)
+            + ",az:"
+            + str(azimuth)
+            + ",ang:"
+            + str(angle_altitude)
         )
 
-        # get the coordinates from the metadata:
-        # this gives us lat, lon but for geojson we need lon, lat
-        coordinates = json.loads(hexbin_pipeline.metadata)["metadata"][
-            "filters.hexbin"
-        ]["boundary_json"]["coordinates"]
+        # if the dict is not empty, try to remove all layers present in the dict.
+        for layer in self.overlay_dict.values():
+            if layer.name == map_type:
+                try:
+                    self.map.remove_layer(layer)
+                except ipyleaflet.LayerException as e:
+                    continue
 
-        # set up the segmentation object to later load into the map
-        hexbin_segmentation = Segmentation(
-            [
-                {
-                    "type": "Feature",
-                    "properties": {
-                        "style": {
-                            "stroke": True,
-                            "color": "#add8e6",
-                            "weight": 4,
-                            "opacity": 0.5,
-                            "fill": True,
-                            "fillColor": "#add8e6",
-                            "fillOpacity": 0.1,
-                            "clickable": True,
-                        }
-                    },
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": coordinates,
-                    },
-                }
-            ]
-        )
+        # if the desired hs is not already present, calculate it.
+        # if it is, it will simply be loaded at the end of the function.
+        if key_from_input not in self.overlay_dict.keys():
+            resolution = resolution
 
-        return hexbin_segmentation
+            # calculate the hillshade or slope
+            if map_type == "Hillshade":
+                canvas = hillshade_visualization(
+                    self.dataset,
+                    classification=classification,
+                    resolution=resolution,
+                    azimuth=azimuth,
+                    angle_altitude=angle_altitude,
+                )
+            elif map_type == "Slope":
+                canvas = slopemap_visualization(
+                    self.dataset,
+                    classification=classification,
+                    resolution=resolution,
+                )
+            # setup a temporary filename for the picture.
+            tmp_file = get_temporary_filename("png")
 
-    def add_zoom_slider(self):
-        """Adds the zoom slider to the interactive map.
-        Also sets the default zoom.
+            # save figure with reduced whitespace
+            canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
+            # trim the remaining whitespace
+            trim(tmp_file)
+
+            # convert file to a base64 based url for ipyleaflet import
+            tmp_url = convert_picture_to_base64(tmp_file)
+
+            # convert the edges into a tuple
+            boundary_tuple = (
+                (self.boundary_edges["minY"], self.boundary_edges["minX"]),
+                (self.boundary_edges["maxY"], self.boundary_edges["maxX"]),
+            )
+
+            # save the overlay to the dict.
+            self.overlay_dict[key_from_input] = ipyleaflet.ImageOverlay(
+                url=tmp_url,
+                bounds=((boundary_tuple[0]), (boundary_tuple[1])),
+                rotation=90,
+                name=map_type,
+            )
+        # load the desired layer
+        self.overlay_dict[key_from_input].opacity = opacity
+        self.map.add_layer(self.overlay_dict[key_from_input])
+
+    def show(self):
+        return self.map
+
+    def setup_controls(self):
+        """Modifies the polygon draw control to only include polygons, delete and clear all.
+        Also initilizes the zoom slider, and layer control
+
+
+
         """
-
-        self.zoom_slider = ipywidgets.IntSlider(
-            description="Zoom level:", min=0, max=20, value=16
-        )
-        ipywidgets.jslink((self.zoom_slider, "value"), (self.m, "zoom"))
-        self.zoom_control1 = ipyleaflet.WidgetControl(
-            widget=self.zoom_slider, position="topright"
-        )
-        self.m.add_control(self.zoom_control1)
-
-    def add_polygon_control(self):
-        """Adds the polygon draw control."""
         self.draw_control = ipyleaflet.DrawControl(
             layout=ipywidgets.Layout(width="auto", grid_area="main")
         )
@@ -265,39 +374,24 @@ class InteractiveMap:
             "allowIntersection": False,
         }
 
-        self.m.add_control(self.draw_control)
+        # add draw control
+        self.map.add_control(self.draw_control)
 
-    def setup_grid(self, objects):
-        """
-        Setup the grid layout to allow the color bar and
-        more on the right side of the map.
-        """
-        self.grid = ipywidgets.GridBox(
-            children=objects,
-            layout=ipywidgets.Layout(
-                width="100%",
-                grid_template_columns="70% 30%",
-                grid_template_areas="""
-                        "main sidebar "
-                    """,
-            ),
+        # add zoom control
+        self.zoom_slider = ipywidgets.IntSlider(
+            description="Zoom level:", min=0, max=20, value=16
         )
+        ipywidgets.jslink((self.zoom_slider, "value"), (self.map, "zoom"))
+        self.zoom_control1 = ipyleaflet.WidgetControl(
+            widget=self.zoom_slider, position="topright"
+        )
+        self.map.add_control(self.zoom_control1)
 
-    def return_polygon(self):
-        """Exports the current polygon list as a Segmentation object
+        # layer control
+        self.layer_control = ipyleaflet.LayersControl(position="topright")
+        self.map.add_control(self.layer_control)
 
-        :return:
-            :param segmentation:
-                All current polygons in one segmentation object
-            :type segmentation: Segmentation
-
-
-        """
-
-        segmentation = Segmentation(self.draw_control.data)
-        return segmentation
-
-    def load_polygon(self, segmentation):
+    def load_segmentation(self, segmentation):
         """imports a segmentation object onto the map.
             The function also checks for doubles.
 
@@ -306,10 +400,11 @@ class InteractiveMap:
         :type segmentation: Segmentation
 
         """
+        if isinstance(segmentation, str):
+            segmentation = Segmentation.load(segmentation)
 
         # save current polygon data
         current_data = self.draw_control.data
-
         # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
         new_polygons = [
             new_polygon
@@ -321,10 +416,111 @@ class InteractiveMap:
         new_data = current_data + new_polygons
         self.draw_control.data = new_data
 
-    def show(self):
-        """This functions returns the grid object and makes the map visible.
-        :param grid:
-            The grid object which holds the map and the right side interface
-        :type grid: ipyleaflet.grid
+    def load_hexbin_boundary(self, dataset=None, segmentation=None):
         """
-        return self.grid
+        takes the dataset returns the boundary Segmentation.
+        If a segmentation is given, this will convert it into a boundary segmentation.
+
+        """
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        if dataset:
+            info_pipeline = execute_pdal_pipeline(
+                dataset=dataset, config=[{"type": "filters.info"}]
+            )
+
+            hexbin_pipeline = execute_pdal_pipeline(
+                dataset=dataset,
+                config=[
+                    {
+                        "type": "filters.hexbin",
+                        "sample_size": json.loads(info_pipeline.metadata)["metadata"][
+                            "filters.info"
+                        ]["num_points"],
+                        "precision": 10,
+                        "threshold": 1,
+                    },
+                ],
+            )
+
+            # get the coordinates from the metadata:
+            # this gives us lat, lon but for geojson we need lon, lat
+
+            hexbin_coord = [
+                json.loads(hexbin_pipeline.metadata)["metadata"]["filters.hexbin"][
+                    "boundary_json"
+                ]["coordinates"][0]
+            ]
+        elif segmentation:
+            hexbin_coord = [
+                features["geometry"]["coordinates"]
+                for features in segmentation["features"]
+            ][0]
+
+        boundary_segmentation = Segmentation(
+            [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "style": {
+                            "stroke": True,
+                            "color": "#add8e6",
+                            "weight": 4,
+                            "opacity": 0.5,
+                            "fill": True,
+                            "clickable": False,
+                        }
+                    },
+                    "geometry": {"type": "Polygon", "coordinates": hexbin_coord},
+                }
+            ]
+        )
+
+        # the segmentation should already be in the correct format so no additaional conversion is requiered
+        if dataset:
+
+            boundary_segmentation = convert_Segmentation(
+                boundary_segmentation, "EPSG:4326", self.original_srs
+            )
+            boundary_segmentation = swap_coordinates(boundary_segmentation)
+        # add boundary marker
+        return boundary_segmentation
+
+    def setup_map(self, boundary_segmentation):
+        """Takes the boundary coordinates of the  given dataset
+        through the pdal hexbin filter and returns them as a segmentation.
+        From the segmentation it calculates the center point as well as the edge points to implement the starting location of the map.
+        The edge points are used to draw the boundary square of the given dataset.
+        """
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        coordinates_mean = np.mean(
+            np.squeeze(boundary_segmentation["features"][0]["geometry"]["coordinates"]),
+            axis=0,
+        )
+
+        self.map = ipyleaflet.Map(
+            basemap=ipyleaflet.basemaps.Esri.WorldImagery,
+            center=(coordinates_mean[1], coordinates_mean[0]),
+            # we have to use epsg 3857 see comment in init
+            crs=ipyleaflet.projections.EPSG3857,
+            scroll_wheel_zoom=False,
+            max_zoom=20,
+        )
+        self.map.add_layer(
+            ipyleaflet.GeoJSON(data=boundary_segmentation, name="Boundary")
+        )
+
+    def return_segmentation(self):
+        """Exports the current polygon list as a Segmentation object
+
+        :return:
+            :param segmentation:
+                All current polygons in one segmentation object
+            :type segmentation: Segmentation
+
+
+        """
+        segmentation = Segmentation(self.draw_control.data)
+
+        return segmentation
