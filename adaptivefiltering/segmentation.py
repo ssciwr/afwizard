@@ -491,8 +491,6 @@ class Map:
         through the pdal hexbin filter and returns them as a segmentation.
         From the segmentation it calculates the center point as well as the edge points to implement the starting location of the map.
         The edge points are used to draw the boundary square of the given dataset.
-
-
         """
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
