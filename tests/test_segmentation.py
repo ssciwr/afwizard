@@ -10,7 +10,7 @@ from adaptivefiltering.utils import convert_Segmentation
 
 import geojson
 import os
-from . import dataset, dataset_thingstaette, boundary_segmentation
+from . import dataset, boundary_segmentation
 import pytest
 import numpy as np
 
@@ -140,8 +140,8 @@ def test_show_map(dataset, boundary_segmentation):
         test_map = Map(segmentation=5)
 
 
-def test_load_overlay(dataset_thingstaette, boundary_segmentation):
-    test_map = Map(dataset_thingstaette)
+def test_load_overlay(dataset, boundary_segmentation):
+    test_map = Map(dataset)
     # first overlay
     test_map.load_overlay("Hillshade", resolution=5)
     test_map.load_overlay("Slope", resolution=2, opacity=0.5)

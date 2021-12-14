@@ -25,7 +25,7 @@ def test_paths(tmp_path):
             assert abspath == locate_file("somefile.txt")
 
     # Check that we always find the data provided by the package
-    assert os.path.exists(locate_file("data/500k_NZ20_Westport.laz"))
+    assert os.path.exists(locate_file("500k_NZ20_Westport.laz"))
 
 
 def test_set_data_directory(tmp_path):

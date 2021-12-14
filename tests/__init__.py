@@ -18,21 +18,17 @@ def mock_environment(**env):
         os.environ.update(old_env)
 
 
-@pytest.fixture
-def dataset():
-    return adaptivefiltering.DataSet(filename="data/500k_NZ20_Westport.laz")
+def _dataset_fixture(filename, spatial_reference=None):
+    @pytest.fixture
+    def _fixture():
+        return adaptivefiltering.DataSet(filename, spatial_reference=spatial_reference)
+
+    return _fixture
 
 
-@pytest.fixture
-def dataset_thingstaette():
-    return adaptivefiltering.DataSet(filename="data/uls_thingstaette.las")
-
-
-@pytest.fixture
-def minimal_dataset():
-    return adaptivefiltering.DataSet(
-        filename="data/minimal.las", spatial_reference="EPSG:4362"
-    )
+# Fixtures for the provided datasets
+dataset = _dataset_fixture("500k_NZ20_Westport.laz")
+minimal_dataset = _dataset_fixture("minimal.las", spatial_reference="EPSG:4362")
 
 
 @pytest.fixture
