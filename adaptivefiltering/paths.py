@@ -1,16 +1,24 @@
 import functools
+import hashlib
 import json
 import os
 import platform
+import requests
+import tarfile
 import tempfile
 import uuid
 import xdg
+
 
 # Storage for the temporary workspace directory
 _tmp_dir = None
 
 # Storage for the data directory that will be used to resolve relative paths
 _data_dir = None
+
+# The current data archive URL
+TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/releases/download/2021-12-14/data.tar.gz"
+TEST_DATA_CHECKSUM = "b1af80c173ad475c14972a32bbf86cdbdb8a2197de48ca1e40c4a9859afcabcb"
 
 
 def set_data_directory(directory):
@@ -47,6 +55,26 @@ def get_temporary_filename(extension=""):
     :type extension: str
     """
     return os.path.join(get_temporary_workspace(), f"{uuid.uuid4()}.{extension}")
+
+
+def download_test_file(filename):
+    """Ensure the existence of a dataset file by downloading it"""
+    full_file = os.path.join(get_temporary_workspace(), "data", filename)
+
+    if not os.path.exists(full_file):
+        archive = requests.get(TEST_DATA_ARCHIVE).content
+        checksum = hashlib.sha256(archive).hexdigest()
+        if checksum != TEST_DATA_CHECKSUM:
+            raise ValueError("Checksum for test data archive failed.")
+
+        archive_file = os.path.join(get_temporary_workspace(), "data.tar.gz")
+        with open(archive_file, "wb") as tar:
+            tar.write(archive)
+
+        with tarfile.open(archive_file, "r:gz") as tar:
+            tar.extractall(path=os.path.join(get_temporary_workspace(), "data"))
+
+    return full_file
 
 
 def locate_file(filename):
@@ -92,8 +120,8 @@ def locate_file(filename):
         for xdg_dir in xdg.xdg_data_dirs():
             candidates.append(os.path.join(xdg_dir, filename))
 
-    # Use the package installation directory
-    candidates.append(os.path.join(os.path.split(__file__)[0], filename))
+    # Use the test data directory
+    candidates.append(download_test_file(filename))
 
     # Iterate through the list to check for file existence
     for candidate in candidates:
