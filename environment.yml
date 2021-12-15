@@ -4,7 +4,6 @@ channels:
 dependencies:
   - python=3.9
   - gdal
-  - ipympl
   - IPython=7.21.0
   - ipyvolume
   - ipywidgets<8
@@ -14,7 +13,6 @@ dependencies:
   - pdal=2.3.0
   - python-pdal=2.4.2
   - pip
-  - richdem
   - pillow
   - pip:
     - Click
@@ -22,7 +20,6 @@ dependencies:
     - geojson
     - jsonmerge
     - jsonschema
-    - matplotlib
     - pyrsistent
     - pytools
     - xdg

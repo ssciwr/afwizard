@@ -237,7 +237,7 @@ class Map:
         classification=asprs[:],
         resolution=2,
         azimuth=315,
-        angle_altitude=45,
+        altitude=45,
         opacity=0.6,
     ):
         """
@@ -257,8 +257,8 @@ class Map:
         :param azimuth:azimuth for the visualisation. Default = 315
         :type azimuth: int
 
-        :param angle_altitude: angle_altitude for the visualisation. Default = 45
-        :type angle_altitude: int
+        :param altitude: angle altitude for the visualisation. Default = 45
+        :type altitude: int
 
         :param opacity: Sets the opacity of the layer, does not trigger recalculation of layers. Default = 0.6
         :type opacity: float
@@ -276,7 +276,7 @@ class Map:
         # This makes it easer to find preexisting slope overlays
         if map_type == "Slope":
             azimuth = 0
-            angle_altitude = 0
+            altitude = 0
 
         key_from_input = (
             "_type:"
@@ -288,7 +288,7 @@ class Map:
             + ",az:"
             + str(azimuth)
             + ",ang:"
-            + str(angle_altitude)
+            + str(altitude)
         )
 
         # if the dict is not empty, try to remove all layers present in the dict.

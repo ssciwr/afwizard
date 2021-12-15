@@ -1,12 +1,15 @@
 from adaptivefiltering.asprs import asprs
+from adaptivefiltering.paths import get_temporary_filename
+
+from osgeo import gdal
 
 import functools
+import io
 import IPython
 import ipyvolume.pylab as vis
-import matplotlib.pyplot as plt
+import ipywidgets
 import numpy as np
-import richdem
-import tempfile
+import PIL
 
 from matplotlib import cm
 
@@ -28,77 +31,46 @@ def dispatch_visualization(dataset, visualization_type="hillshade", **options):
     return visualization_functions[visualization_type](dataset, **options)
 
 
-def hillshade_visualization(dataset, azimuth=315, angle_altitude=45, **kwargs):
-    band = dataset.raster.GetRasterBand(1)
-    z = band.ReadAsArray()
+def gdal_object_to_inmemory_png(obj):
+    # Encode it into an in-memory buffer
+    img = PIL.Image.fromarray(obj.ReadAsArray())
 
-    # Calculcate the hillshade values. Code taken from here
-    # http://rnovitsky.blogspot.com/2010/04/using-hillshade-image-as-intensity.html
-    x, y = np.gradient(z)
-    slope = 0.5 * np.pi - np.arctan(np.sqrt(x * x + y * y))
-    aspect = np.arctan2(-x, y)
-    azimuthrad = azimuth * np.pi / 180.0
-    altituderad = angle_altitude * np.pi / 180.0
-    shaded = np.sin(altituderad) * np.sin(slope) + np.cos(altituderad) * np.cos(
-        slope
-    ) * np.cos(azimuthrad - aspect)
-    hs_array = 255 * (shaded + 1) / 2
+    # Fix color scheme - also works for greyscale stuff
+    if img.mode != "RGB":
+        img = img.convert("RGB")
 
-    # Plot the image
-    plt.ioff()
-    fig, ax = plt.subplots()
-    ax.imshow(hs_array, cmap=cm.gray)
+    # Create and fill in-memory stream
+    membuf = io.BytesIO()
+    img.save(membuf, format="png")
 
-    # Make sure that we get the "raw" image and no axes, whitespace etc.
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
-    fig.set_tight_layout(True)
-
-    # Set some properties on the canvas that fit our use case
-    fig.canvas.toolbar_visible = False
-    fig.canvas.header_visible = False
-    fig.canvas.footer_visible = False
-    fig.canvas.resizable = False
-    fig.canvas.capture_scroll = False
-
-    # Return the figure object. The widget can be extracted from this using
-    # the canvas property
-    return fig.canvas
+    return membuf.getvalue()
 
 
-def slopemap_visualization(dataset, **kwargs):
-    return hillshade_visualization(dataset)
-    # shasta_dem = dataset.raster
+def hillshade_visualization(dataset, azimuth=315, altitude=45):
+    # Do the processing with GDAL
+    gdal_img = gdal.DEMProcessing(
+        get_temporary_filename(extension="png"),
+        dataset.raster,
+        "hillshade",
+        azimuth=azimuth,
+        altitude=altitude,
+    )
 
-    # # Have richdem calculate the slope map
-    # slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
-
-    # # Plot the image
-    # plt.ioff()
-    # fig, ax = plt.subplots()
-    # # colour is subject to change and discussion.
-    # ax.imshow(slope, cmap=cm.RdBu)
-
-    # # Make sure that we get the "raw" image and no axes, whitespace etc.
-    # ax.get_xaxis().set_visible(False)
-    # ax.get_yaxis().set_visible(False)
-    # fig.set_tight_layout(True)
-
-    # # Set some properties on the canvas that fit our use case
-    # fig.canvas.toolbar_visible = False
-    # fig.canvas.header_visible = False
-    # fig.canvas.footer_visible = False
-    # fig.canvas.resizable = False
-    # fig.canvas.capture_scroll = False
-
-    # # Return the figure object. The widget can be extracted from this using
-    # # the canvas property
-    # return fig.canvas
+    # Display it in an ipywidget
+    return ipywidgets.Image(value=gdal_object_to_inmemory_png(gdal_img), format="png")
 
 
-def scatter_visualization(
-    dataset, classification=asprs[:], threshold=1000000, **kwargs
-):
+def slopemap_visualization(dataset):
+    # Do the processing with GDAL
+    gdal_img = gdal.DEMProcessing(
+        get_temporary_filename(extension="tif"), dataset.raster, "slope"
+    )
+
+    # Display it in an ipywidget
+    return ipywidgets.Image(value=gdal_object_to_inmemory_png(gdal_img), format="png")
+
+
+def scatter_visualization(dataset, classification=asprs[:], threshold=1000000):
     # Convert to PDAL - this should go away when we make DEM's a first class citizen
     # of our abstractions
     from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -140,7 +112,7 @@ def scatter_visualization(
     return vis.gcc()
 
 
-def mesh_visualization(dataset, **kwargs):
+def mesh_visualization(dataset):
     data = dataset.raster
 
     # use the number of x and y points to generate a grid.

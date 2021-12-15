@@ -3,7 +3,7 @@
     {
       "additionalProperties": false,
       "properties": {
-        "angle_altitude": {
+        "altitude": {
           "default": 45,
           "maximum": 90,
           "minimum": 0,
