@@ -15,10 +15,6 @@
           "minimum": 0,
           "type": "number"
         },
-        "resolution": {
-          "default": 1.0,
-          "type": "number"
-        },
         "visualization_type": {
           "const": "hillshade",
           "type": "string"
@@ -33,10 +29,6 @@
     {
       "additionalProperties": false,
       "properties": {
-        "resolution": {
-          "default": 1.0,
-          "type": "number"
-        },
         "visualization_type": {
           "const": "slopemap",
           "type": "string"
@@ -69,10 +61,6 @@
     {
       "additionalProperties": false,
       "properties": {
-        "resolution": {
-          "default": 1.0,
-          "type": "number"
-        },
         "visualization_type": {
           "const": "mesh",
           "type": "string"

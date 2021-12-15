@@ -17,31 +17,19 @@ if ipython is not None:
     ipython.magic("matplotlib widget")
 
 
-def hillshade_visualization(
-    dataset, classification=asprs[:], resolution=1.0, azimuth=315, angle_altitude=45
-):
-    # Convert to PDAL - this should go away when we make DEM's a first class citizen
-    # of our abstractions
-    from adaptivefiltering.pdal import PDALInMemoryDataSet
+def dispatch_visualization(dataset, visualization_type="hillshade", **options):
+    visualization_functions = {
+        "hillshade": hillshade_visualization,
+        "mesh": mesh_visualization,
+        "scatter": scatter_visualization,
+        "slopemap": slopemap_visualization,
+    }
 
-    dataset = PDALInMemoryDataSet.convert(dataset)
+    return visualization_functions[visualization_type](dataset, **options)
 
-    # Make sure that classification is hashable
-    classification = tuple(classification)
 
-    # Make a temporary tif file to view data
-    if (resolution, classification) not in dataset._mesh_data_cache:
-        # Write a temporary file
-        with tempfile.NamedTemporaryFile() as tmp_file:
-            dataset.save_mesh(
-                str(tmp_file.name),
-                resolution=resolution,
-                classification=classification,
-            )
-
-    # Retrieve the raster data from cache
-    data = dataset._mesh_data_cache[resolution, classification]
-    band = data.GetRasterBand(1)
+def hillshade_visualization(dataset, azimuth=315, angle_altitude=45, **kwargs):
+    band = dataset.raster.GetRasterBand(1)
     z = band.ReadAsArray()
 
     # Calculcate the hillshade values. Code taken from here
@@ -78,57 +66,44 @@ def hillshade_visualization(
     return fig.canvas
 
 
-def slopemap_visualization(dataset, classification=asprs[:], resolution=1.0):
+def slopemap_visualization(dataset, **kwargs):
+    return hillshade_visualization(dataset)
+    # shasta_dem = dataset.raster
+
+    # # Have richdem calculate the slope map
+    # slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
+
+    # # Plot the image
+    # plt.ioff()
+    # fig, ax = plt.subplots()
+    # # colour is subject to change and discussion.
+    # ax.imshow(slope, cmap=cm.RdBu)
+
+    # # Make sure that we get the "raw" image and no axes, whitespace etc.
+    # ax.get_xaxis().set_visible(False)
+    # ax.get_yaxis().set_visible(False)
+    # fig.set_tight_layout(True)
+
+    # # Set some properties on the canvas that fit our use case
+    # fig.canvas.toolbar_visible = False
+    # fig.canvas.header_visible = False
+    # fig.canvas.footer_visible = False
+    # fig.canvas.resizable = False
+    # fig.canvas.capture_scroll = False
+
+    # # Return the figure object. The widget can be extracted from this using
+    # # the canvas property
+    # return fig.canvas
+
+
+def scatter_visualization(
+    dataset, classification=asprs[:], threshold=1000000, **kwargs
+):
     # Convert to PDAL - this should go away when we make DEM's a first class citizen
     # of our abstractions
     from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-    dataset = PDALInMemoryDataSet.convert(dataset)
-
-    # Make sure that classification is hashable
-    classification = tuple(classification)
-
-    # make a temporary tif file to view data
-    with tempfile.NamedTemporaryFile() as tmp_file:
-        dataset.save_mesh(
-            str(tmp_file.name),
-            resolution=resolution,
-            classification=classification,
-        )
-        shasta_dem = richdem.LoadGDAL(tmp_file.name + ".tif")
-
-    # Have richdem calculate the slope map
-    slope = richdem.TerrainAttribute(shasta_dem, attrib="slope_riserun")
-
-    # Plot the image
-    plt.ioff()
-    fig, ax = plt.subplots()
-    # colour is subject to change and discussion.
-    ax.imshow(slope, cmap=cm.RdBu)
-
-    # Make sure that we get the "raw" image and no axes, whitespace etc.
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
-    fig.set_tight_layout(True)
-
-    # Set some properties on the canvas that fit our use case
-    fig.canvas.toolbar_visible = False
-    fig.canvas.header_visible = False
-    fig.canvas.footer_visible = False
-    fig.canvas.resizable = False
-    fig.canvas.capture_scroll = False
-
-    # Return the figure object. The widget can be extracted from this using
-    # the canvas property
-    return fig.canvas
-
-
-def scatter_visualization(dataset, classification=asprs[:], threshold=1000000):
-    # Convert to PDAL - this should go away when we make DEM's a first class citizen
-    # of our abstractions
-    from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-    dataset = PDALInMemoryDataSet.convert(dataset)
+    dataset = PDALInMemoryDataSet.convert(dataset.dataset)
 
     if len(dataset.data["X"]) >= threshold:
         raise ValueError(
@@ -165,28 +140,8 @@ def scatter_visualization(dataset, classification=asprs[:], threshold=1000000):
     return vis.gcc()
 
 
-def mesh_visualization(dataset, classification=asprs[:], resolution=1.0):
-    # Convert to PDAL - this should go away when we make DEM's a first class citizen
-    # of our abstractions
-    from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-    dataset = PDALInMemoryDataSet.convert(dataset)
-
-    # Make sure that classification is hashable
-    classification = tuple(classification)
-
-    # make a temporary tif file to view data
-    if (resolution, classification) not in dataset._mesh_data_cache:
-        # Write a temporary file
-        with tempfile.NamedTemporaryFile() as tmp_file:
-            dataset.save_mesh(
-                str(tmp_file.name),
-                resolution=resolution,
-                classification=classification,
-            )
-
-    # Retrieve the raster data from cache
-    data = dataset._mesh_data_cache[resolution, classification]
+def mesh_visualization(dataset, **kwargs):
+    data = dataset.raster
 
     # use the number of x and y points to generate a grid.
     x = np.arange(0, data.RasterXSize)

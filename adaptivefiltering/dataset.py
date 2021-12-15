@@ -1,18 +1,16 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.visualization import (
-    hillshade_visualization,
-    mesh_visualization,
-    scatter_visualization,
-    slopemap_visualization,
-)
+from adaptivefiltering.visualization import dispatch_visualization
+
+from osgeo import gdal
 
 import json
 import jsonschema
 import os
 import shutil
 import sys
+import tempfile
 
 
 class DataSet:
@@ -44,22 +42,14 @@ class DataSet:
         if self.filename is not None:
             self.filename = locate_file(self.filename)
 
-    def save_mesh(
-        self,
-        filename,
-        resolution=2.0,
-        classification=asprs[:],
-    ):
-        """Store the point cloud as a digital terrain model to a GeoTIFF file
+    def rasterize(self, resolution=2.0, classification=asprs[:]):
+        """Create a digital terrain model from the dataset
+
         It is important to note that for archaelogic applications, the mesh is not
         a traditional DEM/DTM (Digitial Elevation/Terrain Model), but rather a DFM
         (Digital Feature Model) which consists of ground and all potentially relevant
         structures like buildings etc. but always excludes vegetation.
-        :param filename:
-            The filename to store the mesh. You can either specify an absolute path
-            or a relative path. Relative paths are interpreted w.r.t. the current
-            working directory.
-        :type filename: str
+
         :param resolution:
             The mesh resolution in meters. Adapt this depending on the scale
             of the features you are looking for and the point density of your
@@ -69,14 +59,11 @@ class DataSet:
             The classification values to include into the written mesh file.
         :type classification: tuple
         """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-        dataset = PDALInMemoryDataSet.convert(self)
-        return dataset.save_mesh(
-            filename, resolution=resolution, classification=classification
+        return DigitalSurfaceModel(
+            dataset=self, resolution=resolution, classification=classification
         )
 
-    def show(self, visualization_type="hillshade", classification=asprs[:], **kwargs):
+    def show(self, visualization_type="hillshade", **kwargs):
         """Visualize the dataset in JupyterLab
         Several visualization options can be chosen via the *visualization_type* parameter.
         Some of the arguments given below are only available for specific visualization
@@ -104,24 +91,21 @@ class DataSet:
             The angle altitude of the sun from [0, 90] (`hillshade` only)
         """
 
+        # This is a bit unfortunate, but we need to separate rasterization options
+        # from visualization options. I have not had a better idea how to do this.
+        raster_schema = load_schema("rasterize.json")
+        rasterize_options = {}
+        for key in raster_schema["properties"].keys():
+            if key in kwargs:
+                rasterize_options[key] = kwargs.pop(key)
+
         # Validate the visualization input
         kwargs["visualization_type"] = visualization_type
         schema = load_schema("visualization.json")
         jsonschema.validate(kwargs, schema=schema)
-        kwargs.pop("visualization_type")
-
-        # Create a mapping of types to implementations
-        visualization_functions = {
-            "hillshade": hillshade_visualization,
-            "mesh": mesh_visualization,
-            "scatter": scatter_visualization,
-            "slopemap": slopemap_visualization,
-        }
 
         # Call the correct visualization function
-        return visualization_functions[visualization_type](
-            self, classification=classification, **kwargs
-        )
+        return dispatch_visualization(self.rasterize(**rasterize_options), **kwargs)
 
     def show_interactive(self):
         """Visualize the dataset with interactive visualization controls"""
@@ -203,6 +187,52 @@ class DataSet:
     def convert(cls, dataset):
         """Convert this dataset to an instance of DataSet"""
         return dataset.save(get_temporary_filename(extension="las"))
+
+
+class DigitalSurfaceModel:
+    def __init__(self, dataset=None, **rasterization_options):
+        """Representation of a rasterized DEM/DTM/DSM/DFM
+
+        Constructs a raster model from a dataset. This is typically used
+        implicitly or through :ref:`~adaptivefilter.DataSet.rasterize`.
+        """
+
+        from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
+
+        # Store a reference to the generating dataset
+        self.dataset = PDALInMemoryDataSet.convert(dataset)
+
+        # Validate the provided options
+        schema = load_schema("rasterize.json")
+        jsonschema.validate(
+            rasterization_options, schema=schema, types=dict(array=(list, tuple))
+        )
+
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            # Create the model
+            execute_pdal_pipeline(
+                dataset=self.dataset,
+                config=[
+                    {
+                        "type": "filters.range",
+                        "limits": ",".join(
+                            f"Classification[{c}:{c}]"
+                            for c in rasterization_options.get(
+                                "classification", asprs[:]
+                            )
+                        ),
+                    },
+                    {
+                        "filename": str(tmp_file.name),
+                        "gdaldriver": "GTiff",
+                        "output_type": "all",
+                        "type": "writers.gdal",
+                        "resolution": rasterization_options.get("resolution", 2.0),
+                    },
+                ],
+            )
+
+            self.raster = gdal.Open(str(tmp_file.name), gdal.GA_ReadOnly)
 
 
 def remove_classification(dataset):

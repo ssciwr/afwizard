@@ -302,23 +302,19 @@ class Map:
         # if the desired hs is not already present, calculate it.
         # if it is, it will simply be loaded at the end of the function.
         if key_from_input not in self.overlay_dict.keys():
-            resolution = resolution
+            rastered = self.dataset.rasterize(
+                classification=classification, resolution=resolution
+            )
 
             # calculate the hillshade or slope
             if map_type == "Hillshade":
                 canvas = hillshade_visualization(
-                    self.dataset,
-                    classification=classification,
-                    resolution=resolution,
+                    rastered,
                     azimuth=azimuth,
                     angle_altitude=angle_altitude,
                 )
             elif map_type == "Slope":
-                canvas = slopemap_visualization(
-                    self.dataset,
-                    classification=classification,
-                    resolution=resolution,
-                )
+                canvas = slopemap_visualization(rastered)
             # setup a temporary filename for the picture.
             tmp_file = get_temporary_filename("png")
 

@@ -167,34 +167,6 @@ class PDALInMemoryDataSet(DataSet):
             spatial_reference=spatial_reference,
         )
 
-    def save_mesh(self, filename, resolution=2.0, classification=asprs[:]):
-
-        if os.path.splitext(filename)[1] == ".tif":
-            filename = os.path.splitext(filename)[0]
-        execute_pdal_pipeline(
-            dataset=self,
-            config=[
-                {
-                    "type": "filters.range",
-                    "limits": ",".join(
-                        f"Classification[{c}:{c}]" for c in classification
-                    ),
-                },
-                {
-                    "filename": filename + ".tif",
-                    "gdaldriver": "GTiff",
-                    "output_type": "all",
-                    "type": "writers.gdal",
-                    "resolution": resolution,
-                },
-            ],
-        )
-
-        # Also store the data in our internal cache
-        self._mesh_data_cache[resolution, classification] = gdal.Open(
-            filename + ".tif", gdal.GA_ReadOnly
-        )
-
     def save(self, filename, compress=False, overwrite=False):
         # Check if we would overwrite an input file
         if not overwrite and os.path.exists(filename):
