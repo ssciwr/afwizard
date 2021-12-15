@@ -19,7 +19,7 @@ dependencies:
     - geodaisy
     - geojson
     - jsonmerge
-    - jsonschema
+    - jsonschema=3.2.0
     - pyrsistent
     - pytools
     - xdg
