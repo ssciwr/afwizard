@@ -91,25 +91,36 @@ def flex_square_layout(widgets):
 def classification_widget(datasets, selected=None):
     """Create a widget to select classification values"""
 
-    def get_classes(dataset):
+    # Determine classes present across all datasets
+    joined_count = {}
+    for dataset in datasets:
         # Make sure that we have an in-memory copy of the dataset
         dataset = PDALInMemoryDataSet.convert(dataset)
 
         # Get the lists present in this dataset
-        return np.unique(dataset.data["Classification"])
-
-    # Join the classes in all datasets
-    classes = set().union(*tuple(set(get_classes(d)) for d in datasets))
+        for code, numpoints in enumerate(np.bincount(dataset.data["Classification"])):
+            if numpoints > 0:
+                joined_count.setdefault(code, 0)
+                joined_count[code] += numpoints
 
     # Determine selection - either all or the ones that were passed and exist
     if selected is None:
-        selected = list(sorted(classes))
+        if 2 in joined_count:
+            # If the dataset already contains ground points, we only want to use
+            # them by default. This saves tedious work for the user who is interested
+            # in ground point filtering results.
+            selected = [2]
+        else:
+            # If there are no ground points, we use all classes
+            selected = list(joined_count.keys())
     else:
-        selected = [s for s in selected if s in classes]
+        # If an explicitly selection was given, we use it.
+        selected = [s for s in selected if s in joined_count.keys()]
 
     return ipywidgets.SelectMultiple(
         options=[
-            (f"{asprs_class_name(code)} ({code})", code) for code in sorted(classes)
+            (f"[{code}]: {asprs_class_name(code)} ({joined_count[code]} points)", code)
+            for code in sorted(joined_count.keys())
         ],
         value=selected,
     )
