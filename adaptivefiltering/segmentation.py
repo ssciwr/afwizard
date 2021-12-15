@@ -311,20 +311,32 @@ class Map:
                 canvas = hillshade_visualization(
                     rastered,
                     azimuth=azimuth,
-                    angle_altitude=angle_altitude,
+                    altitude=altitude,
                 )
             elif map_type == "Slope":
                 canvas = slopemap_visualization(rastered)
-            # setup a temporary filename for the picture.
-            tmp_file = get_temporary_filename("png")
 
-            # save figure with reduced whitespace
-            canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
-            # trim the remaining whitespace
-            trim(tmp_file)
+            # TODO: Highly unclear to me how this changes now that canvas is
+            #       ipywidgets.Image
 
-            # convert file to a base64 based url for ipyleaflet import
-            tmp_url = convert_picture_to_base64(tmp_file)
+            # # setup a temporary filename for the picture.
+            # tmp_file = get_temporary_filename("png")
+
+            # # save figure with reduced whitespace
+            # canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+            # # trim the remaining whitespace
+            # trim(tmp_file)
+
+            # # convert file to a base64 based url for ipyleaflet import
+            # tmp_url = convert_picture_to_base64(tmp_file)
+
+            # This is my guess:
+            from base64 import b64encode
+
+            data = b64encode(canvas.value)
+            data = data.decode("ascii")
+            url = "data:image/{};base64,".format("png") + data
 
             # convert the edges into a tuple
             boundary_tuple = (
@@ -334,7 +346,7 @@ class Map:
 
             # save the overlay to the dict.
             self.overlay_dict[key_from_input] = ipyleaflet.ImageOverlay(
-                url=tmp_url,
+                url=url,
                 bounds=((boundary_tuple[0]), (boundary_tuple[1])),
                 rotation=90,
                 name=map_type,
