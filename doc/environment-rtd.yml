@@ -26,6 +26,7 @@ dependencies:
     - nbsphinx
     - nbsphinx-link
     - pyrsistent
+    - pytools
     - sphinx_lfs_content
     - xdg
     - ipyleaflet

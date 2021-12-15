@@ -8,6 +8,7 @@ from osgeo import gdal
 import json
 import jsonschema
 import os
+import pytools
 import shutil
 import sys
 import tempfile
@@ -42,6 +43,7 @@ class DataSet:
         if self.filename is not None:
             self.filename = locate_file(self.filename)
 
+    @pytools.memoize_method
     def rasterize(self, resolution=2.0, classification=asprs[:]):
         """Create a digital terrain model from the dataset
 

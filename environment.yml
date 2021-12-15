@@ -24,6 +24,7 @@ dependencies:
     - jsonschema
     - matplotlib
     - pyrsistent
+    - pytools
     - xdg
     - xmltodict
     - pyproj
