@@ -19,7 +19,7 @@ dependencies:
     - geodaisy
     - geojson
     - jsonmerge
-    - jsonschema=3.2.0
+    - jsonschema==3.2.0
     - m2r2
     - nbsphinx
     - nbsphinx-link
