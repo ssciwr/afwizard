@@ -105,8 +105,16 @@ def classification_widget(datasets, selected=None):
 
     # Determine selection - either all or the ones that were passed and exist
     if selected is None:
-        selected = list(joined_count.keys())
+        if 2 in joined_count:
+            # If the dataset already contains ground points, we only want to use
+            # them by default. This saves tedious work for the user who is interested
+            # in ground point filtering results.
+            selected = [2]
+        else:
+            # If there are no ground points, we use all classes
+            selected = list(joined_count.keys())
     else:
+        # If an explicitly selection was given, we use it.
         selected = [s for s in selected if s in joined_count.keys()]
 
     return ipywidgets.SelectMultiple(
