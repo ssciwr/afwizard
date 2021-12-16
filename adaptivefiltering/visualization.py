@@ -5,7 +5,6 @@ from PIL import Image
 
 import io
 import ipywidgets
-import PIL
 
 
 def gdal_visualization(dataset, **options):
