@@ -1,6 +1,7 @@
 from adaptivefiltering.paths import get_temporary_filename
 
 from osgeo import gdal
+from PIL import Image
 
 import io
 import ipywidgets
@@ -15,7 +16,7 @@ def gdal_visualization(dataset, **options):
     )
 
     # Encode it into an in-memory buffer
-    img = PIL.Image.fromarray(gdal_img.ReadAsArray())
+    img = Image.fromarray(gdal_img.ReadAsArray())
 
     # Fix color scheme - also works for greyscale stuff
     if img.mode != "RGB":
