@@ -1,17 +1,14 @@
-from adaptivefiltering.paths import load_schema, locate_file
+from adaptivefiltering.asprs import asprs
+from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import (
-    convert_picture_to_base64,
     is_iterable,
-    trim,
     convert_Segmentation,
 )
-from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.visualization import gdal_visualization
 
-from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import get_temporary_filename
-from adaptivefiltering.utils import AdaptiveFilteringError
-
+import base64
 import geojson
 import jsonschema
 import ipyleaflet
@@ -262,7 +259,6 @@ class Map:
         :type opacity: float
 
         """
-        from adaptivefiltering.pdal import execute_pdal_pipeline
 
         if self.dataset == None:
             raise AdaptiveFilteringError(
@@ -319,25 +315,8 @@ class Map:
             elif map_type == "slope":
                 canvas = gdal_visualization(rastered, visualization_type="slope")
 
-            # TODO: Highly unclear to me how this changes now that canvas is
-            #       ipywidgets.Image
-
-            # # setup a temporary filename for the picture.
-            # tmp_file = get_temporary_filename("png")
-
-            # # save figure with reduced whitespace
-            # canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
-
-            # # trim the remaining whitespace
-            # trim(tmp_file)
-
-            # # convert file to a base64 based url for ipyleaflet import
-            # tmp_url = convert_picture_to_base64(tmp_file)
-
-            # This is my guess:
-            from base64 import b64encode
-
-            data = b64encode(canvas.value)
+            # Construct URL for image to use in ipyleaflet
+            data = base64.b64encode(canvas.value)
             data = data.decode("ascii")
             url = "data:image/{};base64,".format("png") + data
 

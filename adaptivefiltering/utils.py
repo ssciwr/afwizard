@@ -1,8 +1,4 @@
 import collections
-import PIL
-from io import BytesIO
-from base64 import b64encode
-import os
 import copy
 import numpy as np
 
@@ -21,30 +17,6 @@ def stringify_value(value):
         return " ".join(value)
 
     return str(value)
-
-
-def trim(path):
-    """Trim the whitespace around pictures from matplotlib"""
-
-    im = PIL.Image.open(path)
-    bg = PIL.Image.new(im.mode, im.size, im.getpixel((0, 0)))
-    diff = PIL.ImageChops.difference(im, bg)
-    diff = PIL.ImageChops.add(diff, diff, 2.0, -100)
-    bbox = diff.getbbox()
-    if bbox:
-        im = im.crop(bbox)
-        im.save(path)
-
-
-def convert_picture_to_base64(path):
-    image = PIL.Image.open(path)
-    ext = os.path.splitext(path)[1][1:]  # file extension
-    f = BytesIO()
-    image.save(f, ext)
-    data = b64encode(f.getvalue())
-    data = data.decode("ascii")
-    url = "data:image/{};base64,".format(ext) + data
-    return url
 
 
 def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
