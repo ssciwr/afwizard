@@ -211,27 +211,50 @@ class DigitalSurfaceModel:
         )
 
         with tempfile.NamedTemporaryFile() as tmp_file:
-            # Create the model
-            execute_pdal_pipeline(
-                dataset=self.dataset,
-                config=[
-                    {
-                        "type": "filters.range",
-                        "limits": ",".join(
-                            f"Classification[{c}:{c}]"
-                            for c in rasterization_options.get(
-                                "classification", asprs[:]
-                            )
-                        ),
-                    },
+            # Create the PDAL filter configuration
+            config = [
+                {
+                    "type": "filters.range",
+                    "limits": ",".join(
+                        f"Classification[{c}:{c}]"
+                        for c in rasterization_options.get("classification", asprs[:])
+                    ),
+                }
+            ]
+
+            # If we are only using ground, we use a triangulation approach
+            if tuple(rasterization_options.get("classification", asprs[:])) == (2,):
+                config.extend(
+                    [
+                        {
+                            "type": "filters.delaunay",
+                        },
+                        {
+                            "type": "filters.faceraster",
+                            "resolution": rasterization_options.get("resolution", 2.0),
+                        },
+                        {
+                            "type": "writers.raster",
+                            "filename": str(tmp_file.name),
+                        },
+                    ]
+                )
+            else:
+                # Otherwise, a non-triangulated approach gives the better result
+                config.append(
                     {
                         "filename": str(tmp_file.name),
                         "gdaldriver": "GTiff",
                         "output_type": "all",
                         "type": "writers.gdal",
                         "resolution": rasterization_options.get("resolution", 2.0),
-                    },
-                ],
+                    }
+                )
+
+            # Create the model by running the pipeline
+            execute_pdal_pipeline(
+                dataset=self.dataset,
+                config=config,
             )
 
             self.raster = gdal.Open(str(tmp_file.name), gdal.GA_ReadOnly)
