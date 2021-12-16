@@ -1,19 +1,14 @@
-from adaptivefiltering.paths import load_schema, locate_file
+from adaptivefiltering.asprs import asprs
+from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import (
-    convert_picture_to_base64,
     is_iterable,
-    trim,
     convert_Segmentation,
 )
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.visualization import (
-    hillshade_visualization,
-    mesh_visualization,
-    scatter_visualization,
-    slopemap_visualization,
-)
-from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import get_temporary_filename
+from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.visualization import gdal_visualization
+
+import base64
 import geojson
 import jsonschema
 import ipyleaflet
@@ -165,37 +160,37 @@ class Map:
 
         # handle exeptions
         if dataset and segmentation:
-            raise Exception(
+            raise AdaptiveFilteringError(
                 "A dataset and a segmentation can't be loaded at the same time."
             )
 
         if dataset is None and segmentation["features"] is []:
-            raise Exception("an empty segmention was given.")
+            raise AdaptiveFilteringError("an empty segmention was given.")
 
         if dataset is None and segmentation is None:
             # if no dataset or segmentation is given, the map will be centered at the SSC office
-            raise Exception(
+            raise AdaptiveFilteringError(
                 "Please use either a dataset or a segmentation. None were given."
             )
 
         # check if dataset and segmentation are of correct type
         if dataset:
             if isinstance(dataset, Segmentation):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     "A segmentation was given as a dataset, please call Map(segmentation=yourSegmentation)"
                 )
             elif not isinstance(dataset, DataSet):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     f"The given dataset is not of type DataSet, but {type(dataset)}."
                 )
 
         elif segmentation:
             if isinstance(segmentation, DataSet):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     "A DataSet was given as a Segmentation, please call Map(dataset=yourDataset)"
                 )
             elif not isinstance(segmentation, Segmentation):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     f"The given segmentation is not of type Segmentation, but {type(segmentation)}."
                 )
 
@@ -208,7 +203,7 @@ class Map:
                 self.original_srs = dataset.spatial_reference
             else:
                 if in_srs is None:
-                    raise Exception(
+                    raise AdaptiveFilteringError(
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
@@ -234,10 +229,10 @@ class Map:
     def load_overlay(
         self,
         map_type,
-        classification=asprs[:],
+        classification=None,
         resolution=2,
         azimuth=315,
-        angle_altitude=45,
+        altitude=45,
         opacity=0.6,
     ):
         """
@@ -257,26 +252,33 @@ class Map:
         :param azimuth:azimuth for the visualisation. Default = 315
         :type azimuth: int
 
-        :param angle_altitude: angle_altitude for the visualisation. Default = 45
-        :type angle_altitude: int
+        :param altitude: angle altitude for the visualisation. Default = 45
+        :type altitude: int
 
         :param opacity: Sets the opacity of the layer, does not trigger recalculation of layers. Default = 0.6
         :type opacity: float
 
         """
-        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        # If no classification value was given, we use all classes
+        if classification is None:
+            classification = asprs[:]
 
         if self.dataset == None:
-            raise Exception("No dataset was given to calculate the hillshade or slope.")
+            raise AdaptiveFilteringError(
+                "No dataset was given to calculate the hillshade or slope."
+            )
 
-        if map_type != "Hillshade" and map_type != "Slope":
-            raise Exception("map_type can only be 'Hillshade' or 'Slope'.")
+        if map_type not in ("hillshade", "slope"):
+            raise AdaptiveFilteringError(
+                f"map_type can only be 'hillshade' or 'slope', not {map_type}"
+            )
 
         # set azimuth and angle_altitude to zero for _type =="Slope"
         # This makes it easer to find preexisting slope overlays
-        if map_type == "Slope":
+        if map_type == "slope":
             azimuth = 0
-            angle_altitude = 0
+            altitude = 0
 
         key_from_input = (
             "_type:"
@@ -288,7 +290,7 @@ class Map:
             + ",az:"
             + str(azimuth)
             + ",ang:"
-            + str(angle_altitude)
+            + str(altitude)
         )
 
         # if the dict is not empty, try to remove all layers present in the dict.
@@ -302,33 +304,25 @@ class Map:
         # if the desired hs is not already present, calculate it.
         # if it is, it will simply be loaded at the end of the function.
         if key_from_input not in self.overlay_dict.keys():
-            resolution = resolution
+            rastered = self.dataset.rasterize(
+                classification=classification, resolution=resolution
+            )
 
             # calculate the hillshade or slope
-            if map_type == "Hillshade":
-                canvas = hillshade_visualization(
-                    self.dataset,
-                    classification=classification,
-                    resolution=resolution,
+            if map_type == "hillshade":
+                canvas = gdal_visualization(
+                    rastered,
+                    visualization_type="hillshade",
                     azimuth=azimuth,
-                    angle_altitude=angle_altitude,
+                    altitude=altitude,
                 )
-            elif map_type == "Slope":
-                canvas = slopemap_visualization(
-                    self.dataset,
-                    classification=classification,
-                    resolution=resolution,
-                )
-            # setup a temporary filename for the picture.
-            tmp_file = get_temporary_filename("png")
+            elif map_type == "slope":
+                canvas = gdal_visualization(rastered, visualization_type="slope")
 
-            # save figure with reduced whitespace
-            canvas.figure.savefig(tmp_file, bbox_inches="tight", pad_inches=0, dpi=1200)
-            # trim the remaining whitespace
-            trim(tmp_file)
-
-            # convert file to a base64 based url for ipyleaflet import
-            tmp_url = convert_picture_to_base64(tmp_file)
+            # Construct URL for image to use in ipyleaflet
+            data = base64.b64encode(canvas.value)
+            data = data.decode("ascii")
+            url = "data:image/{};base64,".format("png") + data
 
             # convert the edges into a tuple
             boundary_tuple = (
@@ -338,7 +332,7 @@ class Map:
 
             # save the overlay to the dict.
             self.overlay_dict[key_from_input] = ipyleaflet.ImageOverlay(
-                url=tmp_url,
+                url=url,
                 bounds=((boundary_tuple[0]), (boundary_tuple[1])),
                 rotation=90,
                 name=map_type,

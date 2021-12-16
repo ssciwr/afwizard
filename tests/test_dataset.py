@@ -17,17 +17,9 @@ def test_show(dataset):
     dataset.show(visualization_type="hillshade")
     dataset.show(visualization_type="hillshade", resolution=5.0)
     dataset.show(visualization_type="hillshade", classification=asprs[5])
-    dataset.show(visualization_type="slopemap")
-    dataset.show(visualization_type="slopemap", resolution=5.0)
-    dataset.show(visualization_type="slopemap", classification=asprs[5])
-    dataset.show(visualization_type="mesh")
-    dataset.show(visualization_type="mesh", resolution=5.0)
-    dataset.show(visualization_type="mesh", classification=asprs[5])
-    dataset.show(visualization_type="scatter")
-
-    # Scatter plots are subject to a point limit
-    with pytest.raises(ValueError):
-        dataset.show(visualization_type="scatter", threshold=500)
+    dataset.show(visualization_type="slope")
+    dataset.show(visualization_type="slope", resolution=5.0)
+    dataset.show(visualization_type="slope", classification=asprs[5])
 
 
 def test_restriction(dataset):
