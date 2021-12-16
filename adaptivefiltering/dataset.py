@@ -45,7 +45,7 @@ class DataSet:
             self.filename = locate_file(self.filename)
 
     @pytools.memoize_method
-    def rasterize(self, resolution=2.0, classification=asprs[:]):
+    def rasterize(self, resolution=2.0, classification=None):
         """Create a digital terrain model from the dataset
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -62,6 +62,10 @@ class DataSet:
             The classification values to include into the written mesh file.
         :type classification: tuple
         """
+        # If no classification value was given, we use all classes
+        if classification is None:
+            classification = asprs[:]
+
         return DigitalSurfaceModel(
             dataset=self, resolution=resolution, classification=classification
         )

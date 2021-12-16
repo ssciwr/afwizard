@@ -229,7 +229,7 @@ class Map:
     def load_overlay(
         self,
         map_type,
-        classification=asprs[:],
+        classification=None,
         resolution=2,
         azimuth=315,
         altitude=45,
@@ -259,6 +259,10 @@ class Map:
         :type opacity: float
 
         """
+
+        # If no classification value was given, we use all classes
+        if classification is None:
+            classification = asprs[:]
 
         if self.dataset == None:
             raise AdaptiveFilteringError(
