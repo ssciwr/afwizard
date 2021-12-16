@@ -12,6 +12,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import pytools
 
 
 def sized_label(text, size=12):
@@ -133,6 +134,11 @@ def classification_widget(datasets, selected=None):
     )
 
 
+@pytools.memoize(key=lambda d, p: (d, p.config))
+def cached_pipeline_application(dataset, pipeline):
+    return pipeline.execute(dataset)
+
+
 def pipeline_tuning(datasets=[], pipeline=None):
     # Instantiate a new pipeline object if we are not modifying an existing one.
     if pipeline is None:
@@ -193,7 +199,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
         # Apply the pipeline to all datasets
         # TODO: Do this in parallel!
-        transformed_datasets = [pipeline.execute(d) for d in datasets]
+        transformed_datasets = [
+            cached_pipeline_application(d, pipeline) for d in datasets
+        ]
 
         # Update the classification widget with the classes now present in datasets
         selected = class_widget.children[0].value
