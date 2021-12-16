@@ -1,7 +1,7 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
 from adaptivefiltering.filter import Pipeline
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.widgets import WidgetForm
@@ -194,9 +194,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
         # Apply the pipeline to all datasets
         # TODO: Do this in parallel!
-        transformed_datasets = [
-            cached_pipeline_application(d, pipeline) for d in datasets
-        ]
+        with within_temporary_workspace():
+            transformed_datasets = [
+                cached_pipeline_application(d, pipeline) for d in datasets
+            ]
 
         # Update the classification widget with the classes now present in datasets
         selected = class_widget.children[0].value
