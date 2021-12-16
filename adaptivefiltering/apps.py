@@ -1,7 +1,7 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
 from adaptivefiltering.filter import Pipeline
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.widgets import WidgetForm
@@ -12,6 +12,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import pytools
 
 
 def sized_label(text, size=12):
@@ -110,19 +111,14 @@ def classification_widget(datasets, selected=None):
                 joined_count.setdefault(code, 0)
                 joined_count[code] += numpoints
 
-    # Determine selection - either all or the ones that were passed and exist
-    if selected is None:
-        if 2 in joined_count:
-            # If the dataset already contains ground points, we only want to use
-            # them by default. This saves tedious work for the user who is interested
-            # in ground point filtering results.
-            selected = [2]
-        else:
-            # If there are no ground points, we use all classes
-            selected = list(joined_count.keys())
-    else:
-        # If an explicitly selection was given, we use it.
-        selected = [s for s in selected if s in joined_count.keys()]
+    # If the dataset already contains ground points, we only want to use
+    # them by default. This saves tedious work for the user who is interested
+    # in ground point filtering results.
+    if 2 in joined_count:
+        selected = [2]
+    elif selected is None:
+        # If there are no ground points, we use all classes
+        selected = list(joined_count.keys())
 
     return ipywidgets.SelectMultiple(
         options=[
@@ -131,6 +127,11 @@ def classification_widget(datasets, selected=None):
         ],
         value=selected,
     )
+
+
+@pytools.memoize(key=lambda d, p: (d, p.config))
+def cached_pipeline_application(dataset, pipeline):
+    return pipeline.execute(dataset)
 
 
 def pipeline_tuning(datasets=[], pipeline=None):
@@ -193,7 +194,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
         # Apply the pipeline to all datasets
         # TODO: Do this in parallel!
-        transformed_datasets = [pipeline.execute(d) for d in datasets]
+        with within_temporary_workspace():
+            transformed_datasets = [
+                cached_pipeline_application(d, pipeline) for d in datasets
+            ]
 
         # Update the classification widget with the classes now present in datasets
         selected = class_widget.children[0].value

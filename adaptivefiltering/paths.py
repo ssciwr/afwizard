@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import hashlib
 import json
@@ -42,6 +43,17 @@ def get_temporary_workspace():
         _tmp_dir = tempfile.TemporaryDirectory()
 
     return _tmp_dir.name
+
+
+@contextlib.contextmanager
+def within_temporary_workspace():
+    """A context manager that changes the current working directory to a temporary workspace"""
+    old_cwd = os.getcwd()
+    os.chdir(get_temporary_workspace())
+
+    yield
+
+    os.chdir(old_cwd)
 
 
 def get_temporary_filename(extension=""):

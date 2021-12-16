@@ -49,3 +49,12 @@ def test_load_schema():
 
     # Returned paths are always absolute
     assert isinstance(load_schema("filter.json"), dict)
+
+
+def test_within_temporary_workspace():
+    cwd = os.getcwd()
+
+    with within_temporary_workspace():
+        assert cwd != os.getcwd()
+
+    assert cwd == os.getcwd()
