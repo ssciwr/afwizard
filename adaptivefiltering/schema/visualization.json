@@ -3,21 +3,38 @@
     {
       "additionalProperties": false,
       "properties": {
+        "alg": {
+          "default": "Horn",
+          "enum": [
+            "Horn",
+            "ZevenbergenThorne"
+          ],
+          "title": "Algorithm",
+          "type": "string"
+        },
         "altitude": {
           "default": 45,
           "maximum": 90,
           "minimum": 0,
+          "title": "Angle Altitude (0 to 90 degrees)",
           "type": "number"
         },
         "azimuth": {
           "default": 315,
           "maximum": 360,
           "minimum": 0,
+          "title": "Azimuth angle (0 to 360 degrees)",
           "type": "number"
         },
         "visualization_type": {
           "const": "hillshade",
           "type": "string"
+        },
+        "zFactor": {
+          "default": 1.0,
+          "minimum": 0.0,
+          "title": "Vertical exaggeration factor",
+          "type": "number"
         }
       },
       "required": [

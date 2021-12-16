@@ -46,14 +46,10 @@ def gdal_object_to_inmemory_png(obj):
     return membuf.getvalue()
 
 
-def hillshade_visualization(dataset, azimuth=315, altitude=45):
+def hillshade_visualization(dataset, **options):
     # Do the processing with GDAL
     gdal_img = gdal.DEMProcessing(
-        get_temporary_filename(extension="png"),
-        dataset.raster,
-        "hillshade",
-        azimuth=azimuth,
-        altitude=altitude,
+        get_temporary_filename(extension="png"), dataset.raster, "hillshade", **options
     )
 
     # Display it in an ipywidget
