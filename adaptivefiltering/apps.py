@@ -142,17 +142,6 @@ def pipeline_tuning(datasets=[], pipeline=None):
     if isinstance(datasets, DataSet):
         datasets = [datasets]
 
-    # Create widgets from the datasets
-    widgets = [ds.show() for ds in datasets]
-
-    # If no datasets were given, we add a dummy widget that explains the situation
-    if not widgets:
-        widgets = [
-            sized_label(
-                "Please call with datasets for interactive visualization", size=18
-            )
-        ]
-
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
 
@@ -179,6 +168,23 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview")
     finalize = ipywidgets.Button(description="Finalize")
+
+    # Create widgets from the datasets
+    widgets = [
+        ds.show(
+            classification=class_widget.children[0].value,
+            **rasterization_widget_form.data,
+        )
+        for ds in datasets
+    ]
+
+    # If no datasets were given, we add a dummy widget that explains the situation
+    if not widgets:
+        widgets = [
+            sized_label(
+                "Please call with datasets for interactive visualization", size=18
+            )
+        ]
 
     def _update_preview(_):
         # Update the pipeline object according to the widget
