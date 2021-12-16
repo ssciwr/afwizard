@@ -102,18 +102,10 @@ class DataSet:
             if key in kwargs:
                 rasterize_options[key] = kwargs.pop(key)
 
-        # Validate the visualization input
-        kwargs["visualization_type"] = visualization_type
-        schema = load_schema("visualization.json")
-        jsonschema.validate(kwargs, schema=schema)
-
-        # Call the correct visualization function
-        vis = dispatch_visualization(self.rasterize(**rasterize_options), **kwargs)
-        vis.layout = ipywidgets.Layout(width="70%")
-        box_layout = ipywidgets.Layout(
-            width="100%", flex_flow="column", align_items="center", display="flex"
+        # Defer visualization to the rastered dataset
+        return self.rasterize(**rasterize_options).show(
+            visualization_type=visualization_type, **kwargs
         )
-        return ipywidgets.HBox(children=[vis], layout=box_layout)
 
     def show_interactive(self):
         """Visualize the dataset with interactive visualization controls"""
@@ -264,6 +256,20 @@ class DigitalSurfaceModel:
             )
 
             self.raster = gdal.Open(str(tmp_file.name), gdal.GA_ReadOnly)
+
+    def show(self, visualization_type="hillshade", **kwargs):
+        # Validate the visualization input
+        kwargs["visualization_type"] = visualization_type
+        schema = load_schema("visualization.json")
+        jsonschema.validate(kwargs, schema=schema)
+
+        # Call the correct visualization function
+        vis = dispatch_visualization(self, **kwargs)
+        vis.layout = ipywidgets.Layout(width="70%")
+        box_layout = ipywidgets.Layout(
+            width="100%", flex_flow="column", align_items="center", display="flex"
+        )
+        return ipywidgets.HBox(children=[vis], layout=box_layout)
 
 
 def remove_classification(dataset):

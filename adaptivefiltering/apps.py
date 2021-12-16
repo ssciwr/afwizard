@@ -1,11 +1,12 @@
 from adaptivefiltering.asprs import asprs_class_name
-from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.widgets import WidgetForm
 
+import copy
 import ipywidgets
 import IPython
 import itertools
@@ -88,6 +89,12 @@ def flex_square_layout(widgets):
     return grid
 
 
+def as_pdal(dataset):
+    if isinstance(dataset, DigitalSurfaceModel):
+        return as_pdal(dataset.dataset)
+    return PDALInMemoryDataSet.convert(dataset)
+
+
 def classification_widget(datasets, selected=None):
     """Create a widget to select classification values"""
 
@@ -95,7 +102,7 @@ def classification_widget(datasets, selected=None):
     joined_count = {}
     for dataset in datasets:
         # Make sure that we have an in-memory copy of the dataset
-        dataset = PDALInMemoryDataSet.convert(dataset)
+        dataset = as_pdal(dataset)
 
         # Get the lists present in this dataset
         for code, numpoints in enumerate(np.bincount(dataset.data["Classification"])):
@@ -149,6 +156,16 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Get the widget form for this pipeline
     form = pipeline.widget_form()
 
+    # Get a widget for rasterization
+    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
+
+    # We drop classification, because we add this as a specialized widget
+    raster_schema["properties"].pop("classification")
+
+    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget = rasterization_widget_form.widget
+    rasterization_widget.layout = fullwidth
+
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
     visualization_form = WidgetForm(schema)
@@ -181,7 +198,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # Write new widgets
         new_widgets = [
             ds.show(
-                classification=class_widget.children[0].value, **visualization_form.data
+                classification=class_widget.children[0].value,
+                **rasterization_widget_form.data,
+                **visualization_form.data,
             )
             for ds in transformed_datasets
         ]
@@ -227,6 +246,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
             ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
             preview,
             finalize,
+            ipywidgets.HTML("Rasterization options:", layout=fullwidth),
+            rasterization_widget,
             ipywidgets.HTML("Visualization options:", layout=fullwidth),
             visualization_form_widget,
             ipywidgets.HTML(
@@ -322,10 +343,19 @@ def create_upload(filetype):
 
 
 def show_interactive(dataset):
-    # Convert to PDAL - this should go away when we make DEM's a first class citizen
-    # of our abstractions. We do this here instead of the visualization functions to
-    # reuse the converted dataset across the interactive session
-    dataset = PDALInMemoryDataSet.convert(dataset)
+    # If dataset is not rasterized already, do it now
+    if not isinstance(dataset, DigitalSurfaceModel):
+        dataset = dataset.rasterize()
+
+    # Get a widget for rasterization
+    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
+
+    # We drop classification, because we add this as a specialized widget
+    raster_schema["properties"].pop("classification")
+
+    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget = rasterization_widget_form.widget
+    rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
@@ -339,7 +369,9 @@ def show_interactive(dataset):
 
     # Get a visualization button and add it to the control panel
     button = ipywidgets.Button(description="Visualize", layout=fullwidth)
-    controls = ipywidgets.VBox([button, formwidget, classification])
+    controls = ipywidgets.VBox(
+        [button, rasterization_widget, formwidget, classification]
+    )
 
     # Get a container widget for the visualization itself
     content = ipywidgets.Box([ipywidgets.Label("Currently rendering visualization...")])
@@ -355,11 +387,14 @@ def show_interactive(dataset):
     )
 
     def trigger_visualization(_):
-        # This is necessary to work around matplotlib weirdness
-        app.center.children[0].layout.display = "none"
-        app.center.children = (
-            dataset.show(classification=classification.value, **form.data),
+        # Rerasterize if necessary
+        nonlocal dataset
+        dataset = dataset.dataset.rasterize(
+            classification=classification.value, **rasterization_widget_form.data
         )
+
+        # Trigger visualization
+        app.center.children = (dataset.show(**form.data),)
 
     # Get a visualization button
     button.on_click(trigger_visualization)
