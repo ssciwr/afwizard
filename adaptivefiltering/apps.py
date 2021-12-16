@@ -203,11 +203,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # Create the center widget including layout tweaks
         if len(widgets) > 1:
             # We use the Tab widget to allow switching between different datasets
-            center = ipywidgets.Tab()
-
-            # The wrapping in Box works around a known bug in ipympl:
-            # https://github.com/matplotlib/ipympl/issues/126
-            center.children = tuple(ipywidgets.Box([w]) for w in widgets)
+            center = ipywidgets.Tab(children=widgets)
 
             # Set titles for the different tabs
             for i in range(len(widgets)):
@@ -217,7 +213,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
             return center
         else:
-            widgets[0].layout = fullwidth
+            widgets[0].layout = ipywidgets.Layout(
+                width="100%", flex_flow="column", align_items="center", display="flex"
+            )
             return widgets[0]
 
     # Create the right sidebar including layout tweaks

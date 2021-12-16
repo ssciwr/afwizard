@@ -5,6 +5,7 @@ from adaptivefiltering.visualization import dispatch_visualization
 
 from osgeo import gdal
 
+import ipywidgets
 import json
 import jsonschema
 import os
@@ -107,7 +108,12 @@ class DataSet:
         jsonschema.validate(kwargs, schema=schema)
 
         # Call the correct visualization function
-        return dispatch_visualization(self.rasterize(**rasterize_options), **kwargs)
+        vis = dispatch_visualization(self.rasterize(**rasterize_options), **kwargs)
+        vis.layout = ipywidgets.Layout(width="70%")
+        box_layout = ipywidgets.Layout(
+            width="100%", flex_flow="column", align_items="center", display="flex"
+        )
+        return ipywidgets.HBox(children=[vis], layout=box_layout)
 
     def show_interactive(self):
         """Visualize the dataset with interactive visualization controls"""
