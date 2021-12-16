@@ -143,14 +143,14 @@ def test_show_map(dataset, boundary_segmentation):
 def test_load_overlay(dataset, boundary_segmentation):
     test_map = Map(dataset)
     # first overlay
-    test_map.load_overlay("Hillshade", resolution=5)
-    test_map.load_overlay("Slope", resolution=2, opacity=0.5)
+    test_map.load_overlay("hillshade", resolution=5)
+    test_map.load_overlay("slope", resolution=2, opacity=0.5)
     # second overlay
-    test_map.load_overlay("Hillshade", resolution=4, opacity=1)
-    test_map.load_overlay("Slope", resolution=1, opacity=0.6)
+    test_map.load_overlay("hillshade", resolution=4, opacity=1)
+    test_map.load_overlay("slope", resolution=1, opacity=0.6)
     # return to first overlay with different opacity
-    test_map.load_overlay("Hillshade", resolution=5, opacity=0.1)
-    test_map.load_overlay("Slope", resolution=2, opacity=0.1)
+    test_map.load_overlay("hillshade", resolution=5, opacity=0.1)
+    test_map.load_overlay("slope", resolution=2, opacity=0.1)
     test_map2 = Map(segmentation=boundary_segmentation)
     with pytest.raises(Exception):
         test_map2.load_overlay()

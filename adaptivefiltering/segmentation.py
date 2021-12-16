@@ -6,14 +6,12 @@ from adaptivefiltering.utils import (
     convert_Segmentation,
 )
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.visualization import (
-    hillshade_visualization,
-    mesh_visualization,
-    scatter_visualization,
-    slopemap_visualization,
-)
+from adaptivefiltering.visualization import gdal_visualization
+
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import get_temporary_filename
+from adaptivefiltering.utils import AdaptiveFilteringError
+
 import geojson
 import jsonschema
 import ipyleaflet
@@ -165,37 +163,37 @@ class Map:
 
         # handle exeptions
         if dataset and segmentation:
-            raise Exception(
+            raise AdaptiveFilteringError(
                 "A dataset and a segmentation can't be loaded at the same time."
             )
 
         if dataset is None and segmentation["features"] is []:
-            raise Exception("an empty segmention was given.")
+            raise AdaptiveFilteringError("an empty segmention was given.")
 
         if dataset is None and segmentation is None:
             # if no dataset or segmentation is given, the map will be centered at the SSC office
-            raise Exception(
+            raise AdaptiveFilteringError(
                 "Please use either a dataset or a segmentation. None were given."
             )
 
         # check if dataset and segmentation are of correct type
         if dataset:
             if isinstance(dataset, Segmentation):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     "A segmentation was given as a dataset, please call Map(segmentation=yourSegmentation)"
                 )
             elif not isinstance(dataset, DataSet):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     f"The given dataset is not of type DataSet, but {type(dataset)}."
                 )
 
         elif segmentation:
             if isinstance(segmentation, DataSet):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     "A DataSet was given as a Segmentation, please call Map(dataset=yourDataset)"
                 )
             elif not isinstance(segmentation, Segmentation):
-                raise Exception(
+                raise AdaptiveFilteringError(
                     f"The given segmentation is not of type Segmentation, but {type(segmentation)}."
                 )
 
@@ -208,7 +206,7 @@ class Map:
                 self.original_srs = dataset.spatial_reference
             else:
                 if in_srs is None:
-                    raise Exception(
+                    raise AdaptiveFilteringError(
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
@@ -267,14 +265,18 @@ class Map:
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
         if self.dataset == None:
-            raise Exception("No dataset was given to calculate the hillshade or slope.")
+            raise AdaptiveFilteringError(
+                "No dataset was given to calculate the hillshade or slope."
+            )
 
-        if map_type != "Hillshade" and map_type != "Slope":
-            raise Exception("map_type can only be 'Hillshade' or 'Slope'.")
+        if map_type not in ("hillshade", "slope"):
+            raise AdaptiveFilteringError(
+                f"map_type can only be 'hillshade' or 'slope', not {map_type}"
+            )
 
         # set azimuth and angle_altitude to zero for _type =="Slope"
         # This makes it easer to find preexisting slope overlays
-        if map_type == "Slope":
+        if map_type == "slope":
             azimuth = 0
             altitude = 0
 
@@ -307,14 +309,15 @@ class Map:
             )
 
             # calculate the hillshade or slope
-            if map_type == "Hillshade":
-                canvas = hillshade_visualization(
+            if map_type == "hillshade":
+                canvas = gdal_visualization(
                     rastered,
+                    visualization_type="hillshade",
                     azimuth=azimuth,
                     altitude=altitude,
                 )
-            elif map_type == "Slope":
-                canvas = slopemap_visualization(rastered)
+            elif map_type == "slope":
+                canvas = gdal_visualization(rastered, visualization_type="slope")
 
             # TODO: Highly unclear to me how this changes now that canvas is
             #       ipywidgets.Image

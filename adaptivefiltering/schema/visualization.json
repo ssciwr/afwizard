@@ -47,7 +47,7 @@
       "additionalProperties": false,
       "properties": {
         "visualization_type": {
-          "const": "slopemap",
+          "const": "slope",
           "type": "string"
         }
       },
@@ -55,38 +55,6 @@
         "visualization_type"
       ],
       "title": "Slope Map",
-      "type": "object"
-    },
-    {
-      "additionalProperties": false,
-      "properties": {
-        "threshold": {
-          "default": 1000000,
-          "type": "integer"
-        },
-        "visualization_type": {
-          "const": "scatter",
-          "type": "string"
-        }
-      },
-      "required": [
-        "visualization_type"
-      ],
-      "title": "3D Scatter Plot",
-      "type": "object"
-    },
-    {
-      "additionalProperties": false,
-      "properties": {
-        "visualization_type": {
-          "const": "mesh",
-          "type": "string"
-        }
-      },
-      "required": [
-        "visualization_type"
-      ],
-      "title": "2.5D Surface Mesh",
       "type": "object"
     }
   ]
