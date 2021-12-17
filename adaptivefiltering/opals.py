@@ -245,6 +245,7 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
 
         return OPALSDataManagerObject(
             filename=outFile,
+            spatial_reference=dataset.spatial_reference,
             provenance=dataset._provenance
             + [
                 f"Applying OPALS module with the following configuration: {self._serialize()}"
