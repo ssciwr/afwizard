@@ -11,10 +11,7 @@
 ## Features
 
 `adaptivefiltering` is a Python package to enhance the productivity of ground point filtering workflows in archaelogy and beyond.
-Main features are:
-
-* Visualization of Point Cloud Data directly in Jupyter
-* *many more to come soon*
+We will write the main feature list here soon.
 
 ## Prerequisites
 
