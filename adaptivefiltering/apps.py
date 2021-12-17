@@ -6,6 +6,7 @@ from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.widgets import WidgetForm
 
+import contextlib
 import copy
 import ipywidgets
 import IPython
@@ -73,6 +74,14 @@ class InteractiveWidgetOutputProxy:
 
         # Forward this to the actual object
         return getattr(self._obj, attr)
+
+
+@contextlib.contextmanager
+def hourglass_icon(button):
+    """Context manager to show an hourglass icon while processing"""
+    button.icon = "hourglass-half"
+    yield
+    button.icon = ""
 
 
 def flex_square_layout(widgets):
@@ -187,36 +196,37 @@ def pipeline_tuning(datasets=[], pipeline=None):
             )
         ]
 
-    def _update_preview(_):
-        # Update the pipeline object according to the widget
-        nonlocal pipeline
-        pipeline = pipeline.copy(**form.data)
+    def _update_preview(button):
+        with hourglass_icon(button):
+            # Update the pipeline object according to the widget
+            nonlocal pipeline
+            pipeline = pipeline.copy(**form.data)
 
-        # Apply the pipeline to all datasets
-        # TODO: Do this in parallel!
-        with within_temporary_workspace():
-            transformed_datasets = [
-                cached_pipeline_application(d, pipeline) for d in datasets
+            # Apply the pipeline to all datasets
+            # TODO: Do this in parallel!
+            with within_temporary_workspace():
+                transformed_datasets = [
+                    cached_pipeline_application(d, pipeline) for d in datasets
+                ]
+
+            # Update the classification widget with the classes now present in datasets
+            selected = class_widget.children[0].value
+            class_widget.children = (
+                classification_widget(transformed_datasets, selected=selected),
+            )
+
+            # Write new widgets
+            new_widgets = [
+                ds.show(
+                    classification=class_widget.children[0].value,
+                    **rasterization_widget_form.data,
+                    **visualization_form.data,
+                )
+                for ds in transformed_datasets
             ]
 
-        # Update the classification widget with the classes now present in datasets
-        selected = class_widget.children[0].value
-        class_widget.children = (
-            classification_widget(transformed_datasets, selected=selected),
-        )
-
-        # Write new widgets
-        new_widgets = [
-            ds.show(
-                classification=class_widget.children[0].value,
-                **rasterization_widget_form.data,
-                **visualization_form.data,
-            )
-            for ds in transformed_datasets
-        ]
-
-        nonlocal app
-        app.center = create_center_widget(new_widgets)
+            nonlocal app
+            app.center = create_center_widget(new_widgets)
 
     preview.on_click(_update_preview)
 
@@ -396,15 +406,16 @@ def show_interactive(dataset):
         pane_widths=[1, 3, 0],
     )
 
-    def trigger_visualization(_):
-        # Rerasterize if necessary
-        nonlocal dataset
-        dataset = dataset.dataset.rasterize(
-            classification=classification.value, **rasterization_widget_form.data
-        )
+    def trigger_visualization(b):
+        with hourglass_icon(b):
+            # Rerasterize if necessary
+            nonlocal dataset
+            dataset = dataset.dataset.rasterize(
+                classification=classification.value, **rasterization_widget_form.data
+            )
 
-        # Trigger visualization
-        app.center.children = (dataset.show(**form.data),)
+            # Trigger visualization
+            app.center.children = (dataset.show(**form.data),)
 
     # Get a visualization button
     button.on_click(trigger_visualization)
