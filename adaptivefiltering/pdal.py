@@ -154,12 +154,6 @@ class PDALInMemoryDataSet(DataSet):
                 "readers.las"
             ]["comp_spatialreference"]
 
-            # Raise Warning when no srs is present. This is subject to change in the future.
-            if spatial_reference.strip() == "":
-                raise Warning(
-                    "No SRS was detected, please include one manually if none is present in the LAS file."
-                )
-
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
