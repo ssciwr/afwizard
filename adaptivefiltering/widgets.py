@@ -366,6 +366,7 @@ class WidgetForm:
                     )
                     selector.value = names[i]
                     _select(None)
+                    elements[i].setter(_d)
                 except ValidationError:
                     pass
 
