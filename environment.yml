@@ -7,6 +7,7 @@ dependencies:
   - IPython=7.21.0
   - ipywidgets<8
   - ipyleaflet
+  - jsonschema=3.2.0
   - jupyter-resource-usage
   - jupyterlab
   - pdal=2.3.0
@@ -18,7 +19,6 @@ dependencies:
     - geodaisy
     - geojson
     - jsonmerge
-    - jsonschema==3.2.0
     - pyrsistent
     - pytools
     - xdg
