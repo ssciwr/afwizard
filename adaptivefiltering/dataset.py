@@ -45,7 +45,7 @@ class DataSet:
             self.filename = locate_file(self.filename)
 
     @pytools.memoize_method
-    def rasterize(self, resolution=2.0, classification=None):
+    def rasterize(self, resolution=0.5, classification=None):
         """Create a digital terrain model from the dataset
 
         It is important to note that for archaelogic applications, the mesh is not
@@ -233,7 +233,7 @@ class DigitalSurfaceModel:
                         },
                         {
                             "type": "filters.faceraster",
-                            "resolution": rasterization_options.get("resolution", 2.0),
+                            "resolution": rasterization_options.get("resolution", 0.5),
                         },
                         {
                             "type": "writers.raster",
@@ -249,7 +249,7 @@ class DigitalSurfaceModel:
                         "gdaldriver": "GTiff",
                         "output_type": "all",
                         "type": "writers.gdal",
-                        "resolution": rasterization_options.get("resolution", 2.0),
+                        "resolution": rasterization_options.get("resolution", 0.5),
                     }
                 )
 

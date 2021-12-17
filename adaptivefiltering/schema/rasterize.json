@@ -266,7 +266,7 @@
       "type": "array"
     },
     "resolution": {
-      "default": 1.0,
+      "default": 0.5,
       "type": "number"
     }
   },

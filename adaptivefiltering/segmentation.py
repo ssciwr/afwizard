@@ -230,9 +230,9 @@ class Map:
         self,
         map_type,
         classification=None,
-        resolution=2,
+        resolution=0.5,
         azimuth=315,
-        altitude=45,
+        altitude=30,
         opacity=0.6,
     ):
         """
