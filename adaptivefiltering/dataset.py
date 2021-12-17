@@ -212,54 +212,56 @@ class DigitalSurfaceModel:
             rasterization_options, schema=schema, types=dict(array=(list, tuple))
         )
 
-        with tempfile.NamedTemporaryFile() as tmp_file:
-            # Create the PDAL filter configuration
-            config = [
-                {
-                    "type": "filters.range",
-                    "limits": ",".join(
-                        f"Classification[{c}:{c}]"
-                        for c in rasterization_options.get("classification", asprs[:])
-                    ),
-                }
-            ]
+        # Get a temporary filename to write the geotiff to
+        self.filename = get_temporary_filename()
 
-            # If we are only using ground, we use a triangulation approach
-            if tuple(rasterization_options.get("classification", asprs[:])) == (2,):
-                config.extend(
-                    [
-                        {
-                            "type": "filters.delaunay",
-                        },
-                        {
-                            "type": "filters.faceraster",
-                            "resolution": rasterization_options.get("resolution", 0.5),
-                        },
-                        {
-                            "type": "writers.raster",
-                            "filename": str(tmp_file.name),
-                        },
-                    ]
-                )
-            else:
-                # Otherwise, a non-triangulated approach gives the better result
-                config.append(
+        # Create the PDAL filter configuration
+        config = [
+            {
+                "type": "filters.range",
+                "limits": ",".join(
+                    f"Classification[{c}:{c}]"
+                    for c in rasterization_options.get("classification", asprs[:])
+                ),
+            }
+        ]
+
+        # If we are only using ground, we use a triangulation approach
+        if tuple(rasterization_options.get("classification", asprs[:])) == (2,):
+            config.extend(
+                [
                     {
-                        "filename": str(tmp_file.name),
-                        "gdaldriver": "GTiff",
-                        "output_type": "all",
-                        "type": "writers.gdal",
+                        "type": "filters.delaunay",
+                    },
+                    {
+                        "type": "filters.faceraster",
                         "resolution": rasterization_options.get("resolution", 0.5),
-                    }
-                )
-
-            # Create the model by running the pipeline
-            execute_pdal_pipeline(
-                dataset=self.dataset,
-                config=config,
+                    },
+                    {
+                        "type": "writers.raster",
+                        "filename": self.filename,
+                    },
+                ]
+            )
+        else:
+            # Otherwise, a non-triangulated approach gives the better result
+            config.append(
+                {
+                    "filename": self.filename,
+                    "gdaldriver": "GTiff",
+                    "output_type": "all",
+                    "type": "writers.gdal",
+                    "resolution": rasterization_options.get("resolution", 0.5),
+                }
             )
 
-            self.raster = gdal.Open(str(tmp_file.name), gdal.GA_ReadOnly)
+        # Create the model by running the pipeline
+        execute_pdal_pipeline(
+            dataset=self.dataset,
+            config=config,
+        )
+
+        self.raster = gdal.Open(self.filename, gdal.GA_ReadOnly)
 
     def show(self, visualization_type="hillshade", **kwargs):
         # Validate the visualization input
