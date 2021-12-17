@@ -23,8 +23,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-      with:
-        lfs: true
 
     - name: Cache conda
       uses: actions/cache@v2
@@ -104,8 +102,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-      with:
-        lfs: true
 
     - name: Cache conda
       uses: actions/cache@v2
