@@ -26,6 +26,9 @@ def test_restriction(dataset):
     # Trigger generation of the UI
     dataset.restrict()
 
+    ##### this tests doesn't work and the dataset we use here also doesn't work well with the map.
+
+    
     # Programmatically restrict with an artificial segment
     segment = Segment([[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]])
     restricted = dataset.restrict(segment)
