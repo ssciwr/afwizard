@@ -516,5 +516,6 @@ class Map:
 
         """
         segmentation = Segmentation(self.draw_control.data)
-
+        # map returns coordinates in wrong order, this fixes the restrict function.
+        segmentation  = swap_coordinates(segmentation)
         return segmentation
