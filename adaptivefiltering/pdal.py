@@ -3,7 +3,7 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, convert_Segmentation
 
 import geodaisy.converters as convert
 from osgeo import gdal
@@ -199,9 +199,9 @@ class PDALInMemoryDataSet(DataSet):
                 raise NotImplementedError(
                     "The function to choose multiple segments at the same time is not implemented yet."
                 )
+            seg = convert_Segmentation(seg, self.spatial_reference)
             # Construct an array of WKT Polygons for the clipping
             polygons = [convert.geojson_to_wkt(s["geometry"]) for s in seg["features"]]
-
             from adaptivefiltering.pdal import execute_pdal_pipeline
 
             # Apply the cropping filter with all polygons
