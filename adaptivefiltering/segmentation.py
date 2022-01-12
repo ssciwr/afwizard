@@ -476,7 +476,8 @@ class Map:
             boundary_segmentation = convert_Segmentation(
                 boundary_segmentation, "EPSG:4326", self.original_srs
             )
-            boundary_segmentation = swap_coordinates(boundary_segmentation)
+        # lon and latitude must be switched for the map to work
+        boundary_segmentation = swap_coordinates(boundary_segmentation)
         # add boundary marker
         return boundary_segmentation
 
@@ -517,5 +518,5 @@ class Map:
         """
         segmentation = Segmentation(self.draw_control.data)
         # map returns coordinates in wrong order, this fixes the restrict function.
-        segmentation  = swap_coordinates(segmentation)
+        segmentation = swap_coordinates(segmentation)
         return segmentation
