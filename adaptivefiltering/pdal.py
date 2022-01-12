@@ -5,8 +5,7 @@ from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_
 from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.utils import AdaptiveFilteringError, convert_Segmentation
 
-import geodaisy.converters as convert
-from osgeo import gdal
+from osgeo import ogr
 import json
 import os
 import pdal
@@ -201,7 +200,10 @@ class PDALInMemoryDataSet(DataSet):
                 )
             seg = convert_Segmentation(seg, self.spatial_reference)
             # Construct an array of WKT Polygons for the clipping
-            polygons = [convert.geojson_to_wkt(s["geometry"]) for s in seg["features"]]
+            polygons = [
+                ogr.CreateGeometryFromJson(str(s["geometry"])) for s in seg["features"]
+            ]
+
             from adaptivefiltering.pdal import execute_pdal_pipeline
 
             # Apply the cropping filter with all polygons
