@@ -1,6 +1,7 @@
 import collections
 import copy
 import numpy as np
+from geojson.utils import coords
 
 
 class AdaptiveFilteringError(Exception):
@@ -21,24 +22,19 @@ def stringify_value(value):
 
 def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
     from adaptivefiltering.segmentation import Segmentation
-
-    from pyproj import Proj, transform
+    from pyproj import Transformer
 
     new_features = copy.deepcopy(segmentation["features"])
 
     # for just a single srs_in
     for feature, new_feature in zip(segmentation["features"], new_features):
+        feature_coords = np.asarray(list(coords(feature)))
+        transformer = Transformer.from_crs(srs_in, srs_out)
+        output_x, output_y = transformer.transform(
+            feature_coords[:, 0], feature_coords[:, 1]
+        )
 
-        p_in = Proj(srs_in)
-        p_out = Proj(srs_out)
-
-        if p_in != p_out:
-            new_feature["geometry"]["coordinates"] = [
-                # The transpose is necessary to keep the segmentation shape, but it introduces a problem with the map boundary visualisation.
-                np.transpose(
-                    transform(p_in, p_out, *zip(*np.squeeze(coordinates)))
-                ).tolist()
-                for coordinates in feature["geometry"]["coordinates"]
-            ]
-
+        new_feature["geometry"]["coordinates"] = np.stack(
+            [output_x, output_y], axis=1
+        ).tolist()
     return Segmentation(new_features)
