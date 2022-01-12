@@ -203,12 +203,12 @@ class PDALInMemoryDataSet(DataSet):
             polygons = [
                 ogr.CreateGeometryFromJson(str(s["geometry"])) for s in seg["features"]
             ]
-
+            polygongs_wkt = [polygon.ExportToWkt() for polygon in polygons]
             from adaptivefiltering.pdal import execute_pdal_pipeline
 
             # Apply the cropping filter with all polygons
             newdata = execute_pdal_pipeline(
-                dataset=self, config={"type": "filters.crop", "polygon": polygons}
+                dataset=self, config={"type": "filters.crop", "polygon": polygongs_wkt}
             )
 
             return PDALInMemoryDataSet(
