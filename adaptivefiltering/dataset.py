@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, check_spatial_reference
 from adaptivefiltering.visualization import gdal_visualization
 
 from osgeo import gdal
@@ -27,7 +27,7 @@ class DataSet:
             Will give a warning if too many data points are present.
         :type filename: str
         :param spatial_reference:
-            A spatial reference in WKT. This will override the reference system found in the metadata
+            A spatial reference in WKT or EPSG code. This will override the reference system found in the metadata
             and is required if no reference system is present in the metadata of the LAS/LAZ file.
             If this parameter is not provided, this information is extracted from the metadata.
         :type spatial_reference: str

@@ -3,7 +3,11 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation
-from adaptivefiltering.utils import AdaptiveFilteringError, convert_Segmentation
+from adaptivefiltering.utils import (
+    AdaptiveFilteringError,
+    convert_Segmentation,
+    check_spatial_reference,
+)
 
 from osgeo import ogr
 import json
@@ -153,6 +157,7 @@ class PDALInMemoryDataSet(DataSet):
                 "readers.las"
             ]["comp_spatialreference"]
 
+        spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             provenance=dataset._provenance
