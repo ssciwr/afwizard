@@ -130,6 +130,8 @@ def swap_coordinates(segmentation):
 
     for feature, new_feature in zip(segmentation["features"], new_features):
         coord_array = np.asarray(feature["geometry"]["coordinates"])
+        if len(coord_array.shape) == 2:
+            coord_array = np.expand_dims(coord_array, 0)
         coord_array[:, :, [0, 1]] = coord_array[:, :, [1, 0]]
         new_feature["geometry"]["coordinates"] = coord_array.tolist()
     return Segmentation(new_features)
@@ -472,12 +474,12 @@ class Map:
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
         if dataset:
-
             boundary_segmentation = convert_Segmentation(
                 boundary_segmentation, "EPSG:4326", self.original_srs
             )
-        # lon and latitude must be switched for the map to work
-        boundary_segmentation = swap_coordinates(boundary_segmentation)
+
+            # lon and latitude must be switched for the map to work
+            boundary_segmentation = swap_coordinates(boundary_segmentation)
         # add boundary marker
         return boundary_segmentation
 
@@ -517,6 +519,5 @@ class Map:
 
         """
         segmentation = Segmentation(self.draw_control.data)
-        # map returns coordinates in wrong order, this fixes the restrict function.
-        segmentation = swap_coordinates(segmentation)
+
         return segmentation
