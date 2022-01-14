@@ -7,6 +7,7 @@ from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     convert_Segmentation,
     check_spatial_reference,
+    merge_segmentation_features,
 )
 
 from osgeo import ogr
@@ -198,24 +199,24 @@ class PDALInMemoryDataSet(DataSet):
             segmentation = Segmentation([segmentation.__geo_interface__])
 
         def apply_restriction(seg):
-            # raise an Error if two polygons are given.
-            if len(seg["features"]) > 1:
-                raise NotImplementedError(
-                    "The function to choose multiple segments at the same time is not implemented yet."
-                )
+
             # not yet sure why the swap is necessary
             seg = swap_coordinates(seg)
+            # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
             seg = convert_Segmentation(seg, self.spatial_reference)
+
+            # if multiple polygons have been selected they will be merged in one multipolygon
+            # this guarentees, that len(seg[features]) is always 1.
+            seg = merge_segmentation_features(seg)
             # Construct an array of WKT Polygons for the clipping
-            polygons = [
-                ogr.CreateGeometryFromJson(str(s["geometry"])) for s in seg["features"]
-            ]
-            polygongs_wkt = [polygon.ExportToWkt() for polygon in polygons]
+            polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
+            polygons_wkt = polygons.ExportToWkt()
+
             from adaptivefiltering.pdal import execute_pdal_pipeline
 
             # Apply the cropping filter with all polygons
             newdata = execute_pdal_pipeline(
-                dataset=self, config={"type": "filters.crop", "polygon": polygongs_wkt}
+                dataset=self, config={"type": "filters.crop", "polygon": polygons_wkt}
             )
 
             return PDALInMemoryDataSet(
