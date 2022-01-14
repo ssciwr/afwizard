@@ -30,7 +30,7 @@ def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
 
     for feature, new_feature in zip(segmentation["features"], new_features):
         feature_coords = np.asarray(list(coords(feature)))
-        # geojson requiere a 3d list, even if the outer most list is empty
+        # geojson polygons should always be a three dimensional list, in case they have been reduced this will buffer them again
         if len(feature_coords.shape) == 2:
             feature_coords = [feature_coords]
 
@@ -77,7 +77,7 @@ def merge_segmentation_features(seg):
     merged_seg["features"][0]["geometry"] = {"type": "MultiPolygon", "coordinates": []}
 
     for features in seg["features"]:
-        # geojson Polygons should always be a 3 dim list, in case they have been reduced this will buffer them again
+        # geojson polygons should always be a three dimensional list, in case they have been reduced this will buffer them again
         if len(np.asarray(features["geometry"]["coordinates"]).shape) == 2:
             features["geometry"]["coordinates"] = [features["geometry"]["coordinates"]]
         for coords in features["geometry"]["coordinates"]:
