@@ -22,16 +22,13 @@ def test_show(dataset):
     dataset.show(visualization_type="slope", classification=asprs[5])
 
 
-def test_restriction(dataset):
+def test_restriction(minimal_dataset):
     # Trigger generation of the UI
-    dataset.restrict()
+    minimal_dataset.restrict()
 
-    ##### this tests doesn't work and the dataset we use here also doesn't work well with the map.
-
-    
     # Programmatically restrict with an artificial segment
     segment = Segment([[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]])
-    restricted = dataset.restrict(segment)
+    restricted = minimal_dataset.restrict(segment)
 
 
 def test_save_dataset(minimal_dataset):
