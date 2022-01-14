@@ -16,7 +16,6 @@ dependencies:
   - pillow=8.4.0
   - pip:
     - Click
-    - geodaisy
     - geojson
     - jsonmerge
     - m2r2
