@@ -28,18 +28,19 @@ def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
 
     new_features = copy.deepcopy(segmentation["features"])
 
-    # for just a single srs_in
     for feature, new_feature in zip(segmentation["features"], new_features):
         feature_coords = np.asarray(list(coords(feature)))
+        # geojson requiere a 3d list, even if the outer most list is empty
         if len(feature_coords.shape) == 2:
             feature_coords = [feature_coords]
+
         new_feature["geometry"]["coordinates"] = []
         transformer = Transformer.from_crs(srs_in, srs_out)
         for coordinates in feature_coords:
             output_x, output_y = transformer.transform(
                 coordinates[:, 0], coordinates[:, 1]
             )
-
+            # the x and y arrays are merged into the new Segmentation.
             new_feature["geometry"]["coordinates"].append(
                 np.stack([output_x, output_y], axis=1).tolist()
             )
@@ -49,6 +50,8 @@ def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
 def check_spatial_reference(crs):
     if pyproj.crs.is_wkt(crs):
         return crs
+
+    # if the EPSG code matches this pattern it will be reduced to just this.
     elif re.match("(?i)^EPSG:[0-9]{4,5}", crs):
         new_crs = re.match("(?i)^EPSG:[0-9]{4,5}", crs).group()
         if new_crs != crs:
