@@ -208,7 +208,8 @@ class PDALInMemoryDataSet(DataSet):
             # if multiple polygons have been selected they will be merged in one multipolygon
             # this guarentees, that len(seg[features]) is always 1.
             seg = merge_segmentation_features(seg)
-            # Construct an array of WKT Polygons for the clipping
+            # Construct a WKT Polygon for the clipping
+            # this will be either a single polygon or a multipolygon
             polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
             polygons_wkt = polygons.ExportToWkt()
 
