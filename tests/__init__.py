@@ -28,7 +28,7 @@ def _dataset_fixture(filename, spatial_reference=None):
 
 # Fixtures for the provided datasets
 dataset = _dataset_fixture("500k_NZ20_Westport.laz")
-minimal_dataset = _dataset_fixture("minimal.las", spatial_reference="EPSG:4362")
+minimal_dataset = _dataset_fixture("minimal.las", spatial_reference="EPSG:4326")
 
 
 @pytest.fixture
