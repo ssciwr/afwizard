@@ -2,7 +2,7 @@ from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
-from adaptivefiltering.segmentation import Segment, Segmentation
+from adaptivefiltering.segmentation import Segment, Segmentation, swap_coordinates
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     convert_Segmentation,
@@ -203,6 +203,8 @@ class PDALInMemoryDataSet(DataSet):
                 raise NotImplementedError(
                     "The function to choose multiple segments at the same time is not implemented yet."
                 )
+            # not yet sure why the swap is necessary
+            seg = swap_coordinates(seg)
             seg = convert_Segmentation(seg, self.spatial_reference)
             # Construct an array of WKT Polygons for the clipping
             polygons = [
