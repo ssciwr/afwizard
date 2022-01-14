@@ -1,6 +1,6 @@
 from adaptivefiltering.dataset import *
 from adaptivefiltering.paths import get_temporary_filename
-from adaptivefiltering.segmentation import Segment
+from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.asprs import asprs
 
 from . import dataset, minimal_dataset
@@ -25,10 +25,31 @@ def test_show(dataset):
 def test_restriction(minimal_dataset):
     # Trigger generation of the UI
     minimal_dataset.restrict()
-
+    coordinates1 = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]
+    coordinates2 = [[0.2, 0.2], [0.4, 1.0], [1.0, 1.0], [1.0, 0.0], [0.2, 0.2]]
     # Programmatically restrict with an artificial segment
-    segment = Segment([[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]])
+    segment = Segment(coordinates1)
     restricted = minimal_dataset.restrict(segment)
+    restricted.show()
+
+    # test for two polygons
+
+    segmentation = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": {"type": "Polygon", "coordinates": coordinates1},
+            },
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": {"type": "Polygon", "coordinates": coordinates2},
+            },
+        ]
+    )
+    restricted = minimal_dataset.restrict(segmentation)
+    restricted.show()
 
 
 def test_save_dataset(minimal_dataset):
