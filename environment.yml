@@ -16,7 +16,6 @@ dependencies:
   - pillow
   - pip:
     - Click
-    - geodaisy
     - geojson
     - jsonmerge
     - pyrsistent

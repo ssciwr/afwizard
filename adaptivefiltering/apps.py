@@ -321,7 +321,7 @@ def create_segmentation(dataset):
 
     # The return proxy object
     segmentation_proxy = InteractiveWidgetOutputProxy(
-        lambda: Segmentation(map_.return_polygon())
+        lambda: Segmentation(map_.return_segmentation())
     )
 
     def _finalize(_):

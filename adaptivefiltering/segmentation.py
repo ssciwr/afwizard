@@ -4,6 +4,7 @@ from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import (
     is_iterable,
     convert_Segmentation,
+    merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.visualization import gdal_visualization
@@ -111,17 +112,19 @@ def get_min_max_values(segmentation):
     # goes over all features in the segmentation and return the min and max coordinates in a dict.
     min_max_dict = {"minX": [], "maxX": [], "minY": [], "maxY": []}
     for feature in segmentation["features"]:
-        coord_array = np.asarray(feature["geometry"]["coordinates"])
-        min_max_dict["minX"].append(np.min(coord_array, axis=1)[0, 0])
-        min_max_dict["minY"].append(np.min(coord_array, axis=1)[0, 1])
-        min_max_dict["maxX"].append(np.max(coord_array, axis=1)[0, 0])
-        min_max_dict["maxY"].append(np.max(coord_array, axis=1)[0, 1])
+        for coord_array in feature["geometry"]["coordinates"]:
+            coord_array = np.asarray(coord_array)
+
+            min_max_dict["minX"].append(np.min(coord_array, axis=0)[0])
+            min_max_dict["minY"].append(np.min(coord_array, axis=0)[1])
+            min_max_dict["maxX"].append(np.max(coord_array, axis=0)[0])
+            min_max_dict["maxY"].append(np.max(coord_array, axis=0)[1])
+
     for key, value in min_max_dict.items():
         if "min" in key:
             min_max_dict[key] = min(value)
         elif "max" in key:
             min_max_dict[key] = max(value)
-
     return min_max_dict
 
 
@@ -130,6 +133,8 @@ def swap_coordinates(segmentation):
 
     for feature, new_feature in zip(segmentation["features"], new_features):
         coord_array = np.asarray(feature["geometry"]["coordinates"])
+        if len(coord_array.shape) == 2:
+            coord_array = np.expand_dims(coord_array, 0)
         coord_array[:, :, [0, 1]] = coord_array[:, :, [1, 0]]
         new_feature["geometry"]["coordinates"] = coord_array.tolist()
     return Segmentation(new_features)
@@ -446,10 +451,9 @@ class Map:
                 ]["coordinates"][0]
             ]
         elif segmentation:
-            hexbin_coord = [
-                features["geometry"]["coordinates"]
-                for features in segmentation["features"]
-            ][0]
+
+            segmentation = merge_segmentation_features(segmentation)
+            hexbin_coord = segmentation["features"][0]["geometry"]["coordinates"]
 
         boundary_segmentation = Segmentation(
             [
@@ -472,10 +476,11 @@ class Map:
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
         if dataset:
-
             boundary_segmentation = convert_Segmentation(
                 boundary_segmentation, "EPSG:4326", self.original_srs
             )
+
+            # lon and latitude must be switched for the map to work
             boundary_segmentation = swap_coordinates(boundary_segmentation)
         # add boundary marker
         return boundary_segmentation
@@ -488,10 +493,10 @@ class Map:
         """
         from adaptivefiltering.pdal import execute_pdal_pipeline
 
-        coordinates_mean = np.mean(
-            np.squeeze(boundary_segmentation["features"][0]["geometry"]["coordinates"]),
-            axis=0,
-        )
+        coordinates_mean = [
+            (self.boundary_edges["maxX"] + self.boundary_edges["minX"]) / 2,
+            (self.boundary_edges["maxY"] + self.boundary_edges["minY"]) / 2,
+        ]
 
         self.map = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
