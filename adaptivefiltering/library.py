@@ -77,7 +77,7 @@ def reset_filter_libraries():
 
 @click.command()
 @click.argument(
-    "library_path", type=click.Path(exists=True, file_okay=False, writeable=True)
+    "library_path", type=click.Path(exists=True, file_okay=False, writable=True)
 )
 def upgrade_filter_library(path):
     """Upgrades all filters in a library to the latest version of the data model
