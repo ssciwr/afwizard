@@ -226,8 +226,9 @@ class Map:
         self.setup_map(boundary_segmentation)
         self.setup_controls()
 
-        # set up overlay dict.
+        # set up overlay list.
         # this stores the parameters used in the load_overlay function to avoid multipole calculations of the same overlay
+        self.overlay_list = []
 
     def load_overlay(self, vis, title):
         """
@@ -249,15 +250,11 @@ class Map:
             # rotation=90,
             name=title,
         )
-        # if the dict is not empty, try to remove all layers present in the dict.
-        if layer in list(self.map.layers):
-            try:
-                self.map.remove_layer(layer)
-            except ipyleaflet.LayerException as e:
-                raise Exception("layer could not be removed")
-
-        # load the desired layer
-        self.map.add_layer(layer)
+        # if the layler has already been loaded, do nothing.
+        if title not in self.overlay_list:
+            # load the desired layer
+            self.map.add_layer(layer)
+            self.overlay_list.append(title)
 
     def show(self):
         return self.map
