@@ -1,3 +1,6 @@
+# This is the single source of truth
+__version__ = "0.0.1"
+
 # Make sure to import modules that register filter backends
 import adaptivefiltering.lastools
 import adaptivefiltering.opals
@@ -11,7 +14,12 @@ from adaptivefiltering.filter import load_filter, save_filter
 from adaptivefiltering.lastools import set_lastools_directory
 from adaptivefiltering.opals import set_opals_directory
 from adaptivefiltering.paths import set_data_directory
-from adaptivefiltering.version import __version__, print_version
+
+
+def print_version():
+    """Print the current version of adaptivefiltering"""
+    print(__version__)
+
 
 # This is necessary for autodoc to generate the User API
 # The order of objects in this list defines the order in
