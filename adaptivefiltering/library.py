@@ -70,8 +70,8 @@ def reset_filter_libraries():
     _filter_libraries = []
 
     # Register default paths
-    add_filter_library(os.getcwd())
-    # TODO: Community library project
+    add_filter_library(path=os.getcwd())
+    add_filter_library(package="adaptivefiltering_library")
 
 
 # Upon import, we immediately reset the filter library to the defaults

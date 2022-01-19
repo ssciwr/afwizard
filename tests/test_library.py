@@ -13,7 +13,7 @@ def test_noop_add(monkeypatch, tmp_path):
 
     # Without a filter or metadata file, this should be no-op
     add_filter_library(os.getcwd())
-    assert len(adaptivefiltering.library._filter_libraries) == 0
+    assert len(adaptivefiltering.library._filter_libraries) == 1
 
 
 def test_meta_only_add(monkeypatch, tmp_path):
@@ -27,9 +27,9 @@ def test_meta_only_add(monkeypatch, tmp_path):
 
     # This should be recognized although it has 0 filters
     add_filter_library(os.getcwd())
-    assert len(adaptivefiltering.library._filter_libraries) == 1
-    assert len(adaptivefiltering.library._filter_libraries[0].filters) == 0
-    assert adaptivefiltering.library._filter_libraries[0].name is not None
+    assert len(adaptivefiltering.library._filter_libraries) == 2
+    assert len(adaptivefiltering.library._filter_libraries[1].filters) == 0
+    assert adaptivefiltering.library._filter_libraries[1].name is not None
 
 
 def test_filter_only_add(monkeypatch, tmp_path):
@@ -42,6 +42,6 @@ def test_filter_only_add(monkeypatch, tmp_path):
 
     # This should be recognized although it has 0 filters
     add_filter_library(os.getcwd())
-    assert len(adaptivefiltering.library._filter_libraries) == 1
-    assert len(adaptivefiltering.library._filter_libraries[0].filters) == 1
-    assert adaptivefiltering.library._filter_libraries[0].name is None
+    assert len(adaptivefiltering.library._filter_libraries) == 2
+    assert len(adaptivefiltering.library._filter_libraries[1].filters) == 1
+    assert adaptivefiltering.library._filter_libraries[1].name is None

@@ -15,6 +15,7 @@ dependencies:
   - pip
   - pillow
   - pip:
+    - adaptivefiltering-library
     - Click
     - geodaisy
     - geojson
