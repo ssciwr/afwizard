@@ -1,6 +1,7 @@
 from adaptivefiltering.filter import load_filter
 from adaptivefiltering.paths import load_schema
 
+import collections
 import glob
 import importlib
 import json
@@ -12,10 +13,9 @@ import os
 _filter_libraries = []
 
 
-class FilterLibrary:
-    def __init__(self, filters=[], name=None):
-        self.filters = filters
-        self.name = name
+FilterLibrary = collections.namedtuple(
+    "FilterLibrary", ["filters", "name"], defaults=[[], None]
+)
 
 
 def add_filter_library(path=None, package=None):
