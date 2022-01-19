@@ -66,6 +66,9 @@ class DataSet:
         if classification is None:
             classification = asprs[:]
 
+        if resolution <= 0:
+            raise Warning("Negative Resolutions are not possible for rasterization.")
+
         return DigitalSurfaceModel(
             dataset=self, resolution=resolution, classification=classification
         )
