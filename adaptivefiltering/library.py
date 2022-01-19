@@ -1,6 +1,7 @@
-from adaptivefiltering.filter import load_filter
+from adaptivefiltering.filter import load_filter, save_filter
 from adaptivefiltering.paths import load_schema
 
+import click
 import collections
 import glob
 import importlib
@@ -72,6 +73,27 @@ def reset_filter_libraries():
     # Register default paths
     add_filter_library(path=os.getcwd())
     add_filter_library(package="adaptivefiltering_library")
+
+
+@click.command()
+@click.argument(
+    "library_path", type=click.Path(exists=True, file_okay=False, writeable=True)
+)
+def upgrade_filter_library(path):
+    """Upgrades all filters in a library to the latest version of the data model
+
+    :param path:
+        The path of the filesystem where the filter library is located.
+    :type path: str
+    """
+
+    for filename in glob.glob(os.path.join(path, "*.json")):
+        # If this is the library meta file, skip it
+        if os.path.split(filename)[1] == "library.json":
+            continue
+
+        # Add it to our list of filters
+        save_filter(load_filter(filename), filename)
 
 
 # Upon import, we immediately reset the filter library to the defaults

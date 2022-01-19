@@ -1,5 +1,10 @@
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.versioning import (
+    ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION,
+    ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION,
+    upgrade_filter,
+)
 from adaptivefiltering.widgets import WidgetForm
 
 import json
@@ -290,6 +295,8 @@ def serialize_filter(filter_):
     """
     data = filter_._serialize()
     data["_backend"] = filter_._identifier
+    data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
+    data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
     return data
 
 
@@ -302,6 +309,9 @@ def deserialize_filter(data):
     """
     # Find the correct type and do the deserialization
     type_ = Filter._filter_impls[data["_backend"]]
+    data = upgrade_filter(data)
+    data.pop("_major")
+    data.pop("_minor")
     return type_._deserialize(data)
 
 
