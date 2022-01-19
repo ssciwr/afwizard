@@ -304,19 +304,87 @@ def pipeline_tuning(datasets=[], pipeline=None):
     return pipeline_proxy
 
 
+def setup_rasterize_side_panel(dataset):
+    # Get a widget for rasterization
+    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
+
+    # We drop classification, because we add this as a specialized widget
+    raster_schema["properties"].pop("classification")
+
+    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget = rasterization_widget_form.widget
+    rasterization_widget.layout = fullwidth
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+    form = WidgetForm(schema)
+    formwidget = form.widget
+    formwidget.layout = fullwidth
+
+    # Create the classification widget
+    classification = classification_widget([dataset])
+    classification.layout = fullwidth
+
+    widged_list = [rasterization_widget, formwidget, classification]
+    form_list = [rasterization_widget_form, form]
+
+    return widged_list, form_list
+
+
 def create_segmentation(dataset):
     # Create the necessary widgets
     map_ = Map(dataset=dataset)
     map_widget = map_.show()
     finalize = ipywidgets.Button(description="Finalize")
 
+    # add control surface for rasterization overlay.
+    if not isinstance(dataset, DigitalSurfaceModel):
+        dataset = dataset.rasterize()
+
+    widged_list, form_list = setup_rasterize_side_panel(dataset)
+    rasterization_widget, formwidget, classification = widged_list
+    rasterization_widget_form, form = form_list
+
     # Arrange them into one widget
-    layout = ipywidgets.Layout(width="100%")
-    map_widget.layout = layout
-    finalize.layout = layout
-    app = ipywidgets.VBox([map_widget, finalize])
+    map_widget.layout = fullwidth
+    finalize.layout = fullwidth
+
+    # Get a visualization button and add it to the control panel
+    load_raster_button = ipywidgets.Button(
+        description="Load rasterization", layout=fullwidth
+    )
+    controls = ipywidgets.VBox(
+        [load_raster_button, rasterization_widget, formwidget, classification, finalize]
+    )
+
+    # Create the overall app layout
+    app = ipywidgets.AppLayout(
+        header=None,
+        left_sidebar=controls,
+        center=map_widget,
+        right_sidebar=None,
+        footer=None,
+        pane_widths=[1, 3, 0],
+    )
+
+    def load_raster_to_map(b):
+        with hourglass_icon(b):
+            # Rerasterize if necessary
+
+            nonlocal dataset
+            dataset = dataset.dataset.rasterize(
+                classification=classification.value, **rasterization_widget_form.data
+            )
+
+            title = f"{form.data.visualization_type}: res: {rasterization_widget_form.data.resolution}, {form.data.items()}"
+
+            vis = dataset.show(**form.data).children[0]
+
+            map_.load_overlay(vis, title)
 
     # Show the final widget
+    load_raster_button.on_click(load_raster_to_map)
+
     IPython.display.display(app)
 
     # The return proxy object
@@ -367,25 +435,9 @@ def show_interactive(dataset):
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
 
-    # Get a widget for rasterization
-    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
-
-    # We drop classification, because we add this as a specialized widget
-    raster_schema["properties"].pop("classification")
-
-    rasterization_widget_form = WidgetForm(raster_schema)
-    rasterization_widget = rasterization_widget_form.widget
-    rasterization_widget.layout = fullwidth
-
-    # Get a widget that allows configuration of the visualization method
-    schema = load_schema("visualization.json")
-    form = WidgetForm(schema)
-    formwidget = form.widget
-    formwidget.layout = fullwidth
-
-    # Create the classification widget
-    classification = classification_widget([dataset])
-    classification.layout = fullwidth
+    widged_list, form_list = setup_rasterize_side_panel(dataset)
+    rasterization_widget, formwidget, classification = widged_list
+    rasterization_widget_form, form = form_list
 
     # Get a visualization button and add it to the control panel
     button = ipywidgets.Button(description="Visualize", layout=fullwidth)
