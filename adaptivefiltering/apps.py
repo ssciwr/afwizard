@@ -461,6 +461,8 @@ def filter_selection_widget(multiple=False):
     # Define a function that allows use to access the selected filters
     def accessor():
         indices = filter_list_widget.children[0].index
+        if indices is None:
+            return ()
         if not multiple:
             indices = (indices,)
         return tuple(filter_list[i] for i in indices)
@@ -518,3 +520,24 @@ def filter_selection_widget(multiple=False):
 
     # Introduce a two column layout
     return ipywidgets.HBox(children=(acc, filter_list_widget)), accessor
+
+
+def choose_pipeline():
+    widget, accessor = filter_selection_widget()
+    button = ipywidgets.Button(description="Finalize", layout=fullwidth)
+
+    # Piece things together
+    app = ipywidgets.VBox(children=[widget, button])
+    IPython.display.display(app)
+
+    # Return proxy handling
+    proxy = InteractiveWidgetOutputProxy(lambda: accessor()[0])
+
+    def _finalize(_):
+        if len(accessor()) != 0:
+            app.layout.display = "none"
+            proxy._finalize()
+
+    button.on_click(_finalize)
+
+    return proxy
