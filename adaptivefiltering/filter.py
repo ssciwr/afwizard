@@ -1,5 +1,10 @@
 from adaptivefiltering.paths import load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.versioning import (
+    ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION,
+    ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION,
+    upgrade_filter,
+)
 from adaptivefiltering.widgets import WidgetForm
 
 import json
@@ -185,6 +190,9 @@ class Filter:
     def enabled(cls):
         return True
 
+    def used_backends(self):
+        return (self._identifier,)
+
 
 # Register the base class itself
 Filter._filter_impls["base"] = Filter
@@ -257,6 +265,9 @@ class PipelineMixin:
             filters=self.config["filters"] + other.as_pipeline().config["filters"]
         )
 
+    def used_backends(self):
+        return tuple(set(f["_backend"] for f in self.config["filters"]))
+
     @property
     def author(self):
         """The author of this profile"""
@@ -271,6 +282,11 @@ class PipelineMixin:
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
         return self.config["metadata"]["example_data_url"]
+
+    @property
+    def title(self):
+        """A telling display name for the filter pipeline"""
+        return self.config["metadata"]["title"]
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
@@ -290,6 +306,8 @@ def serialize_filter(filter_):
     """
     data = filter_._serialize()
     data["_backend"] = filter_._identifier
+    data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
+    data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
     return data
 
 
@@ -302,6 +320,9 @@ def deserialize_filter(data):
     """
     # Find the correct type and do the deserialization
     type_ = Filter._filter_impls[data["_backend"]]
+    data = upgrade_filter(data)
+    data.pop("_major")
+    data.pop("_minor")
     return type_._deserialize(data)
 
 

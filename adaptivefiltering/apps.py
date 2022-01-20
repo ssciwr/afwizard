@@ -1,6 +1,7 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
-from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.filter import Pipeline, Filter
+from adaptivefiltering.library import get_filter_libraries
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
@@ -424,3 +425,119 @@ def show_interactive(dataset):
     button.click()
 
     return app
+
+
+def filter_selection_widget(multiple=False):
+    def library_name(lib):
+        if lib.name is not None:
+            return lib.name
+        else:
+            return lib.path
+
+    # Collect checkboxes in the selection menu
+    library_checkboxes = [
+        ipywidgets.Checkbox(value=True, description=library_name(lib))
+        for lib in get_filter_libraries()
+    ]
+    backend_checkboxes = {
+        name: ipywidgets.Checkbox(value=cls.enabled(), description=name)
+        for name, cls in Filter._filter_impls.items()
+        if Filter._filter_is_backend[name]
+    }
+
+    # Create the filter list widget
+    filter_list = []
+    widget_type = ipywidgets.SelectMultiple if multiple else ipywidgets.Select
+    filter_list_widget = ipywidgets.Box(
+        children=(
+            widget_type(
+                options=[f.title for f in filter_list],
+                value=[] if multiple else None,
+                description="",
+            ),
+        )
+    )
+
+    # Define a function that allows use to access the selected filters
+    def accessor():
+        indices = filter_list_widget.children[0].index
+        if indices is None:
+            return ()
+        if not multiple:
+            indices = (indices,)
+        return tuple(filter_list[i] for i in indices)
+
+    # A function that recreates the filtered list of filters
+    def update_filter_list(_):
+        filter_list.clear()
+
+        # Iterate over all libraries to find filters
+        for i, lbox in enumerate(library_checkboxes):
+            # If the library is deactivated -> skip
+            if not lbox.value:
+                continue
+
+            # Iterate over all filters in the given library
+            for filter_ in get_filter_libraries()[i].filters:
+                # If the filter uses a deselected backend -> skip
+                if any(
+                    not bbox.value and name in filter_.used_backends()
+                    for name, bbox in backend_checkboxes.items()
+                ):
+                    continue
+
+                # Once we got here we use the filter
+                filter_list.append(filter_)
+
+        # Update the widget
+        nonlocal filter_list_widget
+        filter_list_widget.children = (
+            widget_type(
+                options=[f.title for f in filter_list],
+                value=[] if multiple else None,
+                description="",
+            ),
+        )
+
+    # Trigger it once in the beginning
+    update_filter_list(None)
+
+    # Make all checkbox changes trigger the filter list update
+    for box in itertools.chain(library_checkboxes, backend_checkboxes.values()):
+        box.observe(update_filter_list, names="value")
+
+    # Piece all of the above selcetionwidgets together into an accordion
+    acc = ipywidgets.Accordion(
+        children=[
+            ipywidgets.VBox(children=tuple(library_checkboxes)),
+            ipywidgets.VBox(children=tuple(backend_checkboxes.values())),
+        ],
+    )
+
+    # Name the accordion options
+    acc.set_title(0, "Libraries")
+    acc.set_title(1, "Backends")
+
+    # Introduce a two column layout
+    return ipywidgets.HBox(children=(acc, filter_list_widget)), accessor
+
+
+def choose_pipeline():
+    widget, accessor = filter_selection_widget()
+    button = ipywidgets.Button(description="Finalize", layout=fullwidth)
+
+    # Piece things together
+    app = ipywidgets.VBox(children=[widget, button])
+    IPython.display.display(app)
+
+    # Return proxy handling
+    proxy = InteractiveWidgetOutputProxy(lambda: accessor()[0])
+
+    def _finalize(_):
+        if len(accessor()) != 0:
+            app.layout.display = "none"
+            proxy._finalize()
+
+    button.on_click(_finalize)
+
+    return proxy
