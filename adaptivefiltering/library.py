@@ -15,8 +15,12 @@ _filter_libraries = []
 
 
 FilterLibrary = collections.namedtuple(
-    "FilterLibrary", ["filters", "name"], defaults=[[], None]
+    "FilterLibrary", ["filters", "name", "path"], defaults=[[], None, ""]
 )
+
+
+def get_filter_libraries():
+    return tuple(_filter_libraries)
 
 
 def add_filter_library(path=None, package=None):
@@ -61,7 +65,7 @@ def add_filter_library(path=None, package=None):
 
     # Register the library object if it is existent
     if metadata or filters:
-        _filter_libraries.append(FilterLibrary(filters=filters, **metadata))
+        _filter_libraries.append(FilterLibrary(filters=filters, path=path, **metadata))
 
 
 def reset_filter_libraries():

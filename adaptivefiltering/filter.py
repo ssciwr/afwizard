@@ -190,6 +190,9 @@ class Filter:
     def enabled(cls):
         return True
 
+    def used_backends(self):
+        return (self._identifier,)
+
 
 # Register the base class itself
 Filter._filter_impls["base"] = Filter
@@ -262,6 +265,9 @@ class PipelineMixin:
             filters=self.config["filters"] + other.as_pipeline().config["filters"]
         )
 
+    def used_backends(self):
+        return tuple(set(f["_backend"] for f in self.config["filters"]))
+
     @property
     def author(self):
         """The author of this profile"""
@@ -276,6 +282,11 @@ class PipelineMixin:
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
         return self.config["metadata"]["example_data_url"]
+
+    @property
+    def title(self):
+        """A telling display name for the filter pipeline"""
+        return self.config["metadata"]["title"]
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
