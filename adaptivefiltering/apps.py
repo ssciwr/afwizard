@@ -5,8 +5,10 @@ from adaptivefiltering.library import get_filter_libraries
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
+from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetForm
 
+import collections
 import contextlib
 import copy
 import ipywidgets
@@ -144,6 +146,14 @@ def cached_pipeline_application(dataset, pipeline):
     return pipeline.execute(dataset)
 
 
+# A data structure to store widgets within to quickly navigate back and forth
+# between visualizations in the pipeline_tuning widget.
+PipelineWidgetState = collections.namedtuple(
+    "PipelineWidgetState",
+    ["pipeline", "rasterization", "visualization", "classification", "image"],
+)
+
+
 def pipeline_tuning(datasets=[], pipeline=None):
     # Instantiate a new pipeline object if we are not modifying an existing one.
     if pipeline is None:
@@ -153,8 +163,115 @@ def pipeline_tuning(datasets=[], pipeline=None):
     if isinstance(datasets, DataSet):
         datasets = [datasets]
 
-    # Get the widget form for this pipeline
-    form = pipeline.widget_form()
+    # Assert that at least one dataset has been provided
+    if len(datasets) == 0:
+        raise AdaptiveFilteringError(
+            "At least one dataset must be provided to pipeline_tuning"
+        )
+
+    # Create the data structure to store the history of visualizations in this app
+    history = []
+
+    # Loop over the given datasets
+    def create_history_item(ds):
+        # Create a new classification widget and insert it into the Box
+        _class_widget = classification_widget([ds])
+        app.right_sidebar.children[-1].children = (_class_widget,)
+
+        # Create widgets from the datasets
+        image = ipywidgets.Box(
+            children=[
+                ds.show(
+                    classification=class_widget.children[0].value,
+                    **rasterization_widget_form.data,
+                    **visualization_form.data,
+                )
+            ]
+        )
+
+        # Add the set of widgets to our history
+        history.append(
+            PipelineWidgetState(
+                pipeline=pipeline_form.data,
+                rasterization=rasterization_widget_form.data,
+                visualization=visualization_form.data,
+                classification=_class_widget,
+                image=image,
+            )
+        )
+
+        # Add it to the center Tab widget
+        nonlocal center
+        index = len(center.children)
+        center.children = center.children + (image,)
+        center.set_title(index, f"#{index}")
+
+    # Configure control buttons
+    preview = ipywidgets.Button(description="Preview", layout=fullwidth)
+    finalize = ipywidgets.Button(description="Finalize", layout=fullwidth)
+    delete = ipywidgets.Button(
+        description="Delete this filtering", layout=ipywidgets.Layout(width="50%")
+    )
+    delete_all = ipywidgets.Button(
+        description="Delete filtering history", layout=ipywidgets.Layout(width="50%")
+    )
+
+    # The center widget holds the Tab widget to browse history
+    center = ipywidgets.Tab(children=[])
+    center.layout = fullwidth
+
+    def _switch_tab(_):
+        if len(center.children) > 0:
+            item = history[center.selected_index]
+            pipeline_form.data = item.pipeline
+            rasterization_widget_form.data = item.rasterization
+            visualization_form_widget.data = item.visualization
+            classification_widget.children = (item.classification,)
+
+    def _update_preview(button):
+        with hourglass_icon(button):
+            for ds in datasets:
+                # Extract the pipeline from the widget
+                nonlocal pipeline
+                pipeline = pipeline.copy(**pipeline_form.data)
+
+                # TODO: Do this in parallel!
+                with within_temporary_workspace():
+                    transformed = cached_pipeline_application(ds, pipeline)
+
+                # Create a new entry in the history list
+                create_history_item(transformed)
+
+                # Select the newly added tab
+                center.selected_index = len(center.children) - 1
+
+    def _delete_history_item(_):
+        i = center.selected_index
+        nonlocal history
+        history = history[:i] + history[i + 1 :]
+        center.children = center.children[:i] + center.children[i + 1 :]
+        center.selected_index = len(center.children) - 1
+
+        # This ensures that widgets are updated when this tab is removed
+        _switch_tab(None)
+
+    def _delete_all(_):
+        nonlocal history
+        history = []
+        center.children = tuple()
+
+    # Register preview button click handler
+    preview.on_click(_update_preview)
+
+    # Register delete button click handler
+    delete.on_click(_delete_history_item)
+    delete_all.on_click(_delete_all)
+
+    # When we switch tabs, all widgets should restore the correct information
+    center.observe(_switch_tab, names="selected_index")
+
+    # Create the (persisting) building blocks for the app
+    pipeline_form = pipeline.widget_form()
 
     # Get a widget for rasterization
     raster_schema = copy.deepcopy(load_schema("rasterize.json"))
@@ -172,128 +289,51 @@ def pipeline_tuning(datasets=[], pipeline=None):
     visualization_form_widget = visualization_form.widget
     visualization_form_widget.layout = fullwidth
 
-    # Get the classification value selection widget
-    _class_widget = classification_widget(datasets)
-    class_widget = ipywidgets.Box([_class_widget])
-
-    # Configure control buttons
-    preview = ipywidgets.Button(description="Preview")
-    finalize = ipywidgets.Button(description="Finalize")
-
-    # Create widgets from the datasets
-    widgets = [
-        ds.show(
-            classification=class_widget.children[0].value,
-            **rasterization_widget_form.data,
-        )
-        for ds in datasets
-    ]
-
-    # If no datasets were given, we add a dummy widget that explains the situation
-    if not widgets:
-        widgets = [
-            sized_label(
-                "Please call with datasets for interactive visualization", size=18
-            )
-        ]
-
-    def _update_preview(button):
-        with hourglass_icon(button):
-            # Update the pipeline object according to the widget
-            nonlocal pipeline
-            pipeline = pipeline.copy(**form.data)
-
-            # Apply the pipeline to all datasets
-            # TODO: Do this in parallel!
-            with within_temporary_workspace():
-                transformed_datasets = [
-                    cached_pipeline_application(d, pipeline) for d in datasets
-                ]
-
-            # Update the classification widget with the classes now present in datasets
-            selected = class_widget.children[0].value
-            class_widget.children = (
-                classification_widget(transformed_datasets, selected=selected),
-            )
-
-            # Write new widgets
-            new_widgets = [
-                ds.show(
-                    classification=class_widget.children[0].value,
-                    **rasterization_widget_form.data,
-                    **visualization_form.data,
-                )
-                for ds in transformed_datasets
-            ]
-
-            nonlocal app
-            app.center = create_center_widget(new_widgets)
-
-    preview.on_click(_update_preview)
-
-    # Create the filter configuration widget including layout tweaks
-    left_sidebar = ipywidgets.VBox(
-        [
-            ipywidgets.HTML("Interactive pipeline configuration:", layout=fullwidth),
-            form.widget,
-        ]
-    )
-
-    def create_center_widget(widgets):
-        # Create the center widget including layout tweaks
-        if len(widgets) > 1:
-            # We use the Tab widget to allow switching between different datasets
-            center = ipywidgets.Tab(children=widgets)
-
-            # Set titles for the different tabs
-            for i in range(len(widgets)):
-                center.set_title(i, f"Dataset #{i}")
-
-            center.layout = fullwidth
-
-            return center
-        else:
-            widgets[0].layout = ipywidgets.Layout(
-                width="100%", flex_flow="column", align_items="center", display="flex"
-            )
-            return widgets[0]
-
-    # Create the right sidebar including layout tweaks
-    preview.layout = fullwidth
-    finalize.layout = fullwidth
+    # Get the container widget for classification
+    class_widget = ipywidgets.Box([])
     class_widget.layout = fullwidth
-    right_sidebar = ipywidgets.VBox(
-        [
-            ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
-            preview,
-            finalize,
-            ipywidgets.HTML("Rasterization options:", layout=fullwidth),
-            rasterization_widget,
-            ipywidgets.HTML("Visualization options:", layout=fullwidth),
-            visualization_form_widget,
-            ipywidgets.HTML(
-                "Point classifications to include in the hillshade visualization (click preview to update):",
-                layout=fullwidth,
-            ),
-            class_widget,
-        ]
-    )
 
     # Create the final app layout
     app = ipywidgets.AppLayout(
-        header=None,
-        left_sidebar=left_sidebar,
-        center=create_center_widget(widgets),
-        right_sidebar=right_sidebar,
-        footer=None,
-        pane_widths=[3, 6, 3],
+        left_sidebar=ipywidgets.VBox(
+            [
+                ipywidgets.HTML(
+                    "Interactive pipeline configuration:", layout=fullwidth
+                ),
+                pipeline_form.widget,
+            ]
+        ),
+        center=center,
+        right_sidebar=ipywidgets.VBox(
+            [
+                ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
+                preview,
+                finalize,
+                ipywidgets.HBox([delete, delete_all]),
+                ipywidgets.HTML("Rasterization options:", layout=fullwidth),
+                rasterization_widget,
+                ipywidgets.HTML("Visualization options:", layout=fullwidth),
+                visualization_form_widget,
+                ipywidgets.HTML(
+                    "Point classifications to include in the hillshade visualization (click preview to update):",
+                    layout=fullwidth,
+                ),
+                class_widget,
+            ]
+        ),
     )
+
+    # Initially seed with a simple visualization
+    for ds in datasets:
+        create_history_item(ds)
 
     # Show the app in Jupyter notebook
     IPython.display.display(app)
 
     # Implement finalization
-    pipeline_proxy = InteractiveWidgetOutputProxy(lambda: pipeline.copy(**form.data))
+    pipeline_proxy = InteractiveWidgetOutputProxy(
+        lambda: pipeline.copy(**history[center.selected_index].pipeline)
+    )
 
     def _finalize(_):
         app.layout.display = "none"
