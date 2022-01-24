@@ -292,7 +292,10 @@ class PipelineMixin:
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
     def execute(self, dataset):
         for f in self.config["filters"]:
-            fobj = deserialize_filter(pyrsistent.thaw(f))
+            data = pyrsistent.thaw(f)
+            data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
+            data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
+            fobj = deserialize_filter(data)
             dataset = fobj.execute(dataset)
 
         return dataset
