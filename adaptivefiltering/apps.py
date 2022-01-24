@@ -209,7 +209,12 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview", layout=fullwidth)
     finalize = ipywidgets.Button(description="Finalize", layout=fullwidth)
-    delete = ipywidgets.Button(description="Delete this filtering", layout=fullwidth)
+    delete = ipywidgets.Button(
+        description="Delete this filtering", layout=ipywidgets.Layout(width="50%")
+    )
+    delete_all = ipywidgets.Button(
+        description="Delete filtering history", layout=ipywidgets.Layout(width="50%")
+    )
 
     # The center widget holds the Tab widget to browse history
     center = ipywidgets.Tab(children=[])
@@ -250,11 +255,17 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # This ensures that widgets are updated when this tab is removed
         _switch_tab(None)
 
+    def _delete_all(_):
+        nonlocal history
+        history = []
+        center.children = tuple()
+
     # Register preview button click handler
     preview.on_click(_update_preview)
 
     # Register delete button click handler
     delete.on_click(_delete_history_item)
+    delete_all.on_click(_delete_all)
 
     # When we switch tabs, all widgets should restore the correct information
     center.observe(_switch_tab, names="selected_index")
@@ -298,7 +309,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
                 ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
                 preview,
                 finalize,
-                delete,
+                ipywidgets.HBox([delete, delete_all]),
                 ipywidgets.HTML("Rasterization options:", layout=fullwidth),
                 rasterization_widget,
                 ipywidgets.HTML("Visualization options:", layout=fullwidth),
