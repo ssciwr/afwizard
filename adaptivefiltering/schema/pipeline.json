@@ -15,6 +15,15 @@
         "example_data_url": {
           "type": "string"
         },
+        "keywords": {
+          "description": "A set of keywords that describes the filtering pipeline, only use lowercase letters and dashes!",
+          "items": {
+            "pattern": "[a-z\\-]*",
+            "type": "string"
+          },
+          "title": "Keywords:",
+          "type": "array"
+        },
         "title": {
           "type": "string"
         }

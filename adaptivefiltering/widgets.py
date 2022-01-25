@@ -406,6 +406,53 @@ class WidgetForm:
         )
 
 
+class WidgetFormWithLabels(WidgetForm):
+    """A subclass of WidgetForm that creates a label selection widget for arrays of strings"""
+
+    def _construct_array(self, schema, label=None, root=False):
+        if "items" not in schema:
+            raise WidgetFormError("Expecting 'items' key for 'array' type")
+
+        # Assert a number of conditions that must be true for us
+        # to create a label widget instead of the regular array
+        if (
+            "type" not in schema["items"]
+            or schema["items"]["type"] != "string"
+            or "maxItems" in schema["items"]
+            or "minItems" in schema["items"]
+        ):
+            return WidgetForm._construct_array(self, schema, label=label, root=root)
+
+        # List of widgets for later use in VBox
+        widgets = []
+        if "title" in schema:
+            widgets.append(ipywidgets.Label(schema["title"]))
+
+        # Create the relevant widget
+        widget = ipywidgets.TagsInput(
+            value=[], allow_duplicates=False, tooltip=schema.get("description", None)
+        )
+        widgets.append(widget)
+
+        # Function to check a potential given pattern
+        def _change_checker(change):
+            if "pattern" in schema["items"]:
+                for val in change["new"]:
+                    if not re.fullmatch(schema["items"]["pattern"], val):
+                        widget.value = [i for i in widget.value if i != val]
+
+        widget.observe(_change_checker, names="value")
+
+        def _setter(_d):
+            widget.value = pyrsistent.thaw(_d)
+
+        return WidgetFormElement(
+            getter=lambda: pyrsistent.pvector(widget.value),
+            setter=_setter,
+            widgets=[ipywidgets.VBox(widgets)],
+        )
+
+
 def upload_button(directory=None, filetype=""):
     """
     Create a widget to upload and store files over the jupyter interface.
