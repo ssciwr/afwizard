@@ -185,14 +185,14 @@ class WidgetForm:
                 widget.value = _d
             else:
                 # We will have to see whether or not throwing is a good idea here
-                raise AdaptiveFilteringError(
+                raise WidgetFormError(
                     f"Value '{_d}' does not match the specified pattern '{schema['pattern']}'"
                 )
 
         def _getter():
             if not pattern_checker(widget.value):
                 # We will have to see whether or not throwing is a good idea here
-                raise AdaptiveFilteringError(
+                raise WidgetFormError(
                     f"Value '{widget.value}' does not match the specified pattern '{schema['pattern']}'"
                 )
 

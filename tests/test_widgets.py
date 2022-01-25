@@ -1,5 +1,4 @@
-from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.widgets import WidgetForm
+from adaptivefiltering.widgets import *
 
 import jsonschema
 import pyrsistent
@@ -46,5 +45,5 @@ def test_pattern_rule():
     widget = WidgetForm(schema)
     widget.data = "blawithoutdashor underscore"
 
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(WidgetFormError):
         widget.data = "ba_ad"
