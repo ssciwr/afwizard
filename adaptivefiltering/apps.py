@@ -204,7 +204,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         nonlocal center
         index = len(center.children)
         center.children = center.children + (image,)
-        center.set_title(index, f"#{index}")
+        center.titles = center.titles + (f"#{index}",)
 
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview", layout=fullwidth)
@@ -217,7 +217,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
     )
 
     # The center widget holds the Tab widget to browse history
-    center = ipywidgets.Tab(children=[])
+    center = ipywidgets.Tab(children=[], titles=[])
     center.layout = fullwidth
 
     def _switch_tab(_):
@@ -552,11 +552,8 @@ def filter_selection_widget(multiple=False):
             ipywidgets.VBox(children=tuple(library_checkboxes)),
             ipywidgets.VBox(children=tuple(backend_checkboxes.values())),
         ],
+        titles=["Libraries", "Backends"],
     )
-
-    # Name the accordion options
-    acc.set_title(0, "Libraries")
-    acc.set_title(1, "Backends")
 
     # Introduce a two column layout
     return ipywidgets.HBox(children=(acc, filter_list_widget)), accessor

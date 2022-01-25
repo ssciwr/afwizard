@@ -118,9 +118,12 @@ class WidgetForm:
         return getattr(self, f"_construct_{type_}")(schema, label=label, root=root)
 
     def _wrap_accordion(self, widget_list, schema, label=None):
-        accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
+        titles = []
         if label is not None or "title" in schema:
-            accordion.set_title(0, schema.get("title", label))
+            titles = [schema.get("title", label)]
+        accordion = ipywidgets.Accordion(
+            children=[ipywidgets.VBox(widget_list)], titles=titles
+        )
 
         # This folds the accordion
         accordion.selected_index = None
