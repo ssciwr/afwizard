@@ -10,6 +10,7 @@ import jsonschema
 import json
 import os
 import pyrsistent
+import re
 import typing
 
 
@@ -162,6 +163,16 @@ class WidgetForm:
                 getter=lambda: schema["const"], setter=lambda _: None, widgets=[]
             )
 
+        # Apply regex pattern matching
+        def pattern_checker(val):
+            # This only makes sense for strings
+            if schema["type"] != "string":
+                return True
+
+            # Try matching the given data against the pattern
+            pattern = schema.get("pattern", ".*")
+            return re.fullmatch(pattern, val)
+
         # Register a change handler that triggers the forms change handler
         def _fire_on_change(change):
             if self.on_change:
@@ -170,13 +181,28 @@ class WidgetForm:
         widget.observe(_fire_on_change)
 
         def _setter(_d):
-            widget.value = _d
+            if pattern_checker(_d):
+                widget.value = _d
+            else:
+                # We will have to see whether or not throwing is a good idea here
+                raise AdaptiveFilteringError(
+                    f"Value '{_d}' does not match the specified pattern '{schema['pattern']}'"
+                )
+
+        def _getter():
+            if not pattern_checker(widget.value):
+                # We will have to see whether or not throwing is a good idea here
+                raise AdaptiveFilteringError(
+                    f"Value '{widget.value}' does not match the specified pattern '{schema['pattern']}'"
+                )
+
+            return widget.value
 
         # Make sure the widget adapts to the outer layout
         widget.layout = ipywidgets.Layout(width="100%")
 
         return WidgetFormElement(
-            getter=lambda: widget.value,
+            getter=_getter,
             setter=_setter,
             widgets=[ipywidgets.VBox(box)],
         )
