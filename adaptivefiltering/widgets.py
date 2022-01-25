@@ -10,6 +10,7 @@ import jsonschema
 import json
 import os
 import pyrsistent
+import re
 import typing
 
 
@@ -117,9 +118,12 @@ class WidgetForm:
         return getattr(self, f"_construct_{type_}")(schema, label=label, root=root)
 
     def _wrap_accordion(self, widget_list, schema, label=None):
-        accordion = ipywidgets.Accordion(children=[ipywidgets.VBox(widget_list)])
+        titles = []
         if label is not None or "title" in schema:
-            accordion.set_title(0, schema.get("title", label))
+            titles = [schema.get("title", label)]
+        accordion = ipywidgets.Accordion(
+            children=[ipywidgets.VBox(widget_list)], titles=titles
+        )
 
         # This folds the accordion
         accordion.selected_index = None
@@ -162,6 +166,16 @@ class WidgetForm:
                 getter=lambda: schema["const"], setter=lambda _: None, widgets=[]
             )
 
+        # Apply regex pattern matching
+        def pattern_checker(val):
+            # This only makes sense for strings
+            if schema["type"] != "string":
+                return True
+
+            # Try matching the given data against the pattern
+            pattern = schema.get("pattern", ".*")
+            return re.fullmatch(pattern, val)
+
         # Register a change handler that triggers the forms change handler
         def _fire_on_change(change):
             if self.on_change:
@@ -170,13 +184,28 @@ class WidgetForm:
         widget.observe(_fire_on_change)
 
         def _setter(_d):
-            widget.value = _d
+            if pattern_checker(_d):
+                widget.value = _d
+            else:
+                # We will have to see whether or not throwing is a good idea here
+                raise WidgetFormError(
+                    f"Value '{_d}' does not match the specified pattern '{schema['pattern']}'"
+                )
+
+        def _getter():
+            if not pattern_checker(widget.value):
+                # We will have to see whether or not throwing is a good idea here
+                raise WidgetFormError(
+                    f"Value '{widget.value}' does not match the specified pattern '{schema['pattern']}'"
+                )
+
+            return widget.value
 
         # Make sure the widget adapts to the outer layout
         widget.layout = ipywidgets.Layout(width="100%")
 
         return WidgetFormElement(
-            getter=lambda: widget.value,
+            getter=_getter,
             setter=_setter,
             widgets=[ipywidgets.VBox(box)],
         )
@@ -374,6 +403,53 @@ class WidgetForm:
             getter=lambda: elements[names.index(selector.value)].getter(),
             setter=_setter,
             widgets=[widget],
+        )
+
+
+class WidgetFormWithLabels(WidgetForm):
+    """A subclass of WidgetForm that creates a label selection widget for arrays of strings"""
+
+    def _construct_array(self, schema, label=None, root=False):
+        if "items" not in schema:
+            raise WidgetFormError("Expecting 'items' key for 'array' type")
+
+        # Assert a number of conditions that must be true for us
+        # to create a label widget instead of the regular array
+        if (
+            "type" not in schema["items"]
+            or schema["items"]["type"] != "string"
+            or "maxItems" in schema["items"]
+            or "minItems" in schema["items"]
+        ):
+            return WidgetForm._construct_array(self, schema, label=label, root=root)
+
+        # List of widgets for later use in VBox
+        widgets = []
+        if "title" in schema:
+            widgets.append(ipywidgets.Label(schema["title"]))
+
+        # Create the relevant widget
+        widget = ipywidgets.TagsInput(
+            value=[], allow_duplicates=False, tooltip=schema.get("description", None)
+        )
+        widgets.append(widget)
+
+        # Function to check a potential given pattern
+        def _change_checker(change):
+            if "pattern" in schema["items"]:
+                for val in change["new"]:
+                    if not re.fullmatch(schema["items"]["pattern"], val):
+                        widget.value = [i for i in widget.value if i != val]
+
+        widget.observe(_change_checker, names="value")
+
+        def _setter(_d):
+            widget.value = pyrsistent.thaw(_d)
+
+        return WidgetFormElement(
+            getter=lambda: pyrsistent.pvector(widget.value),
+            setter=_setter,
+            widgets=[ipywidgets.VBox(widgets)],
         )
 
 

@@ -1,5 +1,6 @@
 from adaptivefiltering.filter import load_filter, save_filter
 from adaptivefiltering.paths import load_schema
+from adaptivefiltering.utils import is_iterable
 
 import click
 import collections
@@ -66,6 +67,25 @@ def add_filter_library(path=None, package=None):
     # Register the library object if it is existent
     if metadata or filters:
         _filter_libraries.append(FilterLibrary(filters=filters, path=path, **metadata))
+
+
+def library_keywords(libs=get_filter_libraries()):
+    """Return a list of keywords used across one or more library
+
+    :param libs:
+        One or more filter libraries
+    """
+
+    # Make libs parameter a list if not already
+    if not is_iterable(libs):
+        libs = [libs]
+
+    result = []
+    for lib in libs:
+        for f in lib.filters:
+            result.extend(f.keywords)
+
+    return list(set(result))
 
 
 def reset_filter_libraries():

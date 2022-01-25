@@ -1,8 +1,8 @@
-import pytest
+from adaptivefiltering.widgets import *
 
-from adaptivefiltering.widgets import WidgetForm
 import jsonschema
 import pyrsistent
+import pytest
 
 
 _example_schema = [
@@ -38,3 +38,27 @@ def test_widget_form(schema):
     widget.data = data
     data2 = widget.data
     assert data == data2
+
+
+def test_pattern_rule():
+    schema = {"type": "string", "pattern": "[^_-]*"}
+    widget = WidgetForm(schema)
+    widget.data = "blawithoutdashor underscore"
+
+    with pytest.raises(WidgetFormError):
+        widget.data = "ba_ad"
+
+
+def test_widget_form_with_labels_pattern():
+    schema = {
+        "items": {"pattern": "[a-z\\-]*", "type": "string"},
+        "type": "array",
+    }
+
+    form = WidgetFormWithLabels(schema)
+
+    # Set with some valid and some non-valid data
+    form.data = ["bla", "bla2", "bla-bla", "bla_bla"]
+    assert len(form.data) == 2
+    assert form.data[0] == "bla"
+    assert form.data[1] == "bla-bla"

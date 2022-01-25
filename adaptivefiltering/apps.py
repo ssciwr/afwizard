@@ -1,7 +1,7 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
 from adaptivefiltering.filter import Pipeline, Filter
-from adaptivefiltering.library import get_filter_libraries
+from adaptivefiltering.library import get_filter_libraries, library_keywords
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
@@ -204,7 +204,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         nonlocal center
         index = len(center.children)
         center.children = center.children + (image,)
-        center.set_title(index, f"#{index}")
+        center.titles = center.titles + (f"#{index}",)
 
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview", layout=fullwidth)
@@ -217,7 +217,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
     )
 
     # The center widget holds the Tab widget to browse history
-    center = ipywidgets.Tab(children=[])
+    center = ipywidgets.Tab(children=[], titles=[])
     center.layout = fullwidth
 
     def _switch_tab(_):
@@ -332,7 +332,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Implement finalization
     pipeline_proxy = InteractiveWidgetOutputProxy(
-        lambda: pipeline.copy(**history[center.selected_index].pipeline)
+        lambda: pipeline.copy(**pipeline_form.data)
     )
 
     def _finalize(_):
@@ -485,6 +485,13 @@ def filter_selection_widget(multiple=False):
         if Filter._filter_is_backend[name]
     }
 
+    # Use a TagsInput widget for keywords
+    keyword_widget = ipywidgets.TagsInput(
+        value=library_keywords(),
+        allow_duplicates=False,
+        tooltip="Keywords to filtser for. Filters need to match at least one given keyword in order to be shown.",
+    )
+
     # Create the filter list widget
     filter_list = []
     widget_type = ipywidgets.SelectMultiple if multiple else ipywidgets.Select
@@ -526,6 +533,10 @@ def filter_selection_widget(multiple=False):
                 ):
                     continue
 
+                # If the filter does not have at least one selected keyword -> skip
+                if not set(keyword_widget.value).intersection(set(filter_.keywords)):
+                    continue
+
                 # Once we got here we use the filter
                 filter_list.append(filter_)
 
@@ -552,11 +563,8 @@ def filter_selection_widget(multiple=False):
             ipywidgets.VBox(children=tuple(library_checkboxes)),
             ipywidgets.VBox(children=tuple(backend_checkboxes.values())),
         ],
+        titles=["Libraries", "Backends"],
     )
-
-    # Name the accordion options
-    acc.set_title(0, "Libraries")
-    acc.set_title(1, "Backends")
 
     # Introduce a two column layout
     return ipywidgets.HBox(children=(acc, filter_list_widget)), accessor

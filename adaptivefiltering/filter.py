@@ -5,7 +5,7 @@ from adaptivefiltering.versioning import (
     ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION,
     upgrade_filter,
 )
-from adaptivefiltering.widgets import WidgetForm
+from adaptivefiltering.widgets import WidgetFormWithLabels
 
 import json
 import jsonmerge
@@ -167,9 +167,9 @@ class Filter:
         """Create a widget form for this filter
 
         :return: The widget form
-        :rtype: :class:`~adaptivefiltering.widgets.WidgetForm`
+        :rtype: :class:`~adaptivefiltering.widgets.WidgetFormWithLabels`
         """
-        form = WidgetForm(self.form_schema())
+        form = WidgetFormWithLabels(self.form_schema())
         form.data = self.config
         return form
 
@@ -287,6 +287,11 @@ class PipelineMixin:
     def title(self):
         """A telling display name for the filter pipeline"""
         return self.config["metadata"]["title"]
+
+    @property
+    def keywords(self):
+        """The keywords that describe this filter pipeline"""
+        return self.config["metadata"]["keywords"]
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
