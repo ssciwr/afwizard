@@ -332,7 +332,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Implement finalization
     pipeline_proxy = InteractiveWidgetOutputProxy(
-        lambda: pipeline.copy(**history[center.selected_index].pipeline)
+        lambda: pipeline.copy(**pipeline_form.data)
     )
 
     def _finalize(_):
