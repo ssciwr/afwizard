@@ -4,7 +4,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 
 from IPython.display import display
 
-import dataclasses
+import collections
 import ipywidgets
 import jsonschema
 import json
@@ -18,11 +18,9 @@ class WidgetFormError(AdaptiveFilteringError):
     pass
 
 
-@dataclasses.dataclass
-class WidgetFormElement:
-    getter: typing.Callable
-    setter: typing.Callable
-    widgets: list
+WidgetFormElement = collections.namedtuple(
+    "WidgetFormElement", ["getter", "setter", "widgets"]
+)
 
 
 class WidgetForm:
@@ -55,6 +53,9 @@ class WidgetForm:
 
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
+
+    def construct_element(self, getter=lambda: None, setter=lambda _: None, widgets=[]):
+        return WidgetFormElement(getter=getter, setter=setter, widgets=widgets)
 
     @property
     def widget(self):
@@ -144,7 +145,7 @@ class WidgetForm:
             for k, v in _d.items():
                 elements[k].setter(v)
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: pyrsistent.m(**{p: e.getter() for p, e in elements.items()}),
             setter=_setter,
             widgets=widget_list,
@@ -162,9 +163,7 @@ class WidgetForm:
 
         # Apply potential constant values without generating a widget
         if "const" in schema:
-            return WidgetFormElement(
-                getter=lambda: schema["const"], setter=lambda _: None, widgets=[]
-            )
+            return self.construct_element(getter=lambda: schema["const"])
 
         # Apply regex pattern matching
         def pattern_checker(val):
@@ -204,7 +203,7 @@ class WidgetForm:
         # Make sure the widget adapts to the outer layout
         widget.layout = ipywidgets.Layout(width="100%")
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=_getter,
             setter=_setter,
             widgets=[ipywidgets.VBox(box)],
@@ -243,7 +242,7 @@ class WidgetForm:
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 
     def _construct_null(self, schema, label=None, root=False):
-        return WidgetFormElement(getter=lambda: None, setter=lambda _: None, widgets=[])
+        return self.construct_element()
 
     def _construct_array(self, schema, label=None, root=False):
         if "items" not in schema:
@@ -345,7 +344,7 @@ class WidgetForm:
         if "default" in schema:
             _setter(schema["default"])
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: pyrsistent.pvector(h.getter() for h in elements),
             setter=_setter,
             widgets=wrapped_vbox,
@@ -354,9 +353,7 @@ class WidgetForm:
     def _construct_enum(self, schema, label=None, root=False):
         # We omit trivial enums, but make sure that they end up in the result
         if len(schema["enum"]) == 1:
-            return WidgetFormElement(
-                getter=lambda: schema["enum"][0], setter=lambda _: None, widgets=[]
-            )
+            return self.construct_element(getter=lambda: schema["enum"][0])
 
         # Otherwise, we use a dropdown menu
         return self._construct_simple(
@@ -399,7 +396,7 @@ class WidgetForm:
                 except ValidationError:
                     pass
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: elements[names.index(selector.value)].getter(),
             setter=_setter,
             widgets=[widget],
@@ -446,7 +443,7 @@ class WidgetFormWithLabels(WidgetForm):
         def _setter(_d):
             widget.value = pyrsistent.thaw(_d)
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: pyrsistent.pvector(widget.value),
             setter=_setter,
             widgets=[ipywidgets.VBox(widgets)],
