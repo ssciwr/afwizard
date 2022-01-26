@@ -5,7 +5,7 @@ from adaptivefiltering.versioning import (
     ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION,
     upgrade_filter,
 )
-from adaptivefiltering.widgets import WidgetFormWithLabels
+from adaptivefiltering.widgets import BatchDataWidgetForm
 
 import json
 import jsonmerge
@@ -167,9 +167,9 @@ class Filter:
         """Create a widget form for this filter
 
         :return: The widget form
-        :rtype: :class:`~adaptivefiltering.widgets.WidgetFormWithLabels`
+        :rtype: :class:`~adaptivefiltering.widgets.BatchDataWidgetForm`
         """
-        form = WidgetFormWithLabels(self.form_schema())
+        form = BatchDataWidgetForm(self.form_schema())
         form.data = self.config
         return form
 

@@ -450,6 +450,93 @@ class WidgetFormWithLabels(WidgetForm):
         )
 
 
+BatchDataWidgetFormElement = collections.namedtuple(
+    "BatchDataWidgetFormElement", ["getter", "setter", "widgets", "batchdata"]
+)
+
+
+class BatchDataWidgetForm(WidgetFormWithLabels):
+    def construct_element(
+        self, getter=lambda: None, setter=lambda _: None, widgets=[], batchdata=[]
+    ):
+        return BatchDataWidgetFormElement(
+            getter=getter, setter=setter, widgets=widgets, batchdata=batchdata
+        )
+
+    def _construct_simple(self, schema, widget, label=None, root=False):
+        # Call the original implementation to get the basic widget
+        original = WidgetFormWithLabels._construct_simple(
+            self, schema, widget, label=label, root=root
+        )
+
+        # If this is something that for some reason did not produce an input
+        # widget, we skip all the variablity part.
+        if len(original.widgets) == 0:
+            return original
+
+        # Example for batch data
+        batchdata = lambda: [{"foo": "bar"}]
+
+        # Create additional controls for batch processing and variability
+
+        # Two buttons that allow to create the additional input
+        b1 = ipywidgets.ToggleButton(
+            icon="layer-group", tooltip="Use a parameter batch for this parameter"
+        )
+        b2 = ipywidgets.ToggleButton(
+            icon="sitemap", tooltip="Add a variability to this parameter"
+        )
+
+        # The widget where the variablility input is specified
+        var = ipywidgets.Text(
+            tooltip="Use comma separation to specify a discrete set of parameters or dashes to define a parameter range"
+        )
+
+        # A container widget that allows us to easily make the input widget vanish
+        box = ipywidgets.Box()
+
+        # The handler that unfolds the input widget if necessary
+        def handler(change):
+            # Make sure that the two toggle buttons are mutually exclusive
+            if b1.value and b2.value:
+                for b in [b1, b2]:
+                    if b is not change.owner:
+                        b.value = False
+                        return
+
+            # Make sure that if either button is pressed, we display the input widget
+            if b1.value or b2.value:
+                box.children = (
+                    ipywidgets.HBox([ipywidgets.Label("Variablity:"), var]),
+                )
+            else:
+                box.children = ()
+
+        b1.observe(handler, names="value")
+        b2.observe(handler, names="value")
+
+        # Modify the original widgets to also include our modifications
+        try:
+            original.widgets[0].children[-1].layout = ipywidgets.Layout(width="80%")
+            b1.layout = ipywidgets.Layout(width="10%")
+            b2.layout = ipywidgets.Layout(width="10%")
+            original.widgets[0].children = original.widgets[0].children[:-1] + (
+                ipywidgets.HBox([original.widgets[0].children[-1], b1, b2]),
+            )
+            original.widgets[0].children = original.widgets[0].children + (box,)
+        except Exception as e:
+            print(schema)
+            raise e
+
+        # Wrap the result in our new form element
+        return self.construct_element(
+            getter=original.getter,
+            setter=original.setter,
+            widgets=original.widgets,
+            batchdata=batchdata,
+        )
+
+
 def upload_button(directory=None, filetype=""):
     """
     Create a widget to upload and store files over the jupyter interface.
