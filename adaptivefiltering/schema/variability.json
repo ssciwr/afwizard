@@ -33,6 +33,9 @@
       "persist": {
         "type": "boolean"
       },
+      "type": {
+        "type": "string"
+      },
       "values": {
         "type": "string"
       }

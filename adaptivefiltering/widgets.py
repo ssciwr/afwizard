@@ -537,9 +537,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
             # Make sure that if either button is pressed, we display the input widget
             if b1.value or b2.value:
-                box.children = (
-                    ipywidgets.HBox([ipywidgets.Label("Variablity:"), var]),
-                )
+                box.children = (ipywidgets.HBox([ipywidgets.Label("Values:"), var]),)
             else:
                 box.children = ()
 
@@ -547,9 +545,9 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         b2.observe(handler, names="value")
 
         # Modify the original widgets to also include our modifications
-        original.widgets[0].children[-1].layout = ipywidgets.Layout(width="80%")
-        b1.layout = ipywidgets.Layout(width="10%")
-        b2.layout = ipywidgets.Layout(width="10%")
+        original.widgets[0].children[-1].layout = ipywidgets.Layout(width="70%")
+        b1.layout = ipywidgets.Layout(width="15%")
+        b2.layout = ipywidgets.Layout(width="15%")
         original.widgets[0].children = original.widgets[0].children[:-1] + (
             ipywidgets.HBox([original.widgets[0].children[-1], b1, b2]),
         )
@@ -561,7 +559,14 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
             # Only record a variation if one of our buttons is pressed
             if b1.value or b2.value:
-                ret.append({"values": var.value, "persist": b2.value, "path": []})
+                ret.append(
+                    {
+                        "values": var.value,
+                        "persist": b2.value,
+                        "path": [],
+                        "type": schema["type"],
+                    }
+                )
 
             return ret
 

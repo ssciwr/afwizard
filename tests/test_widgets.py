@@ -62,3 +62,15 @@ def test_widget_form_with_labels_pattern():
     assert len(form.data) == 2
     assert form.data[0] == "bla"
     assert form.data[1] == "bla-bla"
+
+
+@pytest.mark.parametrize("schema", _example_schema)
+def test_batchdata_getset(schema):
+    widget = BatchDataWidgetForm(schema)
+
+    # Get data, set it, get it again and compare the resulting document
+    data = widget.batchdata
+    widget.batchdata = data
+    data2 = widget.batchdata
+
+    assert pyrsistent.freeze(data) == pyrsistent.freeze(data2)
