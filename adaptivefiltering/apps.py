@@ -16,6 +16,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import pyrsistent
 import pytools
 
 
@@ -146,6 +147,99 @@ def cached_pipeline_application(dataset, pipeline):
     return pipeline.execute(dataset)
 
 
+def expand_variability_string(varlist, type_="string", samples_for_continuous=5):
+    """Split a string into variants allowing comma separation and ranges with dashes"""
+    # For discrete variation, we use comma separation
+    for part in varlist.split(","):
+        part = part.strip()
+
+        # If this is a numeric parameter it might also have ranges specified by dashes
+        if type_ == "number":
+            range_ = part.split("-")
+
+            if len(range_) == 1:
+                yield float(part)
+
+            # If a range was found we handle this
+            if len(range_) == 2:
+                for i in range(samples_for_continuous):
+                    yield float(range_[0]) + i / (samples_for_continuous - 1) * (
+                        float(range_[1]) - float(range_[0])
+                    )
+
+            # Check for weird patterns like "0-5-10"
+            if len(range_) > 2:
+                raise ValueError(f"Given an invalid range of parameters: '{part}'")
+
+        if type_ == "integer":
+            range_ = part.split("-")
+
+            if len(range_) == 1:
+                yield int(part)
+
+            if len(range_) == 2:
+                if type_ == "integer":
+                    for i in range(int(range_[0]), int(range_[1]) + 1):
+                        yield i
+
+            if len(range_) > 2:
+                raise ValueError(f"Given an invalid range of parameters: '{part}'")
+
+        if type_ == "string":
+            yield part
+
+
+def create_variability(batchdata, samples_for_continuous=5, non_persist_only=True):
+    """Create combinatorical product of specified variants"""
+    if non_persist_only:
+        batchdata = [bd for bd in batchdata if not bd["persist"]]
+
+    variants = []
+    varpoints = [
+        tuple(
+            expand_variability_string(
+                bd["values"],
+                samples_for_continuous=samples_for_continuous,
+                type_=bd["type"],
+            )
+        )
+        for bd in batchdata
+    ]
+    for combo in itertools.product(*varpoints):
+        variant = []
+        for i, val in enumerate(combo):
+            newbd = batchdata[i].copy()
+            newbd["values"] = val
+            variant.append(newbd)
+        variants.append(variant)
+
+    return variants
+
+
+def update_data(data, modifier):
+    """Update a pyrsistent data structure according to a given modifier"""
+    if len(modifier["path"]) == 0:
+        return modifier["values"]
+
+    pathitem = modifier["path"][-1]
+    if "key" in pathitem:
+        return data.update(
+            {
+                pathitem["key"]: update_data(
+                    data[pathitem["key"]],
+                    {"path": modifier["path"][:-1], "values": modifier["values"]},
+                )
+            }
+        )
+    if "index" in pathitem:
+        l = data.tolist()
+        l[pathitem["index"]] = update_data(
+            l[pathitem["index"]],
+            {"path": modifier["path"][:-1], "values": modifier["values"]},
+        )
+        return pyrsistent.pvector(l)
+
+
 # A data structure to store widgets within to quickly navigate back and forth
 # between visualizations in the pipeline_tuning widget.
 PipelineWidgetState = collections.namedtuple(
@@ -173,7 +267,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
     history = []
 
     # Loop over the given datasets
-    def create_history_item(ds):
+    def create_history_item(ds, data):
         # Create a new classification widget and insert it into the Box
         _class_widget = classification_widget([ds])
         app.right_sidebar.children[-1].children = (_class_widget,)
@@ -192,7 +286,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # Add the set of widgets to our history
         history.append(
             PipelineWidgetState(
-                pipeline=pipeline_form.data,
+                pipeline=data,
                 rasterization=rasterization_widget_form.data,
                 visualization=visualization_form.data,
                 classification=_class_widget,
@@ -228,22 +322,41 @@ def pipeline_tuning(datasets=[], pipeline=None):
             visualization_form_widget.data = item.visualization
             classification_widget.children = (item.classification,)
 
+    def _trigger_preview(config=None):
+        if config is None:
+            config = pipeline_form.data
+
+        for ds in datasets:
+            # Extract the pipeline from the widget
+            nonlocal pipeline
+            pipeline = pipeline.copy(**config)
+
+            # TODO: Do this in parallel!
+            with within_temporary_workspace():
+                transformed = cached_pipeline_application(ds, pipeline)
+
+            # Create a new entry in the history list
+            create_history_item(transformed, config)
+
+            # Select the newly added tab
+            center.selected_index = len(center.children) - 1
+
     def _update_preview(button):
         with hourglass_icon(button):
-            for ds in datasets:
-                # Extract the pipeline from the widget
-                nonlocal pipeline
-                pipeline = pipeline.copy(**pipeline_form.data)
+            # Check whether there is batch-processing information
+            batchdata = pipeline_form.batchdata
 
-                # TODO: Do this in parallel!
-                with within_temporary_workspace():
-                    transformed = cached_pipeline_application(ds, pipeline)
+            if len(batchdata) == 0:
+                _trigger_preview()
+            else:
+                for variant in create_variability(batchdata):
+                    config = pipeline_form.data
 
-                # Create a new entry in the history list
-                create_history_item(transformed)
+                    # Modify all the necessary bits
+                    for mod in variant:
+                        config = update_data(config, mod)
 
-                # Select the newly added tab
-                center.selected_index = len(center.children) - 1
+                    _trigger_preview(config)
 
     def _delete_history_item(_):
         i = center.selected_index
@@ -325,7 +438,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Initially seed with a simple visualization
     for ds in datasets:
-        create_history_item(ds)
+        create_history_item(ds, pipeline_form.data)
 
     # Show the app in Jupyter notebook
     IPython.display.display(app)
@@ -489,7 +602,7 @@ def filter_selection_widget(multiple=False):
     keyword_widget = ipywidgets.TagsInput(
         value=library_keywords(),
         allow_duplicates=False,
-        tooltip="Keywords to filtser for. Filters need to match at least one given keyword in order to be shown.",
+        tooltip="Keywords to filter for. Filters need to match at least one given keyword in order to be shown.",
     )
 
     # Create the filter list widget

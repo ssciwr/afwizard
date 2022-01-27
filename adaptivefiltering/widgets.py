@@ -4,25 +4,22 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 
 from IPython.display import display
 
-import dataclasses
+import collections
 import ipywidgets
 import jsonschema
 import json
 import os
 import pyrsistent
 import re
-import typing
 
 
 class WidgetFormError(AdaptiveFilteringError):
     pass
 
 
-@dataclasses.dataclass
-class WidgetFormElement:
-    getter: typing.Callable
-    setter: typing.Callable
-    widgets: list
+WidgetFormElement = collections.namedtuple(
+    "WidgetFormElement", ["getter", "setter", "widgets", "subelements"]
+)
 
 
 class WidgetForm:
@@ -55,6 +52,13 @@ class WidgetForm:
 
         # Construct the widgets
         self._form_element = self._construct(schema, root=True, label=None)
+
+    def construct_element(
+        self, getter=lambda: None, setter=lambda _: None, widgets=[], subelements=[]
+    ):
+        return WidgetFormElement(
+            getter=getter, setter=setter, widgets=widgets, subelements=subelements
+        )
 
     @property
     def widget(self):
@@ -144,10 +148,11 @@ class WidgetForm:
             for k, v in _d.items():
                 elements[k].setter(v)
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: pyrsistent.m(**{p: e.getter() for p, e in elements.items()}),
             setter=_setter,
             widgets=widget_list,
+            subelements=elements,
         )
 
     def _construct_simple(self, schema, widget, label=None, root=False):
@@ -162,9 +167,7 @@ class WidgetForm:
 
         # Apply potential constant values without generating a widget
         if "const" in schema:
-            return WidgetFormElement(
-                getter=lambda: schema["const"], setter=lambda _: None, widgets=[]
-            )
+            return self.construct_element(getter=lambda: schema["const"])
 
         # Apply regex pattern matching
         def pattern_checker(val):
@@ -204,7 +207,7 @@ class WidgetForm:
         # Make sure the widget adapts to the outer layout
         widget.layout = ipywidgets.Layout(width="100%")
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=_getter,
             setter=_setter,
             widgets=[ipywidgets.VBox(box)],
@@ -243,7 +246,7 @@ class WidgetForm:
         return self._construct_simple(schema, ipywidgets.Checkbox(), label=label)
 
     def _construct_null(self, schema, label=None, root=False):
-        return WidgetFormElement(getter=lambda: None, setter=lambda _: None, widgets=[])
+        return self.construct_element()
 
     def _construct_array(self, schema, label=None, root=False):
         if "items" not in schema:
@@ -345,18 +348,17 @@ class WidgetForm:
         if "default" in schema:
             _setter(schema["default"])
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: pyrsistent.pvector(h.getter() for h in elements),
             setter=_setter,
             widgets=wrapped_vbox,
+            subelements=elements,
         )
 
     def _construct_enum(self, schema, label=None, root=False):
         # We omit trivial enums, but make sure that they end up in the result
         if len(schema["enum"]) == 1:
-            return WidgetFormElement(
-                getter=lambda: schema["enum"][0], setter=lambda _: None, widgets=[]
-            )
+            return self.construct_element(getter=lambda: schema["enum"][0])
 
         # Otherwise, we use a dropdown menu
         return self._construct_simple(
@@ -399,10 +401,11 @@ class WidgetForm:
                 except ValidationError:
                     pass
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: elements[names.index(selector.value)].getter(),
             setter=_setter,
             widgets=[widget],
+            subelements=elements,
         )
 
 
@@ -446,10 +449,226 @@ class WidgetFormWithLabels(WidgetForm):
         def _setter(_d):
             widget.value = pyrsistent.thaw(_d)
 
-        return WidgetFormElement(
+        return self.construct_element(
             getter=lambda: pyrsistent.pvector(widget.value),
             setter=_setter,
             widgets=[ipywidgets.VBox(widgets)],
+        )
+
+
+BatchDataWidgetFormElement = collections.namedtuple(
+    "BatchDataWidgetFormElement",
+    [
+        "getter",
+        "setter",
+        "widgets",
+        "subelements",
+        "batchdata_getter",
+        "batchdata_setter",
+    ],
+)
+
+
+class BatchDataWidgetForm(WidgetFormWithLabels):
+    def construct_element(
+        self,
+        getter=lambda: None,
+        setter=lambda _: None,
+        widgets=[],
+        subelements=[],
+        batchdata_getter=lambda: [],
+        batchdata_setter=lambda _: None,
+    ):
+        return BatchDataWidgetFormElement(
+            getter=getter,
+            setter=setter,
+            widgets=widgets,
+            subelements=subelements,
+            batchdata_getter=batchdata_getter,
+            batchdata_setter=batchdata_setter,
+        )
+
+    @property
+    def batchdata(self):
+        bdata = self._form_element.batchdata_getter()
+        schema = load_schema("variability.json")
+        jsonschema.validate(bdata, schema=schema)
+        return bdata
+
+    @batchdata.setter
+    def batchdata(self, _data):
+        self._form_element.batchdata_setter(_data)
+
+    def _construct_simple(self, schema, widget, label=None, root=False):
+        # Call the original implementation to get the basic widget
+        original = super()._construct_simple(schema, widget, label=label, root=root)
+
+        # If this is something that for some reason did not produce an input
+        # widget, we skip all the variablity part.
+        if len(original.widgets) == 0:
+            return original
+
+        # Create additional controls for batch processing and variability
+
+        # Two buttons that allow to create the additional input
+        b1 = ipywidgets.ToggleButton(
+            icon="layer-group", tooltip="Use a parameter batch for this parameter"
+        )
+        b2 = ipywidgets.ToggleButton(
+            icon="sitemap", tooltip="Add a variability to this parameter"
+        )
+
+        # The widget where the variablility input is specified
+        var = ipywidgets.Text(
+            tooltip="Use comma separation to specify a discrete set of parameters or dashes to define a parameter range"
+        )
+
+        # A container widget that allows us to easily make the input widget vanish
+        box = ipywidgets.Box()
+
+        # The handler that unfolds the input widget if necessary
+        def handler(change):
+            # Make sure that the two toggle buttons are mutually exclusive
+            if b1.value and b2.value:
+                for b in [b1, b2]:
+                    if b is not change.owner:
+                        b.value = False
+                        return
+
+            # Make sure that if either button is pressed, we display the input widget
+            if b1.value or b2.value:
+                box.children = (ipywidgets.HBox([ipywidgets.Label("Values:"), var]),)
+            else:
+                box.children = ()
+
+        b1.observe(handler, names="value")
+        b2.observe(handler, names="value")
+
+        # Modify the original widgets to also include our modifications
+        original.widgets[0].children[-1].layout = ipywidgets.Layout(width="70%")
+        b1.layout = ipywidgets.Layout(width="15%")
+        b2.layout = ipywidgets.Layout(width="15%")
+        original.widgets[0].children = original.widgets[0].children[:-1] + (
+            ipywidgets.HBox([original.widgets[0].children[-1], b1, b2]),
+        )
+        original.widgets[0].children = original.widgets[0].children + (box,)
+
+        # Lazy evalution of the batch data
+        def _getter():
+            ret = []
+
+            # Only record a variation if one of our buttons is pressed
+            if b1.value or b2.value:
+                ret.append(
+                    {
+                        "values": var.value,
+                        "persist": b2.value,
+                        "path": [],
+                        "type": schema["type"],
+                    }
+                )
+
+            return ret
+
+        def _setter(_data):
+            assert len(_data) == 1
+            var.value = _data[0]["values"]
+            if _data[0].get("persist", False):
+                b2.value = True
+            else:
+                b1.value = True
+
+        # Wrap the result in our new form element
+        return self.construct_element(
+            getter=original.getter,
+            setter=original.setter,
+            widgets=original.widgets,
+            batchdata_getter=_getter,
+            batchdata_setter=_setter,
+        )
+
+    def _construct_object(self, schema, label=None, root=False):
+        original = super()._construct_object(schema, label=label, root=root)
+
+        def _getter():
+            ret = []
+
+            # Iterate over the subelements and update their path
+            for key, subel in original.subelements.items():
+                data = subel.batchdata_getter()
+                for d in data:
+                    d["path"].append({"key": key})
+                ret.extend(data)
+
+            return ret
+
+        def _setter(_data):
+            for _d in _data:
+                key = _d["path"][0]["key"]
+                _d["path"] = _d["path"][1:]
+                original.subelements[key].batchdata_setter([_d])
+
+        return self.construct_element(
+            getter=original.getter,
+            setter=original.setter,
+            widgets=original.widgets,
+            subelements=original.subelements,
+            batchdata_getter=_getter,
+            batchdata_setter=_setter,
+        )
+
+    def _construct_array(self, schema, label=None, root=False):
+        original = super()._construct_array(schema, label=label, root=root)
+
+        def _getter():
+            ret = []
+
+            for i, subel in enumerate(original.subelements):
+                data = subel.batchdata_getter()
+                for d in data:
+                    d["path"].append({"index": i})
+                ret.extend(data)
+
+            return ret
+
+        def _setter(_data):
+            for _d in _data:
+                index = _d["path"][0]["index"]
+                _d["path"] = _d["path"][1:]
+                original.subelements[index].batchdata_setter([_d])
+
+        return self.construct_element(
+            getter=original.getter,
+            setter=original.setter,
+            widgets=original.widgets,
+            subelements=original.subelements,
+            batchdata_getter=_getter,
+            batchdata_setter=_setter,
+        )
+
+    def _construct_anyof(self, schema, label=None, key="anyOf"):
+        original = super()._construct_anyof(schema, label, key)
+        selector = original.widgets[0].children[0]
+
+        def _setter(_data):
+            for subel in original.subelements:
+                try:
+                    subel.batchdata_setter(_data)
+                    return
+                except (KeyError, IndexError):
+                    pass
+
+            raise WidgetFormError("Cannot restore batchdata in anyOf schema")
+
+        return self.construct_element(
+            getter=original.getter,
+            setter=original.setter,
+            widgets=original.widgets,
+            subelements=original.subelements,
+            batchdata_getter=lambda: original.subelements[
+                selector.index
+            ].batchdata_getter(),
+            batchdata_setter=_setter,
         )
 
 
@@ -474,7 +693,6 @@ def upload_button(directory=None, filetype=""):
     from adaptivefiltering.apps import create_upload
 
     def _save_data(uploaded_files):
-        # print(uploaded_files)
         filenames = []
         for filename, uploaded_file in uploaded_files.value.items():
             filenames.append(filename)
