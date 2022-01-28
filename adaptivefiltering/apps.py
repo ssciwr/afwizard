@@ -6,12 +6,12 @@ from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.widgets import WidgetForm
 
 import collections
 import contextlib
 import copy
 import ipywidgets
+import ipywidgets_jsonschema
 import IPython
 import itertools
 import math
@@ -392,13 +392,17 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget_form = ipywidgets_jsonschema.Form(
+        raster_schema, vertically_place_labels=True
+    )
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
-    visualization_form = WidgetForm(schema)
+    visualization_form = ipywidgets_jsonschema.Form(
+        schema, vertically_place_labels=True
+    )
     visualization_form_widget = visualization_form.widget
     visualization_form_widget.layout = fullwidth
 
@@ -527,13 +531,15 @@ def show_interactive(dataset):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget_form = ipywidgets_jsonschema.Form(
+        raster_schema, vertically_place_labels=True
+    )
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
-    form = WidgetForm(schema)
+    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
     formwidget = form.widget
     formwidget.layout = fullwidth
 

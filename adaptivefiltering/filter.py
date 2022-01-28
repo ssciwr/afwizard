@@ -169,7 +169,7 @@ class Filter:
         :return: The widget form
         :rtype: :class:`~adaptivefiltering.widgets.BatchDataWidgetForm`
         """
-        form = BatchDataWidgetForm(self.form_schema())
+        form = BatchDataWidgetForm(self.form_schema(), vertically_place_labels=True)
         form.data = self.config
         return form
 

@@ -18,6 +18,7 @@ dependencies:
     - Click
     - geojson
     - ipywidgets==8.0.0b1
+    - ipywidgets-jsonschema
     - jsonmerge
     - pyrsistent
     - pytools
