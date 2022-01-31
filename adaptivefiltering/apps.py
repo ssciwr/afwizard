@@ -16,6 +16,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import pyrsistent
 import pytools
 
 
@@ -141,9 +142,9 @@ def classification_widget(datasets, selected=None):
     )
 
 
-@pytools.memoize(key=lambda d, p: (d, p.config))
-def cached_pipeline_application(dataset, pipeline):
-    return pipeline.execute(dataset)
+@pytools.memoize(key=lambda d, p, **c: (d, p.config, pyrsistent.pmap(c)))
+def cached_pipeline_application(dataset, pipeline, **config):
+    return pipeline.execute(dataset, **config)
 
 
 def expand_variability_string(varlist, type_="string", samples_for_continuous=5):
@@ -497,7 +498,7 @@ def create_upload(filetype):
     return upload_proxy
 
 
-def show_interactive(dataset):
+def show_interactive(dataset, filtering_callback=None):
     # If dataset is not rasterized already, do it now
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
@@ -545,8 +546,12 @@ def show_interactive(dataset):
 
     def trigger_visualization(b):
         with hourglass_icon(b):
-            # Rerasterize if necessary
+            # Maybe call the given callback
             nonlocal dataset
+            if filtering_callback is not None:
+                dataset = filtering_callback(dataset.dataset).rasterize()
+
+            # Rerasterize if necessary
             dataset = dataset.dataset.rasterize(
                 classification=classification.value, **rasterization_widget_form.data
             )
@@ -685,3 +690,26 @@ def choose_pipeline():
     button.on_click(_finalize)
 
     return proxy
+
+
+def execute_interactive(dataset, pipeline):
+    # A widget that contains the variability
+    varform = ipywidgets_jsonschema.Form(
+        pipeline.variability_schema, vertically_place_labels=True
+    )
+
+    # Piggy-back onto the visualization app
+    vis = show_interactive(
+        dataset,
+        filtering_callback=lambda ds: cached_pipeline_application(
+            ds, pipeline, **varform.data
+        ),
+    )
+
+    # Insert the variability form
+    vis.right_sidebar = ipywidgets.VBox(
+        children=[ipywidgets.Label("Customization points:"), varform.widget]
+    )
+    vis.pane_widths = [1, 2, 1]
+
+    return vis
