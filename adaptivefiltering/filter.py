@@ -19,7 +19,7 @@ class FilterError(AdaptiveFilteringError):
 
 
 class Filter:
-    def __init__(self, **config):
+    def __init__(self, _variability=[], **config):
         """The base class for a filter in adaptivefiltering
 
         A filter can either be constructed from a configuration or be deserialized
@@ -31,6 +31,7 @@ class Filter:
         :type config: dict
         """
         self.config = config
+        self.variability = _variability
 
     # Store a registry of filter implementations derived from this base class
     _filter_impls = {}
@@ -77,6 +78,21 @@ class Filter:
         # Store the validated config
         self._config = _config
 
+    @property
+    def variability(self):
+        return self._variability
+
+    @variability.setter
+    def variability(self, _variability):
+        # Validate the variability input
+        _variability = pyrsistent.thaw(_variability)
+        schema = load_schema("variability.json")
+        jsonschema.validate(instance=_variability, schema=schema)
+
+        # Filter for persistent variation only
+        var = [v for v in _variability if v["persist"]]
+        self._variability = pyrsistent.freeze(var)
+
     def execute(self, dataset):
         """Apply the filter to a given data set
 
@@ -107,6 +123,7 @@ class Filter:
         """
         data = pyrsistent.thaw(self.config)
         data["_backend"] = self._identifier
+        data["_variability"] = pyrsistent.thaw(self._variability)
         return data
 
     @classmethod
@@ -201,7 +218,7 @@ Filter._identifier = "base"
 
 
 class PipelineMixin:
-    def __init__(self, **kwargs):
+    def __init__(self, _variability=[], **kwargs):
         """A filter pipeline consisting of several steps
 
         :param filters:
@@ -218,6 +235,7 @@ class PipelineMixin:
         kwargs["filters"] = filters
 
         self.config = kwargs
+        self.variability = _variability
 
     @classmethod
     def _schema_impl(cls, method):
