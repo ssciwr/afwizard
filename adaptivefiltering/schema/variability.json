@@ -1,6 +1,12 @@
 {
   "items": {
     "properties": {
+      "description": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
       "path": {
         "items": {
           "oneOf": [
