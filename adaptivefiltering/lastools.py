@@ -49,7 +49,10 @@ def lastools_is_present():
 
 
 class LASToolsFilter(Filter, identifier="lastools", backend=True):
-    def execute(self, dataset):
+    def execute(self, dataset, **variability_data):
+        # Apply variabilility without changing self
+        config = self._modify_filter_config(variability_data)
+
         # The lasground executable operates on raw LAS/LAZ input
         dataset = DataSet.convert(dataset)
 
@@ -68,7 +71,7 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
 
         # Build the argument list
         args = []
-        for k, v in self.config.items():
+        for k, v in config.items():
             strv = stringify_value(v)
             if strv != "":
                 args.append(f"-{k}")
