@@ -87,3 +87,12 @@ def merge_segmentation_features(seg):
             merged_seg["features"][0]["geometry"]["coordinates"].append([coords])
 
     return merged_seg
+
+
+def as_number_type(type_, value):
+    if type_ == "integer":
+        return int(value)
+    elif type_ == "number":
+        return float(value)
+    else:
+        raise NotImplementedError(f"as_number_type does not support type {type_}")

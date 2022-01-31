@@ -125,8 +125,16 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             tooltip="Use comma separation to specify a discrete set of parameters or dashes to define a parameter range"
         )
 
+        # For persisitent variability, we also need some additional information
+        name = ipywidgets.Text(
+            tooltip="The parameter name to use for this variability. Will be displayed to the end user."
+        )
+        descr = ipywidgets.Text(
+            tooltip="The description of this parameter that will be displayed to the end user when hovering over the parameter."
+        )
+
         # A container widget that allows us to easily make the input widget vanish
-        box = ipywidgets.Box()
+        box = ipywidgets.VBox()
 
         # The handler that unfolds the input widget if necessary
         def handler(change):
@@ -138,8 +146,14 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
                         return
 
             # Make sure that if either button is pressed, we display the input widget
-            if b1.value or b2.value:
+            if b1.value:
                 box.children = (ipywidgets.HBox([ipywidgets.Label("Values:"), var]),)
+            elif b2.value:
+                box.children = (
+                    ipywidgets.HBox([ipywidgets.Label("Values:"), var]),
+                    ipywidgets.HBox([ipywidgets.Label("Name:"), name]),
+                    ipywidgets.HBox([ipywidgets.Label("Description:"), descr]),
+                )
             else:
                 box.children = ()
 
@@ -166,6 +180,8 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
                         "values": var.value,
                         "persist": b2.value,
                         "path": [],
+                        "name": name.value,
+                        "description": descr.value,
                         "type": schema["type"],
                     }
                 )
@@ -175,6 +191,8 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         def _setter(_data):
             assert len(_data) == 1
             var.value = _data[0]["values"]
+            name.value = _data[0]["name"]
+            descr.value = _data[0]["description"]
             if _data[0].get("persist", False):
                 b2.value = True
             else:

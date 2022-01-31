@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter, PipelineMixin
+from adaptivefiltering.filter import Filter, PipelineMixin, modify_filter_config
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation, swap_coordinates
 from adaptivefiltering.utils import (
@@ -63,9 +63,12 @@ def execute_pdal_pipeline(dataset=None, config=None):
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
-    def execute(self, dataset):
+    def execute(self, dataset, **variability_data):
+        # Apply variabilility without changing self
+        config = self._modify_filter_config(variability_data)
+
         dataset = PDALInMemoryDataSet.convert(dataset)
-        config = pyrsistent.thaw(self.config)
+        config = pyrsistent.thaw(config)
         config.pop("_backend", None)
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
@@ -84,9 +87,12 @@ class PDALFilter(Filter, identifier="pdal"):
 class PDALPipeline(
     PipelineMixin, PDALFilter, identifier="pdal_pipeline", backend=False
 ):
-    def execute(self, dataset):
+    def execute(self, dataset, **variability_data):
+        # Apply variabilility without changing self
+        config = self._modify_filter_config(variability_data)
+
         dataset = PDALInMemoryDataSet.convert(dataset)
-        pipeline_json = pyrsistent.thaw(self.config["filters"])
+        pipeline_json = pyrsistent.thaw(config["filters"])
         for f in pipeline_json:
             f.pop("_backend", None)
 

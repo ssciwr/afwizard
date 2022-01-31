@@ -267,6 +267,7 @@
     },
     "resolution": {
       "default": 0.5,
+      "title": "Raster resolution",
       "type": "number"
     }
   },

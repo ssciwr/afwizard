@@ -220,7 +220,7 @@ def execute_opals_module(dataset=None, config=None):
 class OPALSFilter(Filter, identifier="opals", backend=True):
     """A filter implementation based on OPALS"""
 
-    def execute(self, dataset):
+    def execute(self, dataset, **variability_data):
         """Execution of an OPALS module
 
         This interfaces with OPALS using its CLI.
@@ -240,8 +240,11 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
             shutil.copy(dataset.filename, outFile)
             dataset = OPALSDataManagerObject(filename=outFile)
 
+        # Apply variabilility without changing filter
+        config = final_filter._modify_filter_config(variability_data)
+
         # Actually run the CLI
-        execute_opals_module(dataset=dataset, config=final_filter.config)
+        execute_opals_module(dataset=dataset, config=config)
 
         return OPALSDataManagerObject(
             filename=outFile,
