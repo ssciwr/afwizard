@@ -278,8 +278,11 @@ class Filter:
         # Update a copy of the configuration according to the given data
         config = self.config
         for var in self.variability:
-            var = var.update({"values": variability_data[var["name"].lower()]})
-            config = update_data(config, var)
+            value = variability_data.get(var["name"].lower(), None)
+            if value is not None:
+                var = var.update({"values": value})
+                config = update_data(config, var)
+
         return config
 
 
