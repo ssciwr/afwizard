@@ -7,7 +7,13 @@ import adaptivefiltering.opals
 import adaptivefiltering.pdal
 
 # Import those functions and objects that we consider the package user API
-from adaptivefiltering.apps import pipeline_tuning, choose_pipeline, choose_pipelines
+from adaptivefiltering.apps import (
+    execute_interactive,
+    pipeline_tuning,
+    select_pipeline_from_library,
+    select_pipelines_from_library,
+    select_best_pipeline,
+)
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet, remove_classification, reproject_dataset
 from adaptivefiltering.filter import load_filter, save_filter
@@ -28,6 +34,10 @@ def print_version():
 __all__ = [
     "DataSet",
     "pipeline_tuning",
+    "select_best_pipeline",
+    "select_pipeline_from_library",
+    "select_pipelines_from_library",
+    "execute_interactive",
     "remove_classification",
     "reproject_dataset",
     "load_filter",

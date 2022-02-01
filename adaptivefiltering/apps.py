@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
-from adaptivefiltering.filter import Pipeline, Filter, update_data
+from adaptivefiltering.filter import Pipeline, Filter, save_filter, update_data
 from adaptivefiltering.library import get_filter_libraries, library_keywords
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -11,6 +11,7 @@ from adaptivefiltering.widgets import WidgetFormWithLabels
 import collections
 import contextlib
 import copy
+import ipyfilechooser
 import ipywidgets
 import ipywidgets_jsonschema
 import IPython
@@ -59,9 +60,6 @@ class InteractiveWidgetOutputProxy:
         # Store whether this object has been finalized
         self._finalized = False
 
-        # Docstring Forwarding
-        self.__doc__ = getattr(self._obj, "__doc__", "")
-
     def _finalize(self):
         """Finalize the return object.
 
@@ -79,6 +77,9 @@ class InteractiveWidgetOutputProxy:
 
         # Forward this to the actual object
         return getattr(self._obj, attr)
+
+    def __iter__(self):
+        return self._obj.__iter__()
 
 
 @contextlib.contextmanager
@@ -499,7 +500,7 @@ def create_upload(filetype):
     return upload_proxy
 
 
-def show_interactive(dataset, filtering_callback=None):
+def show_interactive(dataset, filtering_callback=None, update_classification=False):
     # If dataset is not rasterized already, do it now
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
@@ -523,7 +524,7 @@ def show_interactive(dataset, filtering_callback=None):
     formwidget.layout = fullwidth
 
     # Create the classification widget
-    classification = classification_widget([dataset])
+    classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
     # Get a visualization button and add it to the control panel
@@ -552,9 +553,15 @@ def show_interactive(dataset, filtering_callback=None):
             if filtering_callback is not None:
                 dataset = filtering_callback(dataset.dataset).rasterize()
 
+            # Maybe update the classification widget if necessary
+            if update_classification:
+                nonlocal classification
+                classification.children = (classification_widget([dataset]),)
+
             # Rerasterize if necessary
             dataset = dataset.dataset.rasterize(
-                classification=classification.value, **rasterization_widget_form.data
+                classification=classification.children[0].value,
+                **rasterization_widget_form.data,
             )
 
             # Trigger visualization
@@ -569,7 +576,7 @@ def show_interactive(dataset, filtering_callback=None):
     return app
 
 
-def choose_pipeline(multiple=False):
+def select_pipeline_from_library(multiple=False):
     def library_name(lib):
         if lib.name is not None:
             return lib.name
@@ -627,7 +634,9 @@ def choose_pipeline(multiple=False):
         if multiple:
             return tuple(filter_list[i] for i in indices)
         else:
-            return filter_list[indices]
+            return tuple(
+                filter_list[indices],
+            )
 
     # A function that recreates the filtered list of filters
     def update_filter_list(_):
@@ -705,28 +714,110 @@ def choose_pipeline(multiple=False):
     return proxy
 
 
-def choose_pipelines():
-    return choose_pipeline(multiple=True)
+def select_pipelines_from_library():
+    return select_pipeline_from_library(multiple=True)
+
+
+def select_best_pipeline(dataset=None, pipelines=None):
+    """Select the best pipeline for a given dataset.
+
+    This function implements an interactive selection process in Jupyter notebooks
+    that allows you to pick the pipeline that is best suited for the given dataset.
+
+    :param dataset:
+        The dataset to use for visualization of ground point filtering results
+    :type dataset: adaptivefiltering.DataSet
+    :param pipelines:
+        The tentative list of pipelines to try. May e.g. have been selected using
+        the select_pipelines_from_library tool.
+    :type pipelines: list
+
+    """
+    if dataset is None:
+        raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
+
+    if not pipelines:
+        raise AdaptiveFilteringError(
+            "At least one pipeline needs to be passed to 'select_best_pipeline'"
+        )
+
+    # Control elements for this app
+    filechooser = ipyfilechooser.FileChooser(
+        filter_pattern="*.json", layout=ipywidgets.Layout(width="50%")
+    )
+    finalize = ipywidgets.Button(
+        description="Save this filter (including its end-user configuration)",
+        layout=ipywidgets.Layout(width="50%"),
+    )
+    controls = ipywidgets.HBox([filechooser, finalize], layout=fullwidth)
+
+    # Per-pipeline data structures to keep track off
+    subwidgets = []
+    pipeline_accessors = []
+
+    # Subwidget generator function
+    def interactive_pipeline(p):
+        # A widget that contains the variability
+        varform = ipywidgets_jsonschema.Form(
+            p.variability_schema, vertically_place_labels=True, use_sliders=False
+        )
+
+        # Piggy-back onto the visualization app
+        vis = show_interactive(
+            dataset,
+            filtering_callback=lambda ds: cached_pipeline_application(
+                ds, p, **varform.data
+            ),
+            update_classification=True,
+        )
+
+        # Insert the variability form
+        vis.right_sidebar = ipywidgets.VBox(
+            children=[ipywidgets.Label("Customization points:"), varform.widget]
+        )
+        vis.pane_widths = [1, 2, 1]
+
+        # Insert the generated widgets into the outer structures
+        subwidgets.append(vis)
+
+        def accessor():
+            print(varform.data)
+            modp = p.copy(**p._modify_filter_config(varform.data))
+            print(modp)
+            return modp
+
+        pipeline_accessors.append(accessor)
+
+    # Trigger subwidget generation for all pipelines
+    for p in pipelines:
+        interactive_pipeline(p)
+
+    # Tabs that contain the interactive execution with all given pipelines
+    if len(subwidgets) > 1:
+        tabs = ipywidgets.Tab(
+            children=subwidgets, titles=[f"#{i}" for i in range(len(pipelines))]
+        )
+    elif len(subwidgets) == 1:
+        tabs = subwidgets[0]
+    else:
+        tabs = ipywidgets.Box()
+
+    def save(_):
+        filename = filechooser.value
+        if filename is not None:
+            # Get the current selection index of the Tabs widget (if any)
+            if len(subwidgets) > 1:
+                index = tabs.selected_index
+            else:
+                index = 0
+
+            # Trigger saving the file to disk
+            save_filter(pipeline_accessors[index](), filename)
+
+    finalize.on_click(save)
+
+    return ipywidgets.VBox([controls, tabs])
 
 
 def execute_interactive(dataset, pipeline):
-    # A widget that contains the variability
-    varform = ipywidgets_jsonschema.Form(
-        pipeline.variability_schema, vertically_place_labels=True
-    )
-
-    # Piggy-back onto the visualization app
-    vis = show_interactive(
-        dataset,
-        filtering_callback=lambda ds: cached_pipeline_application(
-            ds, pipeline, **varform.data
-        ),
-    )
-
-    # Insert the variability form
-    vis.right_sidebar = ipywidgets.VBox(
-        children=[ipywidgets.Label("Customization points:"), varform.widget]
-    )
-    vis.pane_widths = [1, 2, 1]
-
-    return vis
+    return select_best_pipeline(dataset=dataset, pipelines=[pipeline])

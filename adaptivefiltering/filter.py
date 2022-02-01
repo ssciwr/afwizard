@@ -273,13 +273,18 @@ class Filter:
 
     def _modify_filter_config(self, variability_data):
         # Validate the given variablity data
-        jsonschema.validate(instance=variability_data, schema=self.variability_schema)
+        jsonschema.validate(
+            instance=pyrsistent.thaw(variability_data), schema=self.variability_schema
+        )
 
         # Update a copy of the configuration according to the given data
         config = self.config
         for var in self.variability:
-            var = var.update({"values": variability_data[var["name"].lower()]})
-            config = update_data(config, var)
+            value = variability_data.get(var["name"].lower(), None)
+            if value is not None:
+                var = var.update({"values": value})
+                config = update_data(config, var)
+
         return config
 
 
