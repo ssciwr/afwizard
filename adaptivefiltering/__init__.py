@@ -7,7 +7,7 @@ import adaptivefiltering.opals
 import adaptivefiltering.pdal
 
 # Import those functions and objects that we consider the package user API
-from adaptivefiltering.apps import pipeline_tuning
+from adaptivefiltering.apps import pipeline_tuning, choose_pipeline, choose_pipelines
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet, remove_classification, reproject_dataset
 from adaptivefiltering.filter import load_filter, save_filter
