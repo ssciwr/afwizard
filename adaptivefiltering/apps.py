@@ -6,6 +6,7 @@ from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
 from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.widgets import WidgetFormWithLabels
 
 import collections
 import contextlib
@@ -568,7 +569,7 @@ def show_interactive(dataset, filtering_callback=None):
     return app
 
 
-def filter_selection_widget(multiple=False):
+def choose_pipeline(multiple=False):
     def library_name(lib):
         if lib.name is not None:
             return lib.name
@@ -596,24 +597,37 @@ def filter_selection_widget(multiple=False):
     # Create the filter list widget
     filter_list = []
     widget_type = ipywidgets.SelectMultiple if multiple else ipywidgets.Select
-    filter_list_widget = ipywidgets.Box(
-        children=(
-            widget_type(
-                options=[f.title for f in filter_list],
-                value=[] if multiple else None,
-                description="",
-            ),
-        )
+    filter_list_widget = widget_type(
+        options=[f.title for f in filter_list],
+        value=[] if multiple else None,
+        description="",
+        layout=fullwidth,
     )
+
+    # Create the pipeline description widget
+    metadata_schema = load_schema("pipeline.json")["properties"]["metadata"]
+    metadata_form = WidgetFormWithLabels(metadata_schema, vertically_place_labels=True)
+
+    def metadata_updater(change):
+        # Check if the change selected a new entry
+        if len(change["new"]) > len(change["old"]):
+            # If so, we display the metadata of the newly selected one
+            (entry,) = set(change["new"]) - set(change["old"])
+            metadata_form.data = filter_list[entry].config["metadata"]
+
+    filter_list_widget.observe(metadata_updater, names="index")
 
     # Define a function that allows use to access the selected filters
     def accessor():
-        indices = filter_list_widget.children[0].index
+        indices = filter_list_widget.index
         if indices is None:
             return ()
-        if not multiple:
-            indices = (indices,)
-        return tuple(filter_list[i] for i in indices)
+
+        # Either return a tuple of filters or a single filter
+        if multiple:
+            return tuple(filter_list[i] for i in indices)
+        else:
+            return filter_list[indices]
 
     # A function that recreates the filtered list of filters
     def update_filter_list(_):
@@ -635,21 +649,20 @@ def filter_selection_widget(multiple=False):
                     continue
 
                 # If the filter does not have at least one selected keyword -> skip
-                if not set(keyword_widget.value).intersection(set(filter_.keywords)):
-                    continue
+                # Exception: No keywords are specified at all in the library (early dev)
+                if library_keywords():
+                    if not set(keyword_widget.value).intersection(
+                        set(filter_.keywords)
+                    ):
+                        continue
 
                 # Once we got here we use the filter
                 filter_list.append(filter_)
 
         # Update the widget
         nonlocal filter_list_widget
-        filter_list_widget.children = (
-            widget_type(
-                options=[f.title for f in filter_list],
-                value=[] if multiple else None,
-                description="",
-            ),
-        )
+        filter_list_widget.value = [] if multiple else None
+        filter_list_widget.options = [f.title for f in filter_list]
 
     # Trigger it once in the beginning
     update_filter_list(None)
@@ -663,24 +676,24 @@ def filter_selection_widget(multiple=False):
         children=[
             ipywidgets.VBox(children=tuple(library_checkboxes)),
             ipywidgets.VBox(children=tuple(backend_checkboxes.values())),
+            keyword_widget,
         ],
-        titles=["Libraries", "Backends"],
+        titles=["Libraries", "Backends", "Keywords"],
     )
 
-    # Introduce a two column layout
-    return ipywidgets.HBox(children=(acc, filter_list_widget)), accessor
-
-
-def choose_pipeline():
-    widget, accessor = filter_selection_widget()
     button = ipywidgets.Button(description="Finalize", layout=fullwidth)
 
-    # Piece things together
-    app = ipywidgets.VBox(children=[widget, button])
+    # Piece things together into an app layout
+    app = ipywidgets.AppLayout(
+        left_sidebar=acc,
+        center=filter_list_widget,
+        right_sidebar=ipywidgets.VBox([button, metadata_form.widget]),
+        pane_widths=(1, 1, 1),
+    )
     IPython.display.display(app)
 
     # Return proxy handling
-    proxy = InteractiveWidgetOutputProxy(lambda: accessor()[0])
+    proxy = InteractiveWidgetOutputProxy(accessor)
 
     def _finalize(_):
         if len(accessor()) != 0:
@@ -690,6 +703,10 @@ def choose_pipeline():
     button.on_click(_finalize)
 
     return proxy
+
+
+def choose_pipelines():
+    return choose_pipeline(multiple=True)
 
 
 def execute_interactive(dataset, pipeline):

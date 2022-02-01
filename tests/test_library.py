@@ -37,7 +37,7 @@ def test_filter_only_add(monkeypatch, tmp_path):
     reset_filter_libraries()
 
     # Write a filter to a file
-    filter = PDALFilter(type="filters.csf")
+    filter = PDALFilter(type="filters.csf").as_pipeline()
     save_filter(filter, os.path.join(os.getcwd(), "myfilter.json"))
 
     # This should be recognized although it has 0 filters

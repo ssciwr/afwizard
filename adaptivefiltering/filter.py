@@ -361,27 +361,27 @@ class PipelineMixin:
     @property
     def author(self):
         """The author of this profile"""
-        return self.config["metadata"]["author"]
+        return self.config.get("metadata", {}).get("author", "")
 
     @property
     def description(self):
         """A description of the usage scenarios for this profile."""
-        return self.config["metadata"]["description"]
+        return self.config.get("metadata", {}).get("description", "")
 
     @property
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
-        return self.config["metadata"]["example_data_url"]
+        return self.config.get("metadata", {}).get("example_data_url", "")
 
     @property
     def title(self):
         """A telling display name for the filter pipeline"""
-        return self.config["metadata"]["title"]
+        return self.config.get("metadata", {}).get("title", "")
 
     @property
     def keywords(self):
         """The keywords that describe this filter pipeline"""
-        return self.config["metadata"]["keywords"]
+        return self.config.get("metadata", {}).get("keywords", ())
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):

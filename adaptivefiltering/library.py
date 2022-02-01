@@ -9,6 +9,7 @@ import importlib
 import json
 import jsonschema
 import os
+import pyrsistent
 
 
 # The global storage for the list of directories
@@ -61,8 +62,15 @@ def add_filter_library(path=None, package=None):
         if os.path.split(filename)[1] == "library.json":
             continue
 
+        # If the title field has not been specified, use the filename
+        filter_ = load_filter(filename)
+        if filter_.title == "":
+            md = filter_.config.get("metadata", pyrsistent.pmap())
+            md = md.update({"title": filename})
+            filter_ = filter_.copy(metadata=md)
+
         # Add it to our list of filters
-        filters.append(load_filter(filename))
+        filters.append(filter_)
 
     # Register the library object if it is existent
     if metadata or filters:
