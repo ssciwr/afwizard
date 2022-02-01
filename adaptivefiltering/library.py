@@ -9,6 +9,7 @@ import importlib
 import json
 import jsonschema
 import os
+import pyrsistent
 
 
 # The global storage for the list of directories
@@ -64,7 +65,7 @@ def add_filter_library(path=None, package=None):
         # If the title field has not been specified, use the filename
         filter_ = load_filter(filename)
         if filter_.title == "":
-            md = filter_.config["metadata"]
+            md = filter_.config.get("metadata", pyrsistent.pmap())
             md = md.update({"title": filename})
             filter_ = filter_.copy(metadata=md)
 
