@@ -273,7 +273,9 @@ class Filter:
 
     def _modify_filter_config(self, variability_data):
         # Validate the given variablity data
-        jsonschema.validate(instance=variability_data, schema=self.variability_schema)
+        jsonschema.validate(
+            instance=pyrsistent.thaw(variability_data), schema=self.variability_schema
+        )
 
         # Update a copy of the configuration according to the given data
         config = self.config
