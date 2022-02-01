@@ -499,7 +499,7 @@ def create_upload(filetype):
     return upload_proxy
 
 
-def show_interactive(dataset, filtering_callback=None):
+def show_interactive(dataset, filtering_callback=None, update_classification=False):
     # If dataset is not rasterized already, do it now
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
@@ -523,7 +523,7 @@ def show_interactive(dataset, filtering_callback=None):
     formwidget.layout = fullwidth
 
     # Create the classification widget
-    classification = classification_widget([dataset])
+    classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
     # Get a visualization button and add it to the control panel
@@ -552,9 +552,15 @@ def show_interactive(dataset, filtering_callback=None):
             if filtering_callback is not None:
                 dataset = filtering_callback(dataset.dataset).rasterize()
 
+            # Maybe update the classification widget if necessary
+            if update_classification:
+                nonlocal classification
+                classification.children = (classification_widget([dataset]),)
+
             # Rerasterize if necessary
             dataset = dataset.dataset.rasterize(
-                classification=classification.value, **rasterization_widget_form.data
+                classification=classification.children[0].value,
+                **rasterization_widget_form.data,
             )
 
             # Trigger visualization
@@ -712,7 +718,7 @@ def choose_pipelines():
 def execute_interactive(dataset, pipeline):
     # A widget that contains the variability
     varform = ipywidgets_jsonschema.Form(
-        pipeline.variability_schema, vertically_place_labels=True
+        pipeline.variability_schema, vertically_place_labels=True, use_sliders=True
     )
 
     # Piggy-back onto the visualization app
@@ -721,6 +727,7 @@ def execute_interactive(dataset, pipeline):
         filtering_callback=lambda ds: cached_pipeline_application(
             ds, pipeline, **varform.data
         ),
+        update_classification=True,
     )
 
     # Insert the variability form
