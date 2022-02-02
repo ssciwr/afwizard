@@ -1,6 +1,6 @@
 from adaptivefiltering.filter import load_filter, save_filter
 from adaptivefiltering.paths import load_schema
-from adaptivefiltering.utils import is_iterable
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
 import collections
@@ -12,20 +12,71 @@ import os
 import pyrsistent
 
 
-# The global storage for the list of directories
+# Global storage for the list of directories
 _filter_libraries = []
+
+# Global storage for the current working library directory
+_current_library = None
 
 
 FilterLibrary = collections.namedtuple(
-    "FilterLibrary", ["filters", "name", "path"], defaults=[[], None, ""]
+    "FilterLibrary",
+    ["filters", "name", "path", "recursive"],
+    defaults=[[], None, "", False],
 )
 
 
 def get_filter_libraries():
-    return tuple(_filter_libraries)
+    # The reversing implements priority ordering from user-defined to built-in
+    return tuple(reversed(_filter_libraries))
 
 
-def add_filter_library(path=None, package=None):
+def get_current_filter_library():
+    return _current_library
+
+
+def set_current_filter_library(path, create_dirs=False, name="My filter library"):
+    """Set a library path that will be used to store filters in
+
+    :param path:
+        The path to store filters in. Might be an absolute path or
+        a relative path that will be interpreted with respect to the
+        current working directory.
+    :type path: str
+    :param create_dirs:
+        Whether adaptivefiltering should create this directory (and
+        potentially some parent directories) for you
+    :type create_dirs: bool
+    :param name:
+        The display name of the library (e.g. in the selection UI)
+    :type name: str
+    """
+    # Make path absolute
+    path = os.path.abspath(path)
+
+    # Ensure existence of the directory
+    if not os.path.exists(path):
+        if create_dirs:
+            os.makedirs(path)
+        else:
+            raise AdaptiveFilteringError(
+                f"The given path does not exist and create_dirs was not set"
+            )
+
+    # Set the global variable
+    global _current_library
+    _current_library = path
+
+    # Add the metadata file to the filter library directory
+    if name is not None:
+        with open(os.path.join(path, "library.json"), "w") as f:
+            json.dump({"name": name}, f)
+
+    # Register the filter library
+    add_filter_library(path=path)
+
+
+def add_filter_library(path=None, package=None, recursive=False, name=None):
     """Add filters from a custom library
 
     :param path:
@@ -37,12 +88,18 @@ def add_filter_library(path=None, package=None):
         Alternatively, you can specify a Python package that is installed on
         the system and that contains the relevant JSON files.
     :type package: str
+    :param recursive:
+        Whether the file system should be traversed recursively from
+        the given directory to find filter pipeline definitions.
+    :param name:
+        A display name to override the name provided by library metadata
+    :type name: str
     """
     # Translate a package name to a directory
     if package is not None:
         mod = importlib.import_module(package)
         package_path, _ = os.path.split(mod.__file__)
-        return add_filter_library(path=package_path)
+        return add_filter_library(path=package_path, recursive=recursive, name=name)
 
     # Look for a library metadata file
     metadata = {}
@@ -57,7 +114,7 @@ def add_filter_library(path=None, package=None):
 
     # Iterate over the JSON documents in the directory and load them
     filters = []
-    for filename in glob.glob(os.path.join(path, "*.json")):
+    for filename in glob.glob(os.path.join(path, "*.json"), recursive=recursive):
         # If this is the library meta file, skip it
         if os.path.split(filename)[1] == "library.json":
             continue
@@ -72,9 +129,15 @@ def add_filter_library(path=None, package=None):
         # Add it to our list of filters
         filters.append(filter_)
 
+    # Maybe override the name field in metadata
+    if name is not None:
+        metadata["name"] = name
+
     # Register the library object if it is existent
     if metadata or filters:
-        _filter_libraries.append(FilterLibrary(filters=filters, path=path, **metadata))
+        _filter_libraries.append(
+            FilterLibrary(filters=filters, path=path, recursive=recursive, **metadata)
+        )
 
 
 def library_keywords(libs=get_filter_libraries()):
@@ -96,14 +159,41 @@ def library_keywords(libs=get_filter_libraries()):
     return list(set(result))
 
 
+def locate_filter(filename):
+    """Find a filter with a given filename across all filter libraries"""
+
+    # If this is already an absolute path, we check its existence and return
+    if os.path.isabs(filename):
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"Filter file {filename} does not exist!")
+        return filename
+
+    # Find the file across all libraries
+    for lib in get_filter_libraries():
+        for fn in glob.glob(os.path.join(lib.path, "*.json"), recursive=lib.recursive):
+            # If this is the library meta file, skip it
+            if os.path.split(fn)[1] == "library.json":
+                continue
+
+            if os.path.exists(fn):
+                return fn
+
+    # If we have not found it by now, we throw an error
+    raise FileNotFoundError(f"Filter file {filename} cannot be found!")
+
+
 def reset_filter_libraries():
     """Reset registered filter libraries to the default ones"""
     # Remove all registered filter libraries
     global _filter_libraries
     _filter_libraries = []
 
+    # Also reset the current filter library
+    global _current_library
+    _current_library = None
+
     # Register default paths
-    add_filter_library(path=os.getcwd())
+    add_filter_library(path=os.getcwd(), name="Current working directory")
     add_filter_library(package="adaptivefiltering_library")
 
 

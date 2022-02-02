@@ -1,11 +1,15 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
 from adaptivefiltering.filter import Pipeline, Filter, save_filter, update_data
-from adaptivefiltering.library import get_filter_libraries, library_keywords
+from adaptivefiltering.library import (
+    get_filter_libraries,
+    library_keywords,
+    get_current_filter_library,
+)
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 from adaptivefiltering.widgets import WidgetFormWithLabels
 
 import collections
@@ -18,6 +22,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import os
 import pyrsistent
 import pytools
 
@@ -645,11 +650,16 @@ def select_pipeline_from_library(multiple=False):
     metadata_form = WidgetFormWithLabels(metadata_schema, vertically_place_labels=True)
 
     def metadata_updater(change):
-        # Check if the change selected a new entry
-        if len(change["new"]) > len(change["old"]):
-            # If so, we display the metadata of the newly selected one
-            (entry,) = set(change["new"]) - set(change["old"])
-            metadata_form.data = filter_list[entry].config["metadata"]
+        # The details of how to access this from the change object differs
+        # for Select and SelectMultiple
+        if multiple:
+            # Check if the change selected a new entry
+            if len(change["new"]) > len(change["old"]):
+                # If so, we display the metadata of the newly selected one
+                (entry,) = set(change["new"]) - set(change["old"])
+                metadata_form.data = filter_list[entry].config["metadata"]
+        else:
+            metadata_form.data = filter_list[change["new"]].config["metadata"]
 
     filter_list_widget.observe(metadata_updater, names="index")
 
@@ -657,15 +667,13 @@ def select_pipeline_from_library(multiple=False):
     def accessor():
         indices = filter_list_widget.index
         if indices is None:
-            return ()
+            return None
 
         # Either return a tuple of filters or a single filter
         if multiple:
             return tuple(filter_list[i] for i in indices)
         else:
-            return tuple(
-                filter_list[indices],
-            )
+            return filter_list[indices]
 
     # A function that recreates the filtered list of filters
     def update_filter_list(_):
@@ -741,7 +749,8 @@ def select_pipeline_from_library(multiple=False):
     proxy = InteractiveWidgetOutputProxy(accessor)
 
     def _finalize(_):
-        if len(accessor()) != 0:
+        # If nothing has been selected, the finalize button is no-op
+        if accessor():
             app.layout.display = "none"
             proxy._finalize()
 
@@ -778,8 +787,11 @@ def select_best_pipeline(dataset=None, pipelines=None):
         )
 
     # Control elements for this app
+    current_lib = get_current_filter_library()
     filechooser = ipyfilechooser.FileChooser(
-        filter_pattern="*.json", layout=ipywidgets.Layout(width="50%")
+        path=os.getcwd() if current_lib is None else current_lib,
+        filter_pattern="*.json",
+        layout=ipywidgets.Layout(width="50%"),
     )
     finalize = ipywidgets.Button(
         description="Save this filter (including its end-user configuration)",
@@ -816,13 +828,9 @@ def select_best_pipeline(dataset=None, pipelines=None):
         # Insert the generated widgets into the outer structures
         subwidgets.append(vis)
 
-        def accessor():
-            print(varform.data)
-            modp = p.copy(**p._modify_filter_config(varform.data))
-            print(modp)
-            return modp
-
-        pipeline_accessors.append(accessor)
+        pipeline_accessors.append(
+            lambda: p.copy(**p._modify_filter_config(varform.data))
+        )
 
     # Trigger subwidget generation for all pipelines
     for p in pipelines:
