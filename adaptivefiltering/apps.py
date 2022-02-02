@@ -129,11 +129,12 @@ def classification_widget(datasets, selected=None):
     # If the dataset already contains ground points, we only want to use
     # them by default. This saves tedious work for the user who is interested
     # in ground point filtering results.
-    if 2 in joined_count:
-        selected = [2]
-    elif selected is None:
-        # If there are no ground points, we use all classes
-        selected = list(joined_count.keys())
+    if selected is None:
+        if 2 in joined_count:
+            selected = [2]
+        else:
+            # If there are no ground points, we use all classes
+            selected = list(joined_count.keys())
 
     return ipywidgets.SelectMultiple(
         options=[
@@ -245,9 +246,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
     history = []
 
     # Loop over the given datasets
-    def create_history_item(ds, data):
+    def create_history_item(ds, data, classes=None):
         # Create a new classification widget and insert it into the Box
-        _class_widget = classification_widget([ds])
+        _class_widget = classification_widget([ds], selected=classes)
         app.right_sidebar.children[-1].children = (_class_widget,)
 
         # Create widgets from the datasets
@@ -304,6 +305,15 @@ def pipeline_tuning(datasets=[], pipeline=None):
         if config is None:
             config = pipeline_form.data
 
+        # Extract the currently selected classes and implement heuristic:
+        # If ground was already in the classification, we keep the values
+        if history:
+            old_classes = history[-1].classification.value
+            had_ground = 2 in [o[1] for o in history[-1].classification.options]
+            classes = old_classes if had_ground else None
+        else:
+            classes = None
+
         for ds in datasets:
             # Extract the pipeline from the widget
             nonlocal pipeline
@@ -314,7 +324,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
                 transformed = cached_pipeline_application(ds, pipeline)
 
             # Create a new entry in the history list
-            create_history_item(transformed, config)
+            create_history_item(transformed, config, classes=classes)
 
             # Select the newly added tab
             center.selected_index = len(center.children) - 1
