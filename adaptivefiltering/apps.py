@@ -571,11 +571,11 @@ def select_pipeline_from_library(multiple=False):
 
     # Collect checkboxes in the selection menu
     library_checkboxes = [
-        ipywidgets.Checkbox(value=True, description=library_name(lib))
+        ipywidgets.Checkbox(value=True, description=library_name(lib), indent=False)
         for lib in get_filter_libraries()
     ]
     backend_checkboxes = {
-        name: ipywidgets.Checkbox(value=cls.enabled(), description=name)
+        name: ipywidgets.Checkbox(value=cls.enabled(), description=name, indent=False)
         for name, cls in Filter._filter_impls.items()
         if Filter._filter_is_backend[name]
     }
@@ -595,10 +595,9 @@ def select_pipeline_from_library(multiple=False):
 
     # Create checkbox widgets for the all authors
     author_checkboxes = {
-        author: ipywidgets.Checkbox(value=True, description=author)
+        author: ipywidgets.Checkbox(value=True, description=author, indent=False)
         for author in all_authors
     }
-    print(author_checkboxes)
 
     # Use a TagsInput widget for keywords
     keyword_widget = ipywidgets.TagsInput(
