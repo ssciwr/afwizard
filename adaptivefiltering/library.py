@@ -172,7 +172,7 @@ def locate_filter(filename):
     for lib in get_filter_libraries():
         for fn in glob.glob(os.path.join(lib.path, "*.json"), recursive=lib.recursive):
             # If this is the library meta file, skip it
-            if os.path.split(filename)[1] == "library.json":
+            if os.path.split(fn)[1] == "library.json":
                 continue
 
             if os.path.exists(fn):
