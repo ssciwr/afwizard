@@ -418,9 +418,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
         ),
     )
 
-    # Initially seed with a simple visualization
-    for ds in datasets:
-        create_history_item(ds, pipeline_form.data)
+    # Initially trigger preview generation
+    preview.click()
 
     # Show the app in Jupyter notebook
     IPython.display.display(app)
