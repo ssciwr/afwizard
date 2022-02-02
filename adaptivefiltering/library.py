@@ -188,6 +188,10 @@ def reset_filter_libraries():
     global _filter_libraries
     _filter_libraries = []
 
+    # Also reset the current filter library
+    global _current_library
+    _current_library = None
+
     # Register default paths
     add_filter_library(path=os.getcwd(), name="Current working directory")
     add_filter_library(package="adaptivefiltering_library")
