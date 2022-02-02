@@ -603,6 +603,26 @@ def select_pipeline_from_library(multiple=False):
         if Filter._filter_is_backend[name]
     }
 
+    # Extract all authors that contributed to the filter libraries
+    def get_author(f):
+        if f.author == "":
+            return "(unknown)"
+        else:
+            return f.author
+
+    all_authors = []
+    for lib in get_filter_libraries():
+        for f in lib.filters:
+            all_authors.append(get_author(f))
+    all_authors = list(sorted(set(all_authors)))
+
+    # Create checkbox widgets for the all authors
+    author_checkboxes = {
+        author: ipywidgets.Checkbox(value=True, description=author)
+        for author in all_authors
+    }
+    print(author_checkboxes)
+
     # Use a TagsInput widget for keywords
     keyword_widget = ipywidgets.TagsInput(
         value=library_keywords(),
@@ -666,6 +686,10 @@ def select_pipeline_from_library(multiple=False):
                 ):
                     continue
 
+                # If the author of this pipeline has been deselected -> skip
+                if not author_checkboxes[get_author(filter_)].value:
+                    continue
+
                 # If the filter does not have at least one selected keyword -> skip
                 # Exception: No keywords are specified at all in the library (early dev)
                 if library_keywords():
@@ -686,7 +710,9 @@ def select_pipeline_from_library(multiple=False):
     update_filter_list(None)
 
     # Make all checkbox changes trigger the filter list update
-    for box in itertools.chain(library_checkboxes, backend_checkboxes.values()):
+    for box in itertools.chain(
+        library_checkboxes, backend_checkboxes.values(), author_checkboxes.values()
+    ):
         box.observe(update_filter_list, names="value")
 
     # Piece all of the above selcetionwidgets together into an accordion
@@ -695,8 +721,9 @@ def select_pipeline_from_library(multiple=False):
             ipywidgets.VBox(children=tuple(library_checkboxes)),
             ipywidgets.VBox(children=tuple(backend_checkboxes.values())),
             keyword_widget,
+            ipywidgets.VBox(children=tuple(author_checkboxes.values())),
         ],
-        titles=["Libraries", "Backends", "Keywords"],
+        titles=["Libraries", "Backends", "Keywords", "Author"],
     )
 
     button = ipywidgets.Button(description="Finalize", layout=fullwidth)
