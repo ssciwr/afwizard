@@ -22,6 +22,7 @@ import IPython
 import itertools
 import math
 import numpy as np
+import os
 import pyrsistent
 import pytools
 
@@ -759,8 +760,9 @@ def select_best_pipeline(dataset=None, pipelines=None):
         )
 
     # Control elements for this app
+    current_lib = get_current_filter_library()
     filechooser = ipyfilechooser.FileChooser(
-        path=get_current_filter_library(),
+        path=os.getcwd() if current_lib is None else current_lib,
         filter_pattern="*.json",
         layout=ipywidgets.Layout(width="50%"),
     )
