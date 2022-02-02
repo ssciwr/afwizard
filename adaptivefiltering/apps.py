@@ -27,19 +27,6 @@ import pyrsistent
 import pytools
 
 
-def sized_label(text, size=12):
-    """Create a text label widget with a given font size
-
-    :param text:
-        The text to show.
-    :type text: str
-    :param size:
-        The fontsize
-    :type size: int
-    """
-    return ipywidgets.HTML(value=f"<h3 style='font-size: {str(size)}px'>{text}</h>")
-
-
 fullwidth = ipywidgets.Layout(width="100%")
 
 
@@ -93,21 +80,6 @@ def hourglass_icon(button):
     button.icon = "hourglass-half"
     yield
     button.icon = ""
-
-
-def flex_square_layout(widgets):
-    """Place widgets into a grid layout that is approximately square."""
-    # Arrange the widgets in a flexible square layout
-    grid_cols = math.ceil(math.sqrt(len(widgets)))
-    grid_rows = math.ceil(len(widgets) / grid_cols)
-
-    # Fill the given widgets into a GridspecLayout
-    grid = ipywidgets.GridspecLayout(grid_rows, grid_cols)
-    for i, xy in enumerate(itertools.product(range(grid_rows), range(grid_cols))):
-        if i < len(widgets):
-            grid[xy] = widgets[i]
-
-    return grid
 
 
 def as_pdal(dataset):
