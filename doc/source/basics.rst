@@ -8,3 +8,4 @@ be run directly as presented here.
 .. toctree::
 
     datasets
+    libraries

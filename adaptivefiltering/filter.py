@@ -445,7 +445,17 @@ def save_filter(filter_, filename):
         The filename where to write the filter. Relative paths are interpreted
         w.r.t. the current working directory.
     """
-    filename = os.path.abspath(filename)
+
+    # If the filename is not already absolute, we maybe
+    if not os.path.isabs(filename):
+        from adaptivefiltering.library import get_current_filter_library
+
+        lib = get_current_filter_library()
+        if lib is None:
+            filename = os.path.abspath(filename)
+        else:
+            filename = os.path.join(lib, filename)
+
     with open(filename, "w") as f:
         json.dump(serialize_filter(filter_), f)
 
@@ -461,12 +471,16 @@ def load_filter(filename=None):
         w.r.t. the current working directory.
     :type filename: str
     """
-    if filename == None:
+    if filename is None:
         from adaptivefiltering.widgets import upload_files
 
         filename = upload_files("./filters_test_upload/")
     else:
-        filename = os.path.abspath(filename)
+        # Find the file across all libraries
+        from adaptivefiltering.library import locate_filter
+
+        filename = locate_filter(filename)
+
     with open(filename, "r") as f:
         return deserialize_filter(json.load(f))
 
