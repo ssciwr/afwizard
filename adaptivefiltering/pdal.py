@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter, PipelineMixin, modify_filter_config
+from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
 from adaptivefiltering.segmentation import Segment, Segmentation, swap_coordinates
 from adaptivefiltering.utils import (
@@ -72,8 +72,6 @@ class PDALFilter(Filter, identifier="pdal"):
         config.pop("_backend", None)
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
-            provenance=dataset._provenance
-            + [f"Applying PDAL filter with the following configuration:\n{config}"],
         )
 
     @classmethod
@@ -98,15 +96,11 @@ class PDALPipeline(
 
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
-            provenance=dataset._provenance
-            + [
-                f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
-            ],
         )
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[], spatial_reference=None):
+    def __init__(self, pipeline=None, spatial_reference=None):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -114,11 +108,10 @@ class PDALInMemoryDataSet(DataSet):
             already have the dataset in memory.
         :type data: pdal.pipeline
         """
-        # Store the given data and provenance array
+        # Store the given pipeline
         self.pipeline = pipeline
 
         super(PDALInMemoryDataSet, self).__init__(
-            provenance=provenance,
             spatial_reference=spatial_reference,
         )
 
@@ -167,8 +160,6 @@ class PDALInMemoryDataSet(DataSet):
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
             pipeline=pipeline,
-            provenance=dataset._provenance
-            + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
             spatial_reference=spatial_reference,
         )
 
@@ -228,10 +219,6 @@ class PDALInMemoryDataSet(DataSet):
 
             return PDALInMemoryDataSet(
                 pipeline=newdata,
-                provenance=self._provenance
-                + [
-                    f"Cropping data to only include polygons defined by:\n{str(polygons)}"
-                ],
                 spatial_reference=self.spatial_reference,
             )
 

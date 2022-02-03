@@ -249,10 +249,6 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
         return OPALSDataManagerObject(
             filename=outFile,
             spatial_reference=dataset.spatial_reference,
-            provenance=dataset._provenance
-            + [
-                f"Applying OPALS module with the following configuration: {self._serialize()}"
-            ],
         )
 
     @classmethod
@@ -315,7 +311,6 @@ class OPALSDataManagerObject(DataSet):
         # Wrap the result in a new data set object
         return OPALSDataManagerObject(
             filename=dm_filename,
-            provenance=dataset._provenance + [f"Converted file to ODM format"],
             spatial_reference=dataset.spatial_reference,
         )
 
@@ -352,6 +347,5 @@ class OPALSDataManagerObject(DataSet):
         # Wrap the result in a new data set object
         return DataSet(
             filename=filename,
-            provenance=self._provenance + [f"Exported ODM file to {filename}"],
             spatial_reference=self.spatial_reference,
         )
