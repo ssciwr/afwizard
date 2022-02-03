@@ -8,6 +8,7 @@ import ipywidgets
 
 
 def gdal_visualization(dataset, **options):
+    """Implement visualization using the GDAL DEM tool"""
     # Do the processing with GDAL
     vis_type = options.pop("visualization_type")
     gdal_img = gdal.DEMProcessing(

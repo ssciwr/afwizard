@@ -13,12 +13,15 @@ import jsonschema
 import os
 import pytools
 import shutil
-import sys
 
 
 class DataSet:
     def __init__(self, filename=None, spatial_reference=None):
         """The main class that represents a Lidar data set.
+
+        The DataSet class performs lazy loading - instantiating an object of this type
+        does not trigger memory intense operations until you do something with the dataset
+        that requires such operation.
 
         :param filename:
             Filename to load the dataset from. The dataset is expected to be in LAS/LAZ 1.2-1.4 format.
@@ -26,10 +29,9 @@ class DataSet:
             are interpreted (in this order) with respect to the directory set with :func:`~adaptivefiltering.set_data_directory`,
             the current working directory, XDG data directories (Unix only) and the Python package
             installation directory.
-            Will give a warning if too many data points are present.
         :type filename: str
         :param spatial_reference:
-            A spatial reference in WKT or EPSG code. This will override the reference system found in the metadata
+            A spatial reference as WKT or EPSG code. This will override the reference system found in the metadata
             and is required if no reference system is present in the metadata of the LAS/LAZ file.
             If this parameter is not provided, this information is extracted from the metadata.
         :type spatial_reference: str
@@ -49,7 +51,7 @@ class DataSet:
     def rasterize(self, resolution=0.5, classification=None):
         """Create a digital terrain model from the dataset
 
-        It is important to note that for archaelogic applications, the mesh is not
+        It is important to note that for archaeologic applications, the mesh is not
         a traditional DEM/DTM (Digitial Elevation/Terrain Model), but rather a DFM
         (Digital Feature Model) which consists of ground and all potentially relevant
         structures like buildings etc. but always excludes vegetation.
@@ -80,11 +82,8 @@ class DataSet:
         user interface with :func:`~adaptivefiltering.DataSet.show_interactive`.
 
         :param visualization_type:
-            Which visualization to use. Current implemented values are:
-            * `hillshade` for a greyscale 2D map
-            * `slopemap` for a 2D map color-coded by the slope
-            * `scatter` for a 3D scatter plot of the point cloud
-            * `mesh` for a 2.5D surface plot
+            Which visualization to use. Current implemented values are :code:`hillshade` for a
+            greyscale 2D map and :code:`slopemap` for a 2D map color-coded by the slope
         :type visualization_type: str
         :param classification:
             Which classification values to include into the visualization. By default,
@@ -92,13 +91,13 @@ class DataSet:
             using :code:`adaptivefiltering.asprs`.
         :type classification: tuple
         :param resolution:
-            The spatial resolution in meters (needed for all types except `scatter`).
+            The spatial resolution in meters.
         :type resolution: float
         :param azimuth:
-            The angle in the xy plane where the sun is from [0, 360] (`hillshade` only)
+            The angle in the xy plane where the sun is from [0, 360] (:code:`hillshade` only)
         :type azimuth: float
         :param angle_altitude:
-            The angle altitude of the sun from [0, 90] (`hillshade` only)
+            The angle altitude of the sun from [0, 90] (:code:`hillshade` only)
         """
 
         # This is a bit unfortunate, but we need to separate rasterization options
@@ -115,7 +114,7 @@ class DataSet:
         )
 
     def show_interactive(self):
-        """Visualize the dataset with interactive visualization controls"""
+        """Visualize the dataset with interactive visualization controls in Jupyter"""
         from adaptivefiltering.apps import show_interactive
 
         return show_interactive(self)
@@ -123,9 +122,9 @@ class DataSet:
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
 
-        This writes this instance of the data set to an LAS/LAZ file which will
-        permanently store the ground point classification. The resulting file will
-        also contain the point data from the original data set.
+        This method writes the Lidar dataset represented by this data structure
+        to an LAS/LAZ file. This includes the classification values which may have
+        been overriden by a filter pipeline.
 
         :param filename:
             Where to store the new LAS/LAZ file. You can either specify an absolute path
@@ -167,7 +166,14 @@ class DataSet:
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
 
+        This is of vital importance when working with large Lidar datasets
+        in adaptivefiltering. The interactive exploration process for filtering
+        pipelines requires a reasonably sized subset to allow fast previews.
+
         :param segmentation:
+            A segmentation object that provides the geometric information
+            for the cropping. If omitted, an interactive selection tool is
+            shown in Jupyter.
         :type: adaptivefiltering.segmentation.Segmentation
         """
         from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -178,7 +184,11 @@ class DataSet:
 
     @classmethod
     def convert(cls, dataset):
-        """Convert this dataset to an instance of DataSet"""
+        """Convert this dataset to an instance of DataSet
+
+        This is used internally to convert datasets between different
+        representations.
+        """
         return dataset.save(get_temporary_filename(extension="las"))
 
 
@@ -357,11 +367,14 @@ def remove_classification(dataset):
 def reproject_dataset(dataset, out_srs, in_srs=None):
     """Standalone function to reproject a given dataset with the option of forcing an input reference system
 
-    :param out_srs: The desired output format in WKT.
+    :param out_srs:
+        The desired output format in WKT.
     :type out_srs: str
-    :param in_srs: The input format in WKT from which to convert. The default is the dataset's current reference system.
+    :param in_srs:
+        The input format in WKT from which to convert. The default is the dataset's current reference system.
     :type in_srs: str
-    :return: A reprojected dataset
+    :return:
+        A reprojected dataset
     :rtype: adaptivefiltering.DataSet
     """
     from adaptivefiltering.pdal import execute_pdal_pipeline
@@ -380,6 +393,7 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     spatial_reference = json.loads(pipeline.metadata)["metadata"][
         "filters.reprojection"
     ]["comp_spatialreference"]
+
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=spatial_reference,

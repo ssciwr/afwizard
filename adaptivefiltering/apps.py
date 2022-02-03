@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
-from adaptivefiltering.filter import Pipeline, Filter, save_filter, update_data
+from adaptivefiltering.filter import Pipeline, Filter, update_data
 from adaptivefiltering.library import (
     get_filter_libraries,
     library_keywords,
@@ -8,7 +8,7 @@ from adaptivefiltering.library import (
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.widgets import WidgetFormWithLabels
 
 import collections
@@ -30,10 +30,21 @@ class InteractiveWidgetOutputProxy:
     def __init__(self, creator, finalization_hook=lambda obj: obj):
         """An object to capture interactive widget output
 
+        This class is a workaround to the general problem that it is extremely
+        hard to create asynchronous Jupyter widgets that block the frontend until
+        user interaction has occured. We solve it by immediately returning this
+        proxy object which is constantly updated according to widget state until
+        it is finalized. To the user, the proxy object should behave exactly like
+        the original object (duck typing).
+
         :param creator:
             A callable accepting no parameters that constructs the return
             object. It will typically depend on widget state.
         :type creator: Callable
+        :param finalization_hook:
+            A callable accepting the an object and return a modified version of it.
+            This callable is called exactly once when the proxy is finalized. The
+            default callable is no-op.
         """
         # Save the creator function for later use
         self._creator = creator
@@ -67,25 +78,48 @@ class InteractiveWidgetOutputProxy:
         return getattr(self._obj, attr)
 
     def __iter__(self):
+        # The necessity of this method is a mystery to me. I suspect that CPython
+        # has some sort of built-in magic regarding iteration that bypasses regular
+        # member access. Without this method, Python would claim the proxy is not
+        # iterable even if self._obj is perfectly iterable.
         return self._obj.__iter__()
 
 
 @contextlib.contextmanager
 def hourglass_icon(button):
-    """Context manager to show an hourglass icon while processing"""
+    """Context manager to temporarily show an hourglass icon on a button
+
+    :param button: The button
+    :type button: ipywidgets.Button
+    """
     button.icon = "hourglass-half"
     yield
     button.icon = ""
 
 
 def as_pdal(dataset):
+    """Transform a dataset or digital surface model into a PDAL dataset"""
     if isinstance(dataset, DigitalSurfaceModel):
         return as_pdal(dataset.dataset)
     return PDALInMemoryDataSet.convert(dataset)
 
 
 def classification_widget(datasets, selected=None):
-    """Create a widget to select classification values"""
+    """Create a widget to select classification values
+
+    The shown classification values are taken from the datasets themselves
+    and the total amount of points for each class is shown in the widget.
+    The widget then allows to select an arbitrary number of classes. By default,
+    all classes are selected, unless ground points are present in the datasets
+    in which case only these are selected.
+
+    :param datasets:
+        A list of datasets.
+    :type datasets: list
+    :param selected:
+        An optional list of pre-selected indices.
+    :type selected: list
+    """
 
     # Determine classes present across all datasets
     joined_count = {}
@@ -120,11 +154,23 @@ def classification_widget(datasets, selected=None):
 
 @pytools.memoize(key=lambda d, p, **c: (d, p.config, pyrsistent.pmap(c)))
 def cached_pipeline_application(dataset, pipeline, **config):
+    """Call filter pipelinex execution in a cached way"""
     return pipeline.execute(dataset, **config)
 
 
 def expand_variability_string(varlist, type_="string", samples_for_continuous=5):
-    """Split a string into variants allowing comma separation and ranges with dashes"""
+    """Split a string into variants allowing comma separation and ranges with dashes
+
+    :param varlist:
+        The input string to expand
+    :type varlist: str
+    :param type_:
+        The type of the variables to return. Maybe `string`, `integer` or `number`.
+    :type type_: str
+    :param samples_for_continuous:
+        The number of samples to use when resolving ranges of floating point values (defaults to 5)
+    :type samples_for_continuous: int
+    """
     # For discrete variation, we use comma separation
     for part in varlist.split(","):
         part = part.strip()
@@ -166,7 +212,20 @@ def expand_variability_string(varlist, type_="string", samples_for_continuous=5)
 
 
 def create_variability(batchdata, samples_for_continuous=5, non_persist_only=True):
-    """Create combinatorical product of specified variants"""
+    """Create combinatorical product of specified variants
+
+    :param batchdata:
+        The variability data provided by the filter data model.
+    :type batchdata: list
+    :param samples_for_continuous:
+        The number of samples to use when resolving ranges of floating point values (defaults to 5)
+    :type samples_for_continuous: int
+    :param non_persist_only:
+        Whether or not the creation of variability is restricted to entries
+        with `persist=False`. The `persist` field is used to distinguish batch
+        processing from end user configuration.
+    :type non_persist_only: bool
+    """
     if non_persist_only:
         batchdata = [bd for bd in batchdata if not bd["persist"]]
 
@@ -201,6 +260,23 @@ PipelineWidgetState = collections.namedtuple(
 
 
 def pipeline_tuning(datasets=[], pipeline=None):
+    """The Jupyter UI to create a filtering pipeline from scratch.
+
+    The use of this UI is described in detail in `the notebook on creating filter pipelines`_.
+
+    .. _the notebook on creating filter pipelines: filtering.nblink
+
+    :param datasets:
+        One or more instances of Lidar datasets to work on
+    :type datasets: list
+    :param pipeline:
+        A pipeline to use as a starting point. If omitted, a new pipeline object will be created.
+    :type pipeline: adaptivefiltering.filter.Pipeline
+    :return:
+        Returns the created pipeline object
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
     # Instantiate a new pipeline object if we are not modifying an existing one.
     if pipeline is None:
         pipeline = Pipeline()
@@ -425,6 +501,11 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
 
 def create_segmentation(dataset):
+    """The Jupyter UI to create a segmentation object from scratch.
+
+    The use of this UI will soon be described in detail.
+    """
+
     # Create the necessary widgets
     map_ = Map(dataset=dataset)
     map_widget = map_.show()
@@ -454,6 +535,12 @@ def create_segmentation(dataset):
 
 
 def create_upload(filetype):
+    """Create a Jupyter UI snippet that allows a user to upload a file
+
+    :param filetype:
+        The file extension to expect for the upload.
+    :type filetype: str
+    """
 
     confirm_button = ipywidgets.Button(
         description="Confirm upload",
@@ -483,6 +570,23 @@ def create_upload(filetype):
 
 
 def show_interactive(dataset, filtering_callback=None, update_classification=False):
+    """The interactive UI to visualize a dataset
+
+    :param dataset:
+        The Lidar dataset to visualize
+    :type dataset: adaptivefiltering.DataSet
+    :param filtering_callback:
+        A callback that is called to transform the dataset before visualization.
+        This may be used to hook in additional functionality like the execution
+        of a filtering pipeline
+    :type pipeline: Callable
+    :param update_classification:
+        Whether or not the classification values shown in the UI need to be updated
+        for each preview. Boils down to the question of whether :code:`filtering_callback`
+        potentially changes the classification of the dataset.
+    :type update_classification: bool
+    """
+
     # If dataset is not rasterized already, do it now
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
@@ -559,6 +663,20 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
 
 
 def select_pipeline_from_library(multiple=False):
+    """The Jupyter UI to select filtering pipelines from libraries.
+
+    The use of this UI is described in detail in `the notebook on filtering libraries`_.
+
+    .. _the notebook on filtering libraries: libraries.nblink
+
+    :param multiple:
+        Whether or not it should be possible to select multiple filter pipelines.
+    :type multiple: bool
+    :return:
+        Returns the selected pipeline object(s)
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
     def library_name(lib):
         if lib.name is not None:
             return lib.name
@@ -727,14 +845,26 @@ def select_pipeline_from_library(multiple=False):
 
 
 def select_pipelines_from_library():
+    """The Jupyter UI to select filtering pipelines from libraries.
+
+    The use of this UI is described in detail in `the notebook on filtering libraries`_.
+
+    .. _the notebook on filtering libraries: libraries.nblink
+
+    :return:
+        Returns the selected pipeline object(s)
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
     return select_pipeline_from_library(multiple=True)
 
 
 def select_best_pipeline(dataset=None, pipelines=None):
     """Select the best pipeline for a given dataset.
 
-    This function implements an interactive selection process in Jupyter notebooks
-    that allows you to pick the pipeline that is best suited for the given dataset.
+    The use of this UI is described in detail in `the notebook on selecting filter pipelines`_.
+
+    .. _the notebook on selecting filter pipelines: selection.nblink
 
     :param dataset:
         The dataset to use for visualization of ground point filtering results
@@ -743,7 +873,9 @@ def select_best_pipeline(dataset=None, pipelines=None):
         The tentative list of pipelines to try. May e.g. have been selected using
         the select_pipelines_from_library tool.
     :type pipelines: list
-
+    :return:
+        The selected pipeline with end user configuration baked in
+    :rtype: adaptivefiltering.filter.Pipeline
     """
     if dataset is None:
         raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
@@ -833,4 +965,20 @@ def select_best_pipeline(dataset=None, pipelines=None):
 
 
 def execute_interactive(dataset, pipeline):
+    """Interactively apply a filter pipeline to a given dataset in Jupyter
+
+    This allows you to interactively explore the effects of end user configuration
+    values specified by the filtering pipeline.
+
+    :param dataset:
+        The dataset to work on
+    :type dataset: adaptivefiltering.DataSet
+    :param pipeline:
+        The pipeline to execute.
+    :type pipelines: adaptivefiltering.filter.Pipeline
+    :return:
+        The pipeline with the end user configuration baked in
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
     return select_best_pipeline(dataset=dataset, pipelines=[pipeline])

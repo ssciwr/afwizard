@@ -77,7 +77,11 @@ def set_current_filter_library(path, create_dirs=False, name="My filter library"
 
 
 def add_filter_library(path=None, package=None, recursive=False, name=None):
-    """Add filters from a custom library
+    """Add a custom filter library to this session
+
+    Adaptivefiltering keeps a list of filter libraries that it browses for
+    filter pipeline definitions. This function adds a new directory to that
+    list. You can use this to organize filter files on your hard disk.
 
     :param path:
         The filesystem path where the filter library is located. The filter
@@ -86,11 +90,13 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
     :type path: str
     :param package:
         Alternatively, you can specify a Python package that is installed on
-        the system and that contains the relevant JSON files.
+        the system and that contains the relevant JSON files. This is used for
+        adaptivefilterings library of community-contributed filter pipelines.
     :type package: str
     :param recursive:
         Whether the file system should be traversed recursively from
         the given directory to find filter pipeline definitions.
+    :type recursive: bool
     :param name:
         A display name to override the name provided by library metadata
     :type name: str
@@ -141,7 +147,7 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
 
 
 def library_keywords(libs=get_filter_libraries()):
-    """Return a list of keywords used across one or more library
+    """Return a list of keywords used across one or more libraries
 
     :param libs:
         One or more filter libraries
@@ -160,7 +166,12 @@ def library_keywords(libs=get_filter_libraries()):
 
 
 def locate_filter(filename):
-    """Find a filter with a given filename across all filter libraries"""
+    """Find a filter with a given filename across all filter libraries
+
+    :param filename:
+        The filename of the filter without any directories.
+    :type filename: str
+    """
 
     # If this is already an absolute path, we check its existence and return
     if os.path.isabs(filename):
@@ -183,7 +194,12 @@ def locate_filter(filename):
 
 
 def reset_filter_libraries():
-    """Reset registered filter libraries to the default ones"""
+    """Reset registered filter libraries to the default ones
+
+    The default libraries are the current working directory and the
+    library of community-contributed filter pipelines provided by
+    :code:`adaptivefiltering`.
+    """
     # Remove all registered filter libraries
     global _filter_libraries
     _filter_libraries = []
