@@ -3,6 +3,7 @@ from adaptivefiltering.filter import load_filter
 
 import dataclasses
 import ipywidgets
+import os
 import pytest
 
 from . import minimal_dataset
