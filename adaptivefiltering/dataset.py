@@ -282,15 +282,26 @@ class DigitalSurfaceModel:
         selector = ipywidgets.Dropdown(
             options=["PNG", "GeoTiff"],
             value="PNG",
-            description="File type:",
-            layout=ipywidgets.Layout(width="25%"),
+            description="Type:",
+            layout=ipywidgets.Layout(width="50%"),
         )
         filename = ipyfilechooser.FileChooser(
-            layout=ipywidgets.Layout(width="50%"),
             filter_pattern=patterns[selector.value],
+            layout=ipywidgets.Layout(width="100%"),
         )
         button = ipywidgets.Button(
-            description="Save this image!", layout=ipywidgets.Layout(width="25%")
+            description="Save this image!", layout=ipywidgets.Layout(width="50%")
+        )
+
+        # Put these together into one control widget
+        controls = ipywidgets.VBox(
+            children=[
+                ipywidgets.HBox(
+                    children=[selector, button], layout=ipywidgets.Layout(width="100%")
+                ),
+                filename,
+            ],
+            layout=ipywidgets.Layout(width="100%"),
         )
 
         def _update_pattern(_):
@@ -321,10 +332,7 @@ class DigitalSurfaceModel:
         return ipywidgets.HBox(
             children=[
                 vis,
-                ipywidgets.HBox(
-                    children=[selector, filename, button],
-                    layout=ipywidgets.Layout(width="70%"),
-                ),
+                controls,
             ],
             layout=box_layout,
         )
