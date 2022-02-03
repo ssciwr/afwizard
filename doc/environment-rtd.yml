@@ -17,6 +17,7 @@ dependencies:
     - adaptivefiltering-library
     - Click
     - geojson
+    - ipyfilechooser
     - ipywidgets==8.0.0b1
     - ipywidgets-jsonschema
     - jsonmerge
