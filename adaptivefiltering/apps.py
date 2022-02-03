@@ -4,7 +4,6 @@ from adaptivefiltering.filter import Pipeline, Filter, save_filter, update_data
 from adaptivefiltering.library import (
     get_filter_libraries,
     library_keywords,
-    get_current_filter_library,
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -15,14 +14,11 @@ from adaptivefiltering.widgets import WidgetFormWithLabels
 import collections
 import contextlib
 import copy
-import ipyfilechooser
 import ipywidgets
 import ipywidgets_jsonschema
 import IPython
 import itertools
-import math
 import numpy as np
-import os
 import pyrsistent
 import pytools
 
