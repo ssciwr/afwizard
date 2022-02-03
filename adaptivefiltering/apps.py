@@ -598,7 +598,6 @@ def select_pipeline_from_library(multiple=False):
         author: ipywidgets.Checkbox(value=True, description=author)
         for author in all_authors
     }
-    print(author_checkboxes)
 
     # Use a TagsInput widget for keywords
     keyword_widget = ipywidgets.TagsInput(
@@ -758,18 +757,11 @@ def select_best_pipeline(dataset=None, pipelines=None):
             "At least one pipeline needs to be passed to 'select_best_pipeline'"
         )
 
-    # Control elements for this app
-    current_lib = get_current_filter_library()
-    filechooser = ipyfilechooser.FileChooser(
-        path=os.getcwd() if current_lib is None else current_lib,
-        filter_pattern="*.json",
-        layout=ipywidgets.Layout(width="50%"),
-    )
+    # Finalize button
     finalize = ipywidgets.Button(
-        description="Save this filter (including its end-user configuration)",
-        layout=ipywidgets.Layout(width="50%"),
+        description="Finalize (including end-user configuration into filter)",
+        layout=ipywidgets.Layout(width="100%"),
     )
-    controls = ipywidgets.HBox([filechooser, finalize], layout=fullwidth)
 
     # Per-pipeline data structures to keep track off
     subwidgets = []
@@ -818,21 +810,30 @@ def select_best_pipeline(dataset=None, pipelines=None):
     else:
         tabs = ipywidgets.Box()
 
-    def save(_):
-        filename = filechooser.value
-        if filename is not None:
-            # Get the current selection index of the Tabs widget (if any)
-            if len(subwidgets) > 1:
-                index = tabs.selected_index
-            else:
-                index = 0
+    app = ipywidgets.VBox([finalize, tabs])
+    IPython.display.display(app)
 
-            # Trigger saving the file to disk
-            save_filter(pipeline_accessors[index](), filename)
+    def _return_handler():
+        # Get the current selection index of the Tabs widget (if any)
+        if len(subwidgets) > 1:
+            index = tabs.selected_index
+        elif len(subwidgets) == 1:
+            index = 0
+        else:
+            return Pipeline()
 
-    finalize.on_click(save)
+        return pipeline_accessors[index]()
 
-    return ipywidgets.VBox([controls, tabs])
+    # Return proxy handling
+    proxy = InteractiveWidgetOutputProxy(_return_handler)
+
+    def _finalize(_):
+        app.layout.display = "none"
+        proxy._finalize()
+
+    finalize.on_click(_finalize)
+
+    return proxy
 
 
 def execute_interactive(dataset, pipeline):
