@@ -19,6 +19,7 @@ import sys
 class DataSet:
     def __init__(self, filename=None, provenance=[], spatial_reference=None):
         """The main class that represents a Lidar data set.
+
         :param filename:
             Filename to load the dataset from. The dataset is expected to be in LAS/LAZ 1.2-1.4 format.
             If an absolute filename is given, the dataset is loaded from that location. Relative paths
@@ -73,10 +74,12 @@ class DataSet:
 
     def show(self, visualization_type="hillshade", **kwargs):
         """Visualize the dataset in JupyterLab
+
         Several visualization options can be chosen via the *visualization_type* parameter.
         Some of the arguments given below are only available for specific visualization
         types. To explore the visualization capabilities, you can also use the interactive
         user interface with :func:`~adaptivefiltering.DataSet.show_interactive`.
+
         :param visualization_type:
             Which visualization to use. Current implemented values are:
             * `hillshade` for a greyscale 2D map
@@ -87,7 +90,7 @@ class DataSet:
         :param classification:
             Which classification values to include into the visualization. By default,
             all classes are considered. The best interface to provide this information is
-            using :ref:`~adaptivefilter.asprs`.
+            using :code:`adaptivefiltering.asprs`.
         :type classification: tuple
         :param resolution:
             The spatial resolution in meters (needed for all types except `scatter`).
@@ -120,9 +123,11 @@ class DataSet:
 
     def save(self, filename, compress=False, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
+
         This writes this instance of the data set to an LAS/LAZ file which will
         permanently store the ground point classification. The resulting file will
         also contain the point data from the original data set.
+
         :param filename:
             Where to store the new LAS/LAZ file. You can either specify an absolute path
             or a relative path. Relative paths are interpreted w.r.t. the current
@@ -163,6 +168,7 @@ class DataSet:
 
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
+
         :param segmentation:
         :type: adaptivefiltering.segmentation.Segmentation
         """
@@ -174,10 +180,12 @@ class DataSet:
 
     def provenance(self, stream=sys.stdout):
         """Report the provence of this data set
+
         For the given data set instance, report the input data and filter
         sequence (incl. filter settings) that procuced this data set. This
         can be used to make good filtering results achieved while using the
         package reproducible.
+
         :param stream:
             The stream to write the results to. Defaults to stdout, but
             could also e.g. be a file stream.
@@ -199,7 +207,7 @@ class DigitalSurfaceModel:
         """Representation of a rasterized DEM/DTM/DSM/DFM
 
         Constructs a raster model from a dataset. This is typically used
-        implicitly or through :ref:`~adaptivefilter.DataSet.rasterize`.
+        implicitly or through :func:`~adaptivefiltering.DataSet.rasterize`.
         """
 
         from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
@@ -340,9 +348,11 @@ class DigitalSurfaceModel:
 
 def remove_classification(dataset):
     """Remove the classification values from a Lidar dataset
+
     Instead, all points will be classified as 1 (unclassified). This is useful
     to drop an automatic preclassification in order to create an archaelogically
     relevant classification from scratch.
+
     :param dataset:
         The dataset to remove the classification from
     :type dataset: adaptivefiltering.Dataset
@@ -366,8 +376,8 @@ def remove_classification(dataset):
 
 
 def reproject_dataset(dataset, out_srs, in_srs=None):
-    """
-    Standalone function to reproject a given dataset with the option of forcing an input reference system
+    """Standalone function to reproject a given dataset with the option of forcing an input reference system
+
     :param out_srs: The desired output format in WKT.
     :type out_srs: str
     :param in_srs: The input format in WKT from which to convert. The default is the dataset's current reference system.
