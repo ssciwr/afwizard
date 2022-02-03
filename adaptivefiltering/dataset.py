@@ -1,10 +1,12 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError, check_spatial_reference
+from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.visualization import gdal_visualization
 
 from osgeo import gdal
 
+import fnmatch
+import ipyfilechooser
 import ipywidgets
 import json
 import jsonschema
@@ -12,7 +14,6 @@ import os
 import pytools
 import shutil
 import sys
-import tempfile
 
 
 class DataSet:
@@ -275,7 +276,58 @@ class DigitalSurfaceModel:
         box_layout = ipywidgets.Layout(
             width="100%", flex_flow="column", align_items="center", display="flex"
         )
-        return ipywidgets.HBox(children=[vis], layout=box_layout)
+
+        # Controls for saving this image
+        patterns = {"PNG": "*.png", "GeoTiff": "*.tiff"}
+        selector = ipywidgets.Dropdown(
+            options=["PNG", "GeoTiff"],
+            value="PNG",
+            description="File type:",
+            layout=ipywidgets.Layout(width="25%"),
+        )
+        filename = ipyfilechooser.FileChooser(
+            layout=ipywidgets.Layout(width="50%"),
+            filter_pattern=patterns[selector.value],
+        )
+        button = ipywidgets.Button(
+            description="Save this image!", layout=ipywidgets.Layout(width="25%")
+        )
+
+        def _update_pattern(_):
+            # Set the new pattern
+            filename.filter_pattern = patterns[selector.value]
+
+            # If the current value does not match the pattern remove it
+            if filename.value and not fnmatch.fnmatch(
+                filename.value, filename.filter_pattern
+            ):
+                filename.reset()
+
+        selector.observe(_update_pattern, names="value")
+
+        def _save_to_file(_):
+            if filename.value:
+                # We already have the GeoTiff file in a temporary directory - simple copy
+                if selector.value == "GeoTiff":
+                    shutil.copy(self.filename, filename.value)
+
+                # For PNGs we need to write the binary buffer to file
+                if selector.value == "PNG":
+                    with open(filename.value, "wb") as f:
+                        f.write(vis.value)
+
+        button.on_click(_save_to_file)
+
+        return ipywidgets.HBox(
+            children=[
+                vis,
+                ipywidgets.HBox(
+                    children=[selector, filename, button],
+                    layout=ipywidgets.Layout(width="70%"),
+                ),
+            ],
+            layout=box_layout,
+        )
 
 
 def remove_classification(dataset):
