@@ -11,6 +11,7 @@ class AdaptiveFilteringError(Exception):
 
 
 def is_iterable(object):
+    """Whether the object is an iterable (excluding a string)"""
     return isinstance(object, collections.abc.Iterable) and not isinstance(object, str)
 
 

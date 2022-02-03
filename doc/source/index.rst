@@ -3,7 +3,6 @@
    :caption: Contents:
 
    intro
-   basics
-   advanced
+   workflows
    user_API
    developer_API

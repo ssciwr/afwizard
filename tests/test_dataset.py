@@ -75,12 +75,6 @@ def test_remove_classification(minimal_dataset):
     assert vals == (1,)
 
 
-def test_provenance(minimal_dataset):
-    # For now, only check that output to a stream works
-    with io.StringIO() as out:
-        minimal_dataset.provenance(out)
-
-
 def test_reproject_dataset(dataset):
     from adaptivefiltering.dataset import reproject_dataset
 
