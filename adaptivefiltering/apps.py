@@ -69,7 +69,12 @@ class InteractiveWidgetOutputProxy:
         self._obj = self._finalization_hook(self._obj)
         self._finalized = True
 
-    def __getattr__(self, attr):
+    def __getattribute__(self, attr):
+        # We forward *everything* to the contained object but methods
+        # prefixes with a single underscore which are fields of the proxy itself.
+        if attr.startswith("_") and not attr.startswith("__"):
+            return object.__getattribute__(self, attr)
+
         # If not finalized, we recreate the object on every member access
         if not self._finalized:
             self._obj = self._creator()
@@ -83,6 +88,10 @@ class InteractiveWidgetOutputProxy:
         # member access. Without this method, Python would claim the proxy is not
         # iterable even if self._obj is perfectly iterable.
         return self._obj.__iter__()
+
+    def _ipython_display_(self):
+        # Make sure that Jupyter prints the repr of our object instead of the proxy
+        print(self._obj.__repr__())
 
 
 @contextlib.contextmanager
