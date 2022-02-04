@@ -12,6 +12,7 @@ opals_2.3.2
 
 # Exclude LASTools-related files
 LAStools.zip
+LAStools
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
