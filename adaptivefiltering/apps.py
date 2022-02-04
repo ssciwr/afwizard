@@ -70,9 +70,15 @@ class InteractiveWidgetOutputProxy:
         self._finalized = True
 
     def __getattribute__(self, attr):
-        # We forward *everything* to the contained object but methods
-        # prefixes with a single underscore which are fields of the proxy itself.
-        if attr.startswith("_") and not attr.startswith("__"):
+        # White list the attributes we always use from the proxy object
+        if attr in (
+            "_creator",
+            "_finalize",
+            "_finalized",
+            "_finalization_hook",
+            "_obj",
+        ):
+            # Using the object baseclass here prevents infinite recursion
             return object.__getattribute__(self, attr)
 
         # If not finalized, we recreate the object on every member access
