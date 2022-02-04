@@ -1,5 +1,5 @@
 # This is the single source of truth
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 # Make sure to import modules that register filter backends
 import adaptivefiltering.lastools
