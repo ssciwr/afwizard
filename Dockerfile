@@ -23,4 +23,4 @@ RUN rm -rf ${HOME}/work
 
 # Copy the artifacts from stage 0 that we need
 COPY --from=builder /opt/conda /opt/conda
-COPY --from=builder /opt/adaptivefiltering/jupyter/* ${HOME}/
+COPY --from=builder /opt/adaptivefiltering/jupyter/*.ipynb ${HOME}/
