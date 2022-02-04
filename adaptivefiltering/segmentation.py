@@ -242,7 +242,7 @@ class Map:
 
         :param _type: Can either be "Hillshade" or "Slope"
         :type _type: String
-        :param classification: a asprs classification that will be passed on to the visualisation function. Default = asprs[:]
+        :param classification: a asprs classification that will be passed on to the visualisation function. Defaults to all classification values.
         :type classification: asprs
         :param resolution:resolution for the visualisation. Default = 2
         :type resolution: int
@@ -256,7 +256,7 @@ class Map:
 
         # If no classification value was given, we use all classes
         if classification is None:
-            classification = asprs[:]
+            classification = asprs(slice(None))
 
         if self.dataset == None:
             raise AdaptiveFilteringError(

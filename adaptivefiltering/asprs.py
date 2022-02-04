@@ -44,68 +44,57 @@ def asprs_class_name(code):
         )
 
 
-class ASPRSClassification:
-    """A data structure that describes the ASPRS Standard Lidar Point Classes"""
+def asprs(*vals):
+    """Map a number of values to ASPRS classification codes
 
-    def __getitem__(self, class_):
-        """Create a classification value sequence from input"""
-
-        # This might be a slice, which we will resolve to an integer sequence
-        if isinstance(class_, slice):
-            # If start is not given, it is zero
-            start = class_.start
-            if start is None:
-                start = 0
-
-            # If stop is not given, it is the maximum possible classification value: 255
-            stop = class_.stop
-            if stop is None:
-                stop = 255
-            # This adaptation is necessary to be able to use the range generator below
-            stop = stop + 1
-
-            # Collect the list of arguments to the range generator
-            args = [start, stop]
-
-            # Add a third parameter iff the slice step parameter was given
-            if class_.step is not None:
-                args.append(class_.step)
-
-            # Return the tuple of classification values
-            return tuple(range(*args))
-
-        def _process_list_item(item):
-            """Process a single given classification value"""
-            if isinstance(item, str):
-                # If this is a string we try to split it at commas
-                subitems = item.split(",")
-                if len(subitems) > 1:
-                    # If a comma-separated list was given, we return the union of classification
-                    # values for each of the entries of that list
-                    return sum((_process_list_item(i.strip()) for i in subitems), ())
-                else:
-                    return asprs_class_code(item.strip())
-
-            # If no string was given, we assume that a plain integer was given
-            assert isinstance(item, int)
-
-            # Check whether the value is in the interval [0, 255]
-            if item < 0 or item > 255:
-                raise AdaptiveFilteringError(
-                    "Classification values need to be in the interval [0, 255]"
-                )
-
-            return (item,)
-
-        def _sort_uniq(items):
-            return tuple(sorted(set(items)))
-
-        # If a tuple of items was given, we return the union of classification values
-        if isinstance(class_, tuple):
-            return _sort_uniq(sum((_process_list_item(i) for i in class_), ()))
-        else:
-            return _sort_uniq(_process_list_item(class_))
+    :param vals:
+        An arbitrary number of values that somehow describe an ASPRS
+        code. Can be integers which will used directy, can be strings
+        which will be split at commas and then turned into integers
+    :returns:
+        A sorted tuple of integers with ASPRS codes:
+    :rtype: tuple
+    """
+    return tuple(sorted(set(sum((_asprs(v) for v in vals), ()))))
 
 
-# A global object of type ASPRSClassification is available for simple use
-asprs = ASPRSClassification()
+def _asprs(val):
+    if isinstance(val, str):
+        # First, we split at commas and go into recursion
+        pieces = val.split(",")
+        if len(pieces) > 1:
+            return asprs(*pieces)
+
+        # If this is a simple string token it must match a code
+        return asprs_class_code(pieces[0].strip())
+    elif isinstance(val, int):
+        if val < 0 or val > 255:
+            raise AdaptiveFilteringError(
+                "Classification values need to be in the interval [0, 255]"
+            )
+        return (val,)
+    elif isinstance(val, slice):
+        # If start is not given, it is zero
+        start = val.start
+        if start is None:
+            start = 0
+
+        # If stop is not given, it is the maximum possible classification value: 255
+        stop = val.stop
+        if stop is None:
+            stop = 255
+
+        # This adaptation is necessary to be able to use the range generator below
+        stop = stop + 1
+
+        # Collect the list of arguments to the range generator
+        args = [start, stop]
+
+        # Add a third parameter iff the slice step parameter was given
+        if val.step is not None:
+            args.append(val.step)
+
+        # Return the tuple of classification values
+        return tuple(range(*args))
+    else:
+        raise ValueError(f"Cannot handle type {type(val)} in ASPRS classification")

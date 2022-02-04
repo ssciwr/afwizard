@@ -67,7 +67,7 @@ class DataSet:
         """
         # If no classification value was given, we use all classes
         if classification is None:
-            classification = asprs[:]
+            classification = asprs(slice(None))
 
         return DigitalSurfaceModel(
             dataset=self, resolution=resolution, classification=classification
@@ -220,13 +220,17 @@ class DigitalSurfaceModel:
                 "type": "filters.range",
                 "limits": ",".join(
                     f"Classification[{c}:{c}]"
-                    for c in rasterization_options.get("classification", asprs[:])
+                    for c in rasterization_options.get(
+                        "classification", asprs(slice(None))
+                    )
                 ),
             }
         ]
 
         # If we are only using ground, we use a triangulation approach
-        if tuple(rasterization_options.get("classification", asprs[:])) == (2,):
+        if tuple(rasterization_options.get("classification", asprs(slice(None)))) == (
+            2,
+        ):
             config.extend(
                 [
                     {
