@@ -49,19 +49,14 @@ You can try `adaptivefiltering` without prior installation by using [Binder](htt
 
 ### Using Docker
 
-Having set up [Docker](https://docs.docker.com/get-docker/), the following sequence of commands will build an image containing `adaptivefiltering`:
+Having set up [Docker](https://docs.docker.com/get-docker/), you can use `adaptivefiltering` directly from a provided Docker image:
 
 ```
-git clone https://github.com/ssciwr/adaptivefiltering.git
-cd adaptivefiltering
-docker build -t adaptivefiltering:latest .
+docker run -t -p 8888:8888 ssciwr/adaptivefiltering:latest
 ```
 
-You can start the the JupyterLab frontend by doing:
-
-```
-docker run -t -p 8888:8888 adaptivefiltering:latest
-```
+Having executed above command, paste the URL given on the command line into your browser and start using `adaptivefiltering` by looking at the provided Jupyter notebooks.
+This image is limited to working with non-proprietary filtering backends (PDAL only).
 
 ### Using Pip
 
