@@ -60,9 +60,10 @@ This image is limited to working with non-proprietary filtering backends (PDAL o
 
 ### Using Pip
 
-We advise you to use Conda instead for two reasons:
+We advise you to use Conda as `adaptivefiltering` depends on a lot of other Python packages, some of which have external C/C++ dependencies. Using Conda, you get all of these installed automatically, using pip you might need to do a lot of manual work to get the same result.
 
-* We depend on a lot of other Python packages, some of which have external C/C++ dependencies. Using Conda, you get all of these installed automatically, using pip you will need to do a lot of manual work to get the same result.
-* We make use of a lot of Jupyter (Lab) extensions that require an additional activation step after installation. These steps are automatically performed in Conda and need to be done manually with pip.
+That being said, `adaptivefiltering` can be installed from PyPI:
 
-That being said, `adaptivefiltering` can be installed using a normal `pip install` workflow.
+```
+python -m pip install adaptivefiltering
+```
