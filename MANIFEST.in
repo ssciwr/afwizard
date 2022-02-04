@@ -1,1 +1,1 @@
-recursive-include adaptivefiltering_library/schema *.json
+recursive-include adaptivefiltering/schema *.json
