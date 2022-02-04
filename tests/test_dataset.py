@@ -16,10 +16,10 @@ def test_show(dataset):
     # But it helps in measuring coverage of the test suite.
     dataset.show(visualization_type="hillshade")
     dataset.show(visualization_type="hillshade", resolution=5.0)
-    dataset.show(visualization_type="hillshade", classification=asprs[5])
+    dataset.show(visualization_type="hillshade", classification=asprs(5))
     dataset.show(visualization_type="slope")
     dataset.show(visualization_type="slope", resolution=5.0)
-    dataset.show(visualization_type="slope", classification=asprs[5])
+    dataset.show(visualization_type="slope", classification=asprs(5))
 
 
 def test_restriction(minimal_dataset):
