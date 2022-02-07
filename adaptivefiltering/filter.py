@@ -1,6 +1,11 @@
 from adaptivefiltering.paths import load_schema
-from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.widgets import WidgetForm
+from adaptivefiltering.utils import AdaptiveFilteringError, as_number_type
+from adaptivefiltering.versioning import (
+    ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION,
+    ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION,
+    upgrade_filter,
+)
+from adaptivefiltering.widgets import BatchDataWidgetForm
 
 import json
 import jsonmerge
@@ -14,7 +19,7 @@ class FilterError(AdaptiveFilteringError):
 
 
 class Filter:
-    def __init__(self, **config):
+    def __init__(self, _variability=[], **config):
         """The base class for a filter in adaptivefiltering
 
         A filter can either be constructed from a configuration or be deserialized
@@ -26,6 +31,7 @@ class Filter:
         :type config: dict
         """
         self.config = config
+        self.variability = _variability
 
     # Store a registry of filter implementations derived from this base class
     _filter_impls = {}
@@ -72,17 +78,92 @@ class Filter:
         # Store the validated config
         self._config = _config
 
-    def execute(self, dataset):
+    @property
+    def variability(self):
+        return self._variability
+
+    @variability.setter
+    def variability(self, _variability):
+        # Validate the variability input
+        _variability = pyrsistent.thaw(_variability)
+        schema = load_schema("variability.json")
+        jsonschema.validate(instance=_variability, schema=schema)
+
+        # Filter for persistent variation only
+        var = [v for v in _variability if v["persist"]]
+        self._variability = pyrsistent.freeze(var)
+
+    @property
+    def variability_schema(self):
+        """Create a schema for the variability of this filter"""
+
+        # Access regular filter configuration to get the default value
+        def access_data(data, path=[]):
+            if len(path) == 0:
+                return data
+
+            pathitem = path[-1]
+            if "key" in pathitem:
+                return access_data(data[pathitem["key"]], path=path[:-1])
+            if "index" in pathitem:
+                return access_data(data[pathitem["index"]], path=path[:-1])
+
+        # Create a dictionary schema
+        schema = {"type": "object", "properties": {}}
+
+        # Iterate over given variation points
+        for var in self._variability:
+            if "name" not in var:
+                raise AdaptiveFilteringError(
+                    f"Name argument is required for variability definition"
+                )
+
+            # Create a subschema for this variation
+            varschema = {
+                "type": var["type"],
+                "title": var["name"],
+                "description": var["description"],
+            }
+
+            # Analyse values
+            if varschema["type"] == "string":
+                varschema["enum"] = [v.strip() for v in var["values"].split(",")]
+            elif varschema["type"] in ("integer", "number"):
+                splitted = var["values"].split(",")
+                # This is a discrete variation
+                if len(splitted) > 1:
+                    varschema["enum"] = [
+                        as_number_type(v.strip()) for v in var["values"].split(",")
+                    ]
+                else:
+                    mn, mx = var["values"].split("-")
+                    varschema["minimum"] = as_number_type(varschema["type"], mn)
+                    varschema["maximum"] = as_number_type(varschema["type"], mx)
+            else:
+                raise NotImplementedError(
+                    f"Variability for type {var['type']} not implemented."
+                )
+
+            # Add default by accessing actual configuration
+            varschema["default"] = access_data(self.config, path=var["path"])
+
+            # Merge the subschema into the bigger object schema
+            schema["properties"][var["name"].lower()] = varschema
+
+        return schema
+
+    def execute(self, dataset, **variability_data):
         """Apply the filter to a given data set
 
         This method needs to be implemented by all filter backends. It is expected
         to return a new data set instance that contains the filter result and have
-        no side effects on the input data set. It also needs to record the data provenance
-        on the newly created data set.
+        no side effects on the input data set.
 
         :param dataset:
             The data set to apply the filter to.
         :type dataset: adaptivefiltering.DataSet
+        :param variability_data:
+            Configuration values for the variation points of this filter.
         :return:
             A modified data set instance with the filter applied.
         """
@@ -102,6 +183,7 @@ class Filter:
         """
         data = pyrsistent.thaw(self.config)
         data["_backend"] = self._identifier
+        data["_variability"] = pyrsistent.thaw(self._variability)
         return data
 
     @classmethod
@@ -162,9 +244,9 @@ class Filter:
         """Create a widget form for this filter
 
         :return: The widget form
-        :rtype: :class:`~adaptivefiltering.widgets.WidgetForm`
+        :rtype: :class:`~adaptivefiltering.widgets.BatchDataWidgetForm`
         """
-        form = WidgetForm(self.form_schema())
+        form = BatchDataWidgetForm(self.form_schema(), vertically_place_labels=True)
         form.data = self.config
         return form
 
@@ -185,6 +267,25 @@ class Filter:
     def enabled(cls):
         return True
 
+    def used_backends(self):
+        return (self._identifier,)
+
+    def _modify_filter_config(self, variability_data):
+        # Validate the given variablity data
+        jsonschema.validate(
+            instance=pyrsistent.thaw(variability_data), schema=self.variability_schema
+        )
+
+        # Update a copy of the configuration according to the given data
+        config = self.config
+        for var in self.variability:
+            value = variability_data.get(var["name"].lower(), None)
+            if value is not None:
+                var = var.update({"values": value})
+                config = update_data(config, var)
+
+        return config
+
 
 # Register the base class itself
 Filter._filter_impls["base"] = Filter
@@ -193,7 +294,7 @@ Filter._identifier = "base"
 
 
 class PipelineMixin:
-    def __init__(self, **kwargs):
+    def __init__(self, _variability=[], **kwargs):
         """A filter pipeline consisting of several steps
 
         :param filters:
@@ -210,6 +311,7 @@ class PipelineMixin:
         kwargs["filters"] = filters
 
         self.config = kwargs
+        self.variability = _variability
 
     @classmethod
     def _schema_impl(cls, method):
@@ -257,26 +359,45 @@ class PipelineMixin:
             filters=self.config["filters"] + other.as_pipeline().config["filters"]
         )
 
+    def used_backends(self):
+        return tuple(set(f["_backend"] for f in self.config["filters"]))
+
     @property
     def author(self):
         """The author of this profile"""
-        return self.config["metadata"]["author"]
+        return self.config.get("metadata", {}).get("author", "")
 
     @property
     def description(self):
         """A description of the usage scenarios for this profile."""
-        return self.config["metadata"]["description"]
+        return self.config.get("metadata", {}).get("description", "")
 
     @property
     def example_data_url(self):
         """A link to a data set that this profile excels at filtering."""
-        return self.config["metadata"]["example_data_url"]
+        return self.config.get("metadata", {}).get("example_data_url", "")
+
+    @property
+    def title(self):
+        """A telling display name for the filter pipeline"""
+        return self.config.get("metadata", {}).get("title", "")
+
+    @property
+    def keywords(self):
+        """The keywords that describe this filter pipeline"""
+        return self.config.get("metadata", {}).get("keywords", ())
 
 
 class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
-    def execute(self, dataset):
-        for f in self.config["filters"]:
-            fobj = deserialize_filter(pyrsistent.thaw(f))
+    def execute(self, dataset, **variability_data):
+        # Apply variabilility without changing self
+        config = self._modify_filter_config(variability_data)
+
+        for f in config["filters"]:
+            data = pyrsistent.thaw(f)
+            data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
+            data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
+            fobj = deserialize_filter(data)
             dataset = fobj.execute(dataset)
 
         return dataset
@@ -290,6 +411,8 @@ def serialize_filter(filter_):
     """
     data = filter_._serialize()
     data["_backend"] = filter_._identifier
+    data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
+    data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
     return data
 
 
@@ -302,6 +425,9 @@ def deserialize_filter(data):
     """
     # Find the correct type and do the deserialization
     type_ = Filter._filter_impls[data["_backend"]]
+    data = upgrade_filter(data)
+    data.pop("_major")
+    data.pop("_minor")
     return type_._deserialize(data)
 
 
@@ -318,7 +444,17 @@ def save_filter(filter_, filename):
         The filename where to write the filter. Relative paths are interpreted
         w.r.t. the current working directory.
     """
-    filename = os.path.abspath(filename)
+
+    # If the filename is not already absolute, we maybe
+    if not os.path.isabs(filename):
+        from adaptivefiltering.library import get_current_filter_library
+
+        lib = get_current_filter_library()
+        if lib is None:
+            filename = os.path.abspath(filename)
+        else:
+            filename = os.path.join(lib, filename)
+
     with open(filename, "w") as f:
         json.dump(serialize_filter(filter_), f)
 
@@ -334,11 +470,46 @@ def load_filter(filename=None):
         w.r.t. the current working directory.
     :type filename: str
     """
-    if filename == None:
+    if filename is None:
         from adaptivefiltering.widgets import upload_files
 
         filename = upload_files("./filters_test_upload/")
     else:
-        filename = os.path.abspath(filename)
+        # Find the file across all libraries
+        from adaptivefiltering.library import locate_filter
+
+        filename = locate_filter(filename)
+
     with open(filename, "r") as f:
         return deserialize_filter(json.load(f))
+
+
+def update_data(data, modifier):
+    """Update a pyrsistent data structure according to a given modifier"""
+    if len(modifier["path"]) == 0:
+        return modifier["values"]
+
+    pathitem = modifier["path"][-1]
+    if "key" in pathitem:
+        return data.update(
+            {
+                pathitem["key"]: update_data(
+                    data[pathitem["key"]],
+                    {"path": modifier["path"][:-1], "values": modifier["values"]},
+                )
+            }
+        )
+    if "index" in pathitem:
+        l = data.tolist()
+        l[pathitem["index"]] = update_data(
+            l[pathitem["index"]],
+            {"path": modifier["path"][:-1], "values": modifier["values"]},
+        )
+        return pyrsistent.pvector(l)
+
+
+def modify_filter_config(config, moddata, variation):
+    for var in variation:
+        var["values"] = moddata[var["name"].lower()]
+        config = update_data(config, var)
+    return config

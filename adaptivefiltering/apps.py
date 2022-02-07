@@ -1,32 +1,26 @@
 from adaptivefiltering.asprs import asprs_class_name
 from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel, reproject_dataset
-from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.filter import Pipeline, Filter, update_data
+from adaptivefiltering.library import (
+    get_filter_libraries,
+    library_keywords,
+)
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import Map, Segmentation
-from adaptivefiltering.widgets import WidgetForm
+from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.widgets import WidgetFormWithLabels
 
+import collections
 import contextlib
 import copy
 import ipywidgets
+import ipywidgets_jsonschema
 import IPython
 import itertools
-import math
 import numpy as np
+import pyrsistent
 import pytools
-
-
-def sized_label(text, size=12):
-    """Create a text label widget with a given font size
-
-    :param text:
-        The text to show.
-    :type text: str
-    :param size:
-        The fontsize
-    :type size: int
-    """
-    return ipywidgets.HTML(value=f"<h3 style='font-size: {str(size)}px'>{text}</h>")
 
 
 fullwidth = ipywidgets.Layout(width="100%")
@@ -36,10 +30,21 @@ class InteractiveWidgetOutputProxy:
     def __init__(self, creator, finalization_hook=lambda obj: obj):
         """An object to capture interactive widget output
 
+        This class is a workaround to the general problem that it is extremely
+        hard to create asynchronous Jupyter widgets that block the frontend until
+        user interaction has occured. We solve it by immediately returning this
+        proxy object which is constantly updated according to widget state until
+        it is finalized. To the user, the proxy object should behave exactly like
+        the original object (duck typing).
+
         :param creator:
             A callable accepting no parameters that constructs the return
             object. It will typically depend on widget state.
         :type creator: Callable
+        :param finalization_hook:
+            A callable accepting the an object and return a modified version of it.
+            This callable is called exactly once when the proxy is finalized. The
+            default callable is no-op.
         """
         # Save the creator function for later use
         self._creator = creator
@@ -54,9 +59,6 @@ class InteractiveWidgetOutputProxy:
         # Store whether this object has been finalized
         self._finalized = False
 
-        # Docstring Forwarding
-        self.__doc__ = getattr(self._obj, "__doc__", "")
-
     def _finalize(self):
         """Finalize the return object.
 
@@ -67,7 +69,18 @@ class InteractiveWidgetOutputProxy:
         self._obj = self._finalization_hook(self._obj)
         self._finalized = True
 
-    def __getattr__(self, attr):
+    def __getattribute__(self, attr):
+        # White list the attributes we always use from the proxy object
+        if attr in (
+            "_creator",
+            "_finalize",
+            "_finalized",
+            "_finalization_hook",
+            "_obj",
+        ):
+            # Using the object baseclass here prevents infinite recursion
+            return object.__getattribute__(self, attr)
+
         # If not finalized, we recreate the object on every member access
         if not self._finalized:
             self._obj = self._creator()
@@ -75,38 +88,53 @@ class InteractiveWidgetOutputProxy:
         # Forward this to the actual object
         return getattr(self._obj, attr)
 
+    def __iter__(self):
+        # The necessity of this method is a mystery to me. I suspect that CPython
+        # has some sort of built-in magic regarding iteration that bypasses regular
+        # member access. Without this method, Python would claim the proxy is not
+        # iterable even if self._obj is perfectly iterable.
+        return self._obj.__iter__()
+
+    def _ipython_display_(self):
+        # Make sure that Jupyter prints the repr of our object instead of the proxy
+        print(self._obj.__repr__())
+
 
 @contextlib.contextmanager
 def hourglass_icon(button):
-    """Context manager to show an hourglass icon while processing"""
+    """Context manager to temporarily show an hourglass icon on a button
+
+    :param button: The button
+    :type button: ipywidgets.Button
+    """
     button.icon = "hourglass-half"
     yield
     button.icon = ""
 
 
-def flex_square_layout(widgets):
-    """Place widgets into a grid layout that is approximately square."""
-    # Arrange the widgets in a flexible square layout
-    grid_cols = math.ceil(math.sqrt(len(widgets)))
-    grid_rows = math.ceil(len(widgets) / grid_cols)
-
-    # Fill the given widgets into a GridspecLayout
-    grid = ipywidgets.GridspecLayout(grid_rows, grid_cols)
-    for i, xy in enumerate(itertools.product(range(grid_rows), range(grid_cols))):
-        if i < len(widgets):
-            grid[xy] = widgets[i]
-
-    return grid
-
-
 def as_pdal(dataset):
+    """Transform a dataset or digital surface model into a PDAL dataset"""
     if isinstance(dataset, DigitalSurfaceModel):
         return as_pdal(dataset.dataset)
     return PDALInMemoryDataSet.convert(dataset)
 
 
 def classification_widget(datasets, selected=None):
-    """Create a widget to select classification values"""
+    """Create a widget to select classification values
+
+    The shown classification values are taken from the datasets themselves
+    and the total amount of points for each class is shown in the widget.
+    The widget then allows to select an arbitrary number of classes. By default,
+    all classes are selected, unless ground points are present in the datasets
+    in which case only these are selected.
+
+    :param datasets:
+        A list of datasets.
+    :type datasets: list
+    :param selected:
+        An optional list of pre-selected indices.
+    :type selected: list
+    """
 
     # Determine classes present across all datasets
     joined_count = {}
@@ -123,11 +151,12 @@ def classification_widget(datasets, selected=None):
     # If the dataset already contains ground points, we only want to use
     # them by default. This saves tedious work for the user who is interested
     # in ground point filtering results.
-    if 2 in joined_count:
-        selected = [2]
-    elif selected is None:
-        # If there are no ground points, we use all classes
-        selected = list(joined_count.keys())
+    if selected is None:
+        if 2 in joined_count:
+            selected = [2]
+        else:
+            # If there are no ground points, we use all classes
+            selected = list(joined_count.keys())
 
     return ipywidgets.SelectMultiple(
         options=[
@@ -138,12 +167,131 @@ def classification_widget(datasets, selected=None):
     )
 
 
-@pytools.memoize(key=lambda d, p: (d, p.config))
-def cached_pipeline_application(dataset, pipeline):
-    return pipeline.execute(dataset)
+@pytools.memoize(key=lambda d, p, **c: (d, p.config, pyrsistent.pmap(c)))
+def cached_pipeline_application(dataset, pipeline, **config):
+    """Call filter pipelinex execution in a cached way"""
+    return pipeline.execute(dataset, **config)
+
+
+def expand_variability_string(varlist, type_="string", samples_for_continuous=5):
+    """Split a string into variants allowing comma separation and ranges with dashes
+
+    :param varlist:
+        The input string to expand
+    :type varlist: str
+    :param type_:
+        The type of the variables to return. Maybe `string`, `integer` or `number`.
+    :type type_: str
+    :param samples_for_continuous:
+        The number of samples to use when resolving ranges of floating point values (defaults to 5)
+    :type samples_for_continuous: int
+    """
+    # For discrete variation, we use comma separation
+    for part in varlist.split(","):
+        part = part.strip()
+
+        # If this is a numeric parameter it might also have ranges specified by dashes
+        if type_ == "number":
+            range_ = part.split("-")
+
+            if len(range_) == 1:
+                yield float(part)
+
+            # If a range was found we handle this
+            if len(range_) == 2:
+                for i in range(samples_for_continuous):
+                    yield float(range_[0]) + i / (samples_for_continuous - 1) * (
+                        float(range_[1]) - float(range_[0])
+                    )
+
+            # Check for weird patterns like "0-5-10"
+            if len(range_) > 2:
+                raise ValueError(f"Given an invalid range of parameters: '{part}'")
+
+        if type_ == "integer":
+            range_ = part.split("-")
+
+            if len(range_) == 1:
+                yield int(part)
+
+            if len(range_) == 2:
+                if type_ == "integer":
+                    for i in range(int(range_[0]), int(range_[1]) + 1):
+                        yield i
+
+            if len(range_) > 2:
+                raise ValueError(f"Given an invalid range of parameters: '{part}'")
+
+        if type_ == "string":
+            yield part
+
+
+def create_variability(batchdata, samples_for_continuous=5, non_persist_only=True):
+    """Create combinatorical product of specified variants
+
+    :param batchdata:
+        The variability data provided by the filter data model.
+    :type batchdata: list
+    :param samples_for_continuous:
+        The number of samples to use when resolving ranges of floating point values (defaults to 5)
+    :type samples_for_continuous: int
+    :param non_persist_only:
+        Whether or not the creation of variability is restricted to entries
+        with `persist=False`. The `persist` field is used to distinguish batch
+        processing from end user configuration.
+    :type non_persist_only: bool
+    """
+    if non_persist_only:
+        batchdata = [bd for bd in batchdata if not bd["persist"]]
+
+    variants = []
+    varpoints = [
+        tuple(
+            expand_variability_string(
+                bd["values"],
+                samples_for_continuous=samples_for_continuous,
+                type_=bd["type"],
+            )
+        )
+        for bd in batchdata
+    ]
+    for combo in itertools.product(*varpoints):
+        variant = []
+        for i, val in enumerate(combo):
+            newbd = batchdata[i].copy()
+            newbd["values"] = val
+            variant.append(newbd)
+        variants.append(variant)
+
+    return variants
+
+
+# A data structure to store widgets within to quickly navigate back and forth
+# between visualizations in the pipeline_tuning widget.
+PipelineWidgetState = collections.namedtuple(
+    "PipelineWidgetState",
+    ["pipeline", "rasterization", "visualization", "classification", "image"],
+)
 
 
 def pipeline_tuning(datasets=[], pipeline=None):
+    """The Jupyter UI to create a filtering pipeline from scratch.
+
+    The use of this UI is described in detail in `the notebook on creating filter pipelines`_.
+
+    .. _the notebook on creating filter pipelines: filtering.nblink
+
+    :param datasets:
+        One or more instances of Lidar datasets to work on
+    :type datasets: list
+    :param pipeline:
+        A pipeline to use as a starting point. If omitted, a new pipeline object will be created.
+    :type pipeline: adaptivefiltering.filter.Pipeline
+    :return:
+        Returns the created pipeline object
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
     # Instantiate a new pipeline object if we are not modifying an existing one.
     if pipeline is None:
         pipeline = Pipeline()
@@ -152,8 +300,143 @@ def pipeline_tuning(datasets=[], pipeline=None):
     if isinstance(datasets, DataSet):
         datasets = [datasets]
 
-    # Get the widget form for this pipeline
-    form = pipeline.widget_form()
+    # Assert that at least one dataset has been provided
+    if len(datasets) == 0:
+        raise AdaptiveFilteringError(
+            "At least one dataset must be provided to pipeline_tuning"
+        )
+
+    # Create the data structure to store the history of visualizations in this app
+    history = []
+
+    # Loop over the given datasets
+    def create_history_item(ds, data, classes=None):
+        # Create a new classification widget and insert it into the Box
+        _class_widget = classification_widget([ds], selected=classes)
+        app.right_sidebar.children[-1].children = (_class_widget,)
+
+        # Create widgets from the datasets
+        image = ipywidgets.Box(
+            children=[
+                ds.show(
+                    classification=class_widget.children[0].value,
+                    **rasterization_widget_form.data,
+                    **visualization_form.data,
+                )
+            ]
+        )
+
+        # Add the set of widgets to our history
+        history.append(
+            PipelineWidgetState(
+                pipeline=data,
+                rasterization=rasterization_widget_form.data,
+                visualization=visualization_form.data,
+                classification=_class_widget,
+                image=image,
+            )
+        )
+
+        # Add it to the center Tab widget
+        nonlocal center
+        index = len(center.children)
+        center.children = center.children + (image,)
+        center.titles = center.titles + (f"#{index}",)
+
+    # Configure control buttons
+    preview = ipywidgets.Button(description="Preview", layout=fullwidth)
+    finalize = ipywidgets.Button(description="Finalize", layout=fullwidth)
+    delete = ipywidgets.Button(
+        description="Delete this filtering", layout=ipywidgets.Layout(width="50%")
+    )
+    delete_all = ipywidgets.Button(
+        description="Delete filtering history", layout=ipywidgets.Layout(width="50%")
+    )
+
+    # The center widget holds the Tab widget to browse history
+    center = ipywidgets.Tab(children=[], titles=[])
+    center.layout = fullwidth
+
+    def _switch_tab(_):
+        if len(center.children) > 0:
+            item = history[center.selected_index]
+            pipeline_form.data = item.pipeline
+            rasterization_widget_form.data = item.rasterization
+            visualization_form_widget.data = item.visualization
+            classification_widget.children = (item.classification,)
+
+    def _trigger_preview(config=None):
+        if config is None:
+            config = pipeline_form.data
+
+        # Extract the currently selected classes and implement heuristic:
+        # If ground was already in the classification, we keep the values
+        if history:
+            old_classes = history[-1].classification.value
+            had_ground = 2 in [o[1] for o in history[-1].classification.options]
+            classes = old_classes if had_ground else None
+        else:
+            classes = None
+
+        for ds in datasets:
+            # Extract the pipeline from the widget
+            nonlocal pipeline
+            pipeline = pipeline.copy(**config)
+
+            # TODO: Do this in parallel!
+            with within_temporary_workspace():
+                transformed = cached_pipeline_application(ds, pipeline)
+
+            # Create a new entry in the history list
+            create_history_item(transformed, config, classes=classes)
+
+            # Select the newly added tab
+            center.selected_index = len(center.children) - 1
+
+    def _update_preview(button):
+        with hourglass_icon(button):
+            # Check whether there is batch-processing information
+            batchdata = pipeline_form.batchdata
+
+            if len(batchdata) == 0:
+                _trigger_preview()
+            else:
+                for variant in create_variability(batchdata):
+                    config = pipeline_form.data
+
+                    # Modify all the necessary bits
+                    for mod in variant:
+                        config = update_data(config, mod)
+
+                    _trigger_preview(config)
+
+    def _delete_history_item(_):
+        i = center.selected_index
+        nonlocal history
+        history = history[:i] + history[i + 1 :]
+        center.children = center.children[:i] + center.children[i + 1 :]
+        center.selected_index = len(center.children) - 1
+
+        # This ensures that widgets are updated when this tab is removed
+        _switch_tab(None)
+
+    def _delete_all(_):
+        nonlocal history
+        history = []
+        center.children = tuple()
+
+    # Register preview button click handler
+    preview.on_click(_update_preview)
+
+    # Register delete button click handler
+    delete.on_click(_delete_history_item)
+    delete_all.on_click(_delete_all)
+
+    # When we switch tabs, all widgets should restore the correct information
+    center.observe(_switch_tab, names="selected_index")
+
+    # Create the (persisting) building blocks for the app
+    pipeline_form = pipeline.widget_form()
 
     # Get a widget for rasterization
     raster_schema = copy.deepcopy(load_schema("rasterize.json"))
@@ -161,138 +444,66 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget_form = ipywidgets_jsonschema.Form(
+        raster_schema, vertically_place_labels=True
+    )
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
-    visualization_form = WidgetForm(schema)
+    visualization_form = ipywidgets_jsonschema.Form(
+        schema, vertically_place_labels=True
+    )
     visualization_form_widget = visualization_form.widget
     visualization_form_widget.layout = fullwidth
 
-    # Get the classification value selection widget
-    _class_widget = classification_widget(datasets)
-    class_widget = ipywidgets.Box([_class_widget])
-
-    # Configure control buttons
-    preview = ipywidgets.Button(description="Preview")
-    finalize = ipywidgets.Button(description="Finalize")
-
-    # Create widgets from the datasets
-    widgets = [
-        ds.show(
-            classification=class_widget.children[0].value,
-            **rasterization_widget_form.data,
-        )
-        for ds in datasets
-    ]
-
-    # If no datasets were given, we add a dummy widget that explains the situation
-    if not widgets:
-        widgets = [
-            sized_label(
-                "Please call with datasets for interactive visualization", size=18
-            )
-        ]
-
-    def _update_preview(button):
-        with hourglass_icon(button):
-            # Update the pipeline object according to the widget
-            nonlocal pipeline
-            pipeline = pipeline.copy(**form.data)
-
-            # Apply the pipeline to all datasets
-            # TODO: Do this in parallel!
-            with within_temporary_workspace():
-                transformed_datasets = [
-                    cached_pipeline_application(d, pipeline) for d in datasets
-                ]
-
-            # Update the classification widget with the classes now present in datasets
-            selected = class_widget.children[0].value
-            class_widget.children = (
-                classification_widget(transformed_datasets, selected=selected),
-            )
-
-            # Write new widgets
-            new_widgets = [
-                ds.show(
-                    classification=class_widget.children[0].value,
-                    **rasterization_widget_form.data,
-                    **visualization_form.data,
-                )
-                for ds in transformed_datasets
-            ]
-
-            nonlocal app
-            app.center = create_center_widget(new_widgets)
-
-    preview.on_click(_update_preview)
-
-    # Create the filter configuration widget including layout tweaks
-    left_sidebar = ipywidgets.VBox(
-        [
-            ipywidgets.HTML("Interactive pipeline configuration:", layout=fullwidth),
-            form.widget,
-        ]
-    )
-
-    def create_center_widget(widgets):
-        # Create the center widget including layout tweaks
-        if len(widgets) > 1:
-            # We use the Tab widget to allow switching between different datasets
-            center = ipywidgets.Tab(children=widgets)
-
-            # Set titles for the different tabs
-            for i in range(len(widgets)):
-                center.set_title(i, f"Dataset #{i}")
-
-            center.layout = fullwidth
-
-            return center
-        else:
-            widgets[0].layout = ipywidgets.Layout(
-                width="100%", flex_flow="column", align_items="center", display="flex"
-            )
-            return widgets[0]
-
-    # Create the right sidebar including layout tweaks
-    preview.layout = fullwidth
-    finalize.layout = fullwidth
+    # Get the container widget for classification
+    class_widget = ipywidgets.Box([])
     class_widget.layout = fullwidth
-    right_sidebar = ipywidgets.VBox(
-        [
-            ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
-            preview,
-            finalize,
-            ipywidgets.HTML("Rasterization options:", layout=fullwidth),
-            rasterization_widget,
-            ipywidgets.HTML("Visualization options:", layout=fullwidth),
-            visualization_form_widget,
-            ipywidgets.HTML(
-                "Point classifications to include in the hillshade visualization (click preview to update):",
-                layout=fullwidth,
-            ),
-            class_widget,
-        ]
-    )
 
     # Create the final app layout
     app = ipywidgets.AppLayout(
-        header=None,
-        left_sidebar=left_sidebar,
-        center=create_center_widget(widgets),
-        right_sidebar=right_sidebar,
-        footer=None,
-        pane_widths=[3, 6, 3],
+        left_sidebar=ipywidgets.VBox(
+            [
+                ipywidgets.HTML(
+                    "Interactive pipeline configuration:", layout=fullwidth
+                ),
+                pipeline_form.widget,
+            ]
+        ),
+        center=center,
+        right_sidebar=ipywidgets.VBox(
+            [
+                ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
+                preview,
+                finalize,
+                ipywidgets.HBox([delete, delete_all]),
+                ipywidgets.HTML("Rasterization options:", layout=fullwidth),
+                rasterization_widget,
+                ipywidgets.HTML("Visualization options:", layout=fullwidth),
+                visualization_form_widget,
+                ipywidgets.HTML(
+                    "Point classifications to include in the hillshade visualization (click preview to update):",
+                    layout=fullwidth,
+                ),
+                class_widget,
+            ]
+        ),
     )
+
+    # Initially trigger preview generation
+    preview.click()
 
     # Show the app in Jupyter notebook
     IPython.display.display(app)
 
     # Implement finalization
-    pipeline_proxy = InteractiveWidgetOutputProxy(lambda: pipeline.copy(**form.data))
+    pipeline_proxy = InteractiveWidgetOutputProxy(
+        lambda: pipeline.copy(
+            _variability=pipeline_form.batchdata, **pipeline_form.data
+        )
+    )
 
     def _finalize(_):
         app.layout.display = "none"
@@ -311,15 +522,19 @@ def setup_rasterize_side_panel(dataset):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = WidgetForm(raster_schema)
+    rasterization_widget_form = WidgetFormWithLabels(raster_schema)
+    print("test1")
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
-    form = WidgetForm(schema)
+    print("test2")
+
+    form = WidgetFormWithLabels(schema)
     formwidget = form.widget
     formwidget.layout = fullwidth
+    print("test3")
 
     # Create the classification widget
     classification = classification_widget([dataset])
@@ -327,15 +542,19 @@ def setup_rasterize_side_panel(dataset):
 
     widged_list = [rasterization_widget, formwidget, classification]
     form_list = [rasterization_widget_form, form]
+    print("test4")
 
     return widged_list, form_list
 
 
 def create_segmentation(dataset):
+    """The Jupyter UI to create a segmentation object from scratch.
+
+    The use of this UI will soon be described in detail.
+    """
     # create instance of dataset with srs of "EPSG:3857",
     # this ensures that the slope and hillshade overlay fit the map projection.
     dataset = reproject_dataset(dataset, "EPSG:3857")
-
     # Create the necessary widgets
 
     map_ = Map(dataset=dataset)
@@ -349,6 +568,7 @@ def create_segmentation(dataset):
     widged_list, form_list = setup_rasterize_side_panel(dataset)
     rasterization_widget, formwidget, classification = widged_list
     rasterization_widget_form, form = form_list
+    print("test5")
 
     # Arrange them into one widget
     map_widget.layout = fullwidth
@@ -391,6 +611,7 @@ def create_segmentation(dataset):
     load_raster_button.on_click(load_raster_to_map)
 
     IPython.display.display(app)
+    print("test6")
 
     # The return proxy object
     segmentation_proxy = InteractiveWidgetOutputProxy(
@@ -407,6 +628,12 @@ def create_segmentation(dataset):
 
 
 def create_upload(filetype):
+    """Create a Jupyter UI snippet that allows a user to upload a file
+
+    :param filetype:
+        The file extension to expect for the upload.
+    :type filetype: str
+    """
 
     confirm_button = ipywidgets.Button(
         description="Confirm upload",
@@ -435,7 +662,24 @@ def create_upload(filetype):
     return upload_proxy
 
 
-def show_interactive(dataset):
+def show_interactive(dataset, filtering_callback=None, update_classification=False):
+    """The interactive UI to visualize a dataset
+
+    :param dataset:
+        The Lidar dataset to visualize
+    :type dataset: adaptivefiltering.DataSet
+    :param filtering_callback:
+        A callback that is called to transform the dataset before visualization.
+        This may be used to hook in additional functionality like the execution
+        of a filtering pipeline
+    :type pipeline: Callable
+    :param update_classification:
+        Whether or not the classification values shown in the UI need to be updated
+        for each preview. Boils down to the question of whether :code:`filtering_callback`
+        potentially changes the classification of the dataset.
+    :type update_classification: bool
+    """
+
     # If dataset is not rasterized already, do it now
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
@@ -465,10 +709,20 @@ def show_interactive(dataset):
 
     def trigger_visualization(b):
         with hourglass_icon(b):
-            # Rerasterize if necessary
+            # Maybe call the given callback
             nonlocal dataset
+            if filtering_callback is not None:
+                dataset = filtering_callback(dataset.dataset).rasterize()
+
+            # Maybe update the classification widget if necessary
+            if update_classification:
+                nonlocal classification
+                classification.children = (classification_widget([dataset]),)
+
+            # Rerasterize if necessary
             dataset = dataset.dataset.rasterize(
-                classification=classification.value, **rasterization_widget_form.data
+                classification=classification.children[0].value,
+                **rasterization_widget_form.data,
             )
 
             # Trigger visualization
@@ -481,3 +735,325 @@ def show_interactive(dataset):
     button.click()
 
     return app
+
+
+def select_pipeline_from_library(multiple=False):
+    """The Jupyter UI to select filtering pipelines from libraries.
+
+    The use of this UI is described in detail in `the notebook on filtering libraries`_.
+
+    .. _the notebook on filtering libraries: libraries.nblink
+
+    :param multiple:
+        Whether or not it should be possible to select multiple filter pipelines.
+    :type multiple: bool
+    :return:
+        Returns the selected pipeline object(s)
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
+    def library_name(lib):
+        if lib.name is not None:
+            return lib.name
+        else:
+            return lib.path
+
+    # Collect checkboxes in the selection menu
+    library_checkboxes = [
+        ipywidgets.Checkbox(value=True, description=library_name(lib), indent=False)
+        for lib in get_filter_libraries()
+    ]
+    backend_checkboxes = {
+        name: ipywidgets.Checkbox(value=cls.enabled(), description=name, indent=False)
+        for name, cls in Filter._filter_impls.items()
+        if Filter._filter_is_backend[name]
+    }
+
+    # Extract all authors that contributed to the filter libraries
+    def get_author(f):
+        if f.author == "":
+            return "(unknown)"
+        else:
+            return f.author
+
+    all_authors = []
+    for lib in get_filter_libraries():
+        for f in lib.filters:
+            all_authors.append(get_author(f))
+    all_authors = list(sorted(set(all_authors)))
+
+    # Create checkbox widgets for the all authors
+    author_checkboxes = {
+        author: ipywidgets.Checkbox(value=True, description=author, indent=False)
+        for author in all_authors
+    }
+
+    # Use a TagsInput widget for keywords
+    keyword_widget = ipywidgets.TagsInput(
+        value=library_keywords(),
+        allow_duplicates=False,
+        tooltip="Keywords to filter for. Filters need to match at least one given keyword in order to be shown.",
+    )
+
+    # Create the filter list widget
+    filter_list = []
+    widget_type = ipywidgets.SelectMultiple if multiple else ipywidgets.Select
+    filter_list_widget = widget_type(
+        options=[f.title for f in filter_list],
+        value=[] if multiple else None,
+        description="",
+        layout=fullwidth,
+    )
+
+    # Create the pipeline description widget
+    metadata_schema = load_schema("pipeline.json")["properties"]["metadata"]
+    metadata_form = WidgetFormWithLabels(metadata_schema, vertically_place_labels=True)
+
+    def metadata_updater(change):
+        # The details of how to access this from the change object differs
+        # for Select and SelectMultiple
+        if multiple:
+            # Check if the change selected a new entry
+            if len(change["new"]) > len(change["old"]):
+                # If so, we display the metadata of the newly selected one
+                (entry,) = set(change["new"]) - set(change["old"])
+                metadata_form.data = filter_list[entry].config["metadata"]
+        else:
+            metadata_form.data = filter_list[change["new"]].config["metadata"]
+
+    filter_list_widget.observe(metadata_updater, names="index")
+
+    # Define a function that allows use to access the selected filters
+    def accessor():
+        indices = filter_list_widget.index
+        if indices is None:
+            return None
+
+        # Either return a tuple of filters or a single filter
+        if multiple:
+            return tuple(filter_list[i] for i in indices)
+        else:
+            return filter_list[indices]
+
+    # A function that recreates the filtered list of filters
+    def update_filter_list(_):
+        filter_list.clear()
+
+        # Iterate over all libraries to find filters
+        for i, lbox in enumerate(library_checkboxes):
+            # If the library is deactivated -> skip
+            if not lbox.value:
+                continue
+
+            # Iterate over all filters in the given library
+            for filter_ in get_filter_libraries()[i].filters:
+                # If the filter uses a deselected backend -> skip
+                if any(
+                    not bbox.value and name in filter_.used_backends()
+                    for name, bbox in backend_checkboxes.items()
+                ):
+                    continue
+
+                # If the author of this pipeline has been deselected -> skip
+                if not author_checkboxes[get_author(filter_)].value:
+                    continue
+
+                # If the filter does not have at least one selected keyword -> skip
+                # Exception: No keywords are specified at all in the library (early dev)
+                if library_keywords():
+                    if not set(keyword_widget.value).intersection(
+                        set(filter_.keywords)
+                    ):
+                        continue
+
+                # Once we got here we use the filter
+                filter_list.append(filter_)
+
+        # Update the widget
+        nonlocal filter_list_widget
+        filter_list_widget.value = [] if multiple else None
+        filter_list_widget.options = [f.title for f in filter_list]
+
+    # Trigger it once in the beginning
+    update_filter_list(None)
+
+    # Make all checkbox changes trigger the filter list update
+    for box in itertools.chain(
+        library_checkboxes, backend_checkboxes.values(), author_checkboxes.values()
+    ):
+        box.observe(update_filter_list, names="value")
+
+    # Piece all of the above selcetionwidgets together into an accordion
+    acc = ipywidgets.Accordion(
+        children=[
+            ipywidgets.VBox(children=tuple(library_checkboxes)),
+            ipywidgets.VBox(children=tuple(backend_checkboxes.values())),
+            keyword_widget,
+            ipywidgets.VBox(children=tuple(author_checkboxes.values())),
+        ],
+        titles=["Libraries", "Backends", "Keywords", "Author"],
+    )
+
+    button = ipywidgets.Button(description="Finalize", layout=fullwidth)
+
+    # Piece things together into an app layout
+    app = ipywidgets.AppLayout(
+        left_sidebar=acc,
+        center=filter_list_widget,
+        right_sidebar=ipywidgets.VBox([button, metadata_form.widget]),
+        pane_widths=(1, 1, 1),
+    )
+    IPython.display.display(app)
+
+    # Return proxy handling
+    proxy = InteractiveWidgetOutputProxy(accessor)
+
+    def _finalize(_):
+        # If nothing has been selected, the finalize button is no-op
+        if accessor():
+            app.layout.display = "none"
+            proxy._finalize()
+
+    button.on_click(_finalize)
+
+    return proxy
+
+
+def select_pipelines_from_library():
+    """The Jupyter UI to select filtering pipelines from libraries.
+
+    The use of this UI is described in detail in `the notebook on filtering libraries`_.
+
+    .. _the notebook on filtering libraries: libraries.nblink
+
+    :return:
+        Returns the selected pipeline object(s)
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
+    return select_pipeline_from_library(multiple=True)
+
+
+def select_best_pipeline(dataset=None, pipelines=None):
+    """Select the best pipeline for a given dataset.
+
+    The use of this UI is described in detail in `the notebook on selecting filter pipelines`_.
+
+    .. _the notebook on selecting filter pipelines: selection.nblink
+
+    :param dataset:
+        The dataset to use for visualization of ground point filtering results
+    :type dataset: adaptivefiltering.DataSet
+    :param pipelines:
+        The tentative list of pipelines to try. May e.g. have been selected using
+        the select_pipelines_from_library tool.
+    :type pipelines: list
+    :return:
+        The selected pipeline with end user configuration baked in
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+    if dataset is None:
+        raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
+
+    if not pipelines:
+        raise AdaptiveFilteringError(
+            "At least one pipeline needs to be passed to 'select_best_pipeline'"
+        )
+
+    # Finalize button
+    finalize = ipywidgets.Button(
+        description="Finalize (including end-user configuration into filter)",
+        layout=ipywidgets.Layout(width="100%"),
+    )
+
+    # Per-pipeline data structures to keep track off
+    subwidgets = []
+    pipeline_accessors = []
+
+    # Subwidget generator function
+    def interactive_pipeline(p):
+        # A widget that contains the variability
+        varform = ipywidgets_jsonschema.Form(
+            p.variability_schema, vertically_place_labels=True, use_sliders=False
+        )
+
+        # Piggy-back onto the visualization app
+        vis = show_interactive(
+            dataset,
+            filtering_callback=lambda ds: cached_pipeline_application(
+                ds, p, **varform.data
+            ),
+            update_classification=True,
+        )
+
+        # Insert the variability form
+        vis.right_sidebar = ipywidgets.VBox(
+            children=[ipywidgets.Label("Customization points:"), varform.widget]
+        )
+        vis.pane_widths = [1, 2, 1]
+
+        # Insert the generated widgets into the outer structures
+        subwidgets.append(vis)
+
+        pipeline_accessors.append(
+            lambda: p.copy(**p._modify_filter_config(varform.data))
+        )
+
+    # Trigger subwidget generation for all pipelines
+    for p in pipelines:
+        interactive_pipeline(p)
+
+    # Tabs that contain the interactive execution with all given pipelines
+    if len(subwidgets) > 1:
+        tabs = ipywidgets.Tab(
+            children=subwidgets, titles=[f"#{i}" for i in range(len(pipelines))]
+        )
+    elif len(subwidgets) == 1:
+        tabs = subwidgets[0]
+    else:
+        tabs = ipywidgets.Box()
+
+    app = ipywidgets.VBox([finalize, tabs])
+    IPython.display.display(app)
+
+    def _return_handler():
+        # Get the current selection index of the Tabs widget (if any)
+        if len(subwidgets) > 1:
+            index = tabs.selected_index
+        elif len(subwidgets) == 1:
+            index = 0
+        else:
+            return Pipeline()
+
+        return pipeline_accessors[index]()
+
+    # Return proxy handling
+    proxy = InteractiveWidgetOutputProxy(_return_handler)
+
+    def _finalize(_):
+        app.layout.display = "none"
+        proxy._finalize()
+
+    finalize.on_click(_finalize)
+
+    return proxy
+
+
+def execute_interactive(dataset, pipeline):
+    """Interactively apply a filter pipeline to a given dataset in Jupyter
+
+    This allows you to interactively explore the effects of end user configuration
+    values specified by the filtering pipeline.
+
+    :param dataset:
+        The dataset to work on
+    :type dataset: adaptivefiltering.DataSet
+    :param pipeline:
+        The pipeline to execute.
+    :type pipelines: adaptivefiltering.filter.Pipeline
+    :return:
+        The pipeline with the end user configuration baked in
+    :rtype: adaptivefiltering.filter.Pipeline
+    """
+
+    return select_best_pipeline(dataset=dataset, pipelines=[pipeline])

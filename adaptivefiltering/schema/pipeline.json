@@ -7,12 +7,32 @@
     "metadata": {
       "properties": {
         "author": {
+          "description": "The author of this filter pipeline, used as a filtering criterion in pipeline browsing",
+          "title": "Author",
           "type": "string"
         },
         "description": {
+          "description": "A description of the filtering pipeline: What terrain is it suited best for?",
+          "title": "Description",
           "type": "string"
         },
         "example_data_url": {
+          "description": "An optional URL to a public data set that illustrates the qualities of this pipeline",
+          "title": "Example data set URL",
+          "type": "string"
+        },
+        "keywords": {
+          "description": "A set of keywords that describes the filtering pipeline, only use lowercase letters and dashes!",
+          "items": {
+            "pattern": "[a-z\\-]*",
+            "type": "string"
+          },
+          "title": "Keywords:",
+          "type": "array"
+        },
+        "title": {
+          "description": "A good descriptive name for the filter pipeline",
+          "title": "Filter pipeline name:",
           "type": "string"
         }
       },

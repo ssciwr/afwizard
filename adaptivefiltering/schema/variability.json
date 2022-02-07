@@ -1,0 +1,55 @@
+{
+  "items": {
+    "properties": {
+      "description": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "path": {
+        "items": {
+          "oneOf": [
+            {
+              "properties": {
+                "key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "index": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "index"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "persist": {
+        "type": "boolean"
+      },
+      "type": {
+        "type": "string"
+      },
+      "values": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "values"
+    ],
+    "type": "object"
+  },
+  "type": "array"
+}

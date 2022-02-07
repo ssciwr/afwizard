@@ -1,8 +1,8 @@
-import pytest
+from adaptivefiltering.widgets import *
 
-from adaptivefiltering.widgets import WidgetForm
 import jsonschema
 import pyrsistent
+import pytest
 
 
 _example_schema = [
@@ -27,14 +27,28 @@ _example_schema = [
 ]
 
 
+def test_widget_form_with_labels_pattern():
+    schema = {
+        "items": {"pattern": "[a-z\\-]*", "type": "string"},
+        "type": "array",
+    }
+
+    form = WidgetFormWithLabels(schema)
+
+    # Set with some valid and some non-valid data
+    form.data = ["bla", "bla2", "bla-bla", "bla_bla"]
+    assert len(form.data) == 2
+    assert form.data[0] == "bla"
+    assert form.data[1] == "bla-bla"
+
+
 @pytest.mark.parametrize("schema", _example_schema)
-def test_widget_form(schema):
-    widget = WidgetForm(schema)
-    widget.show()
-    jsonschema.validate(instance=pyrsistent.thaw(widget.data), schema=schema)
+def test_batchdata_getset(schema):
+    widget = BatchDataWidgetForm(schema)
 
     # Get data, set it, get it again and compare the resulting document
-    data = widget.data
-    widget.data = data
-    data2 = widget.data
-    assert data == data2
+    data = widget.batchdata
+    widget.batchdata = data
+    data2 = widget.batchdata
+
+    assert pyrsistent.freeze(data) == pyrsistent.freeze(data2)

@@ -86,12 +86,8 @@ class Segmentation(geojson.FeatureCollection):
             geojson.dump(self, f)
 
     def show(self):
-        """This will create a new InteractiveMap with bounds from the segmentation.
-             use
-                 map = self.show()
-                 map
-             to show and access the data of the new map or just
-                self.show() to show the map without interacting with it.
+        """Create a new InteractiveMap with bounds from the segmentation.
+
         :param grid:
              The grid object which holds the map and the right side interface
         :type grid: ipyleaflet.grid
@@ -142,13 +138,13 @@ def swap_coordinates(segmentation):
 
 class Map:
     def __init__(self, dataset=None, segmentation=None, in_srs=None):
-        """This class manages the interactive map on which one can choose the segmentation.
-            It can be initilized with a dataset from which it will detect the boundaries and show them on the map.
-            Or it can be initilized with a segmentation which will also be visualized on the map.
-            There can be multiple polygons in the Segmentation and all will drawn. The
-            depending on the segmentation it might be necessary to first swap the coordinates of the segmentation to fit with the ipyleaflet map
-            in_srs can be used to override the current srs.
+        """Manage the interactive map use to create segmentations
 
+        It can be initilized with a dataset from which it will detect the boundaries and show them on the map.
+        Or it can be initilized with a segmentation which will also be visualized on the map.
+        There can be multiple polygons in the Segmentation and all will drawn. The
+        depending on the segmentation it might be necessary to first swap the coordinates of the segmentation to fit with the ipyleaflet map
+        in_srs can be used to override the current srs.
 
         :param dataset:
             The dataset from which the map should be displayed.
@@ -261,9 +257,6 @@ class Map:
     def setup_controls(self):
         """Modifies the polygon draw control to only include polygons, delete and clear all.
         Also initilizes the zoom slider, and layer control
-
-
-
         """
         self.draw_control = ipyleaflet.DrawControl(
             layout=ipywidgets.Layout(width="auto", grid_area="main")
@@ -300,13 +293,11 @@ class Map:
         self.map.add_control(self.layer_control)
 
     def load_segmentation(self, segmentation):
-        """imports a segmentation object onto the map.
-            The function also checks for doubles.
+        """Imports a segmentation object onto the map.
 
         :param segmentation:
             A segmentation object which is to be loaded.
         :type segmentation: Segmentation
-
         """
         if isinstance(segmentation, str):
             segmentation = Segmentation.load(segmentation)
@@ -328,7 +319,6 @@ class Map:
         """
         takes the dataset returns the boundary Segmentation.
         If a segmentation is given, this will convert it into a boundary segmentation.
-
         """
         from adaptivefiltering.pdal import execute_pdal_pipeline
 

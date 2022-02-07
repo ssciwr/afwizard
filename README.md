@@ -49,25 +49,21 @@ You can try `adaptivefiltering` without prior installation by using [Binder](htt
 
 ### Using Docker
 
-Having set up [Docker](https://docs.docker.com/get-docker/), the following sequence of commands will build an image containing `adaptivefiltering`:
+Having set up [Docker](https://docs.docker.com/get-docker/), you can use `adaptivefiltering` directly from a provided Docker image:
 
 ```
-git clone https://github.com/ssciwr/adaptivefiltering.git
-cd adaptivefiltering
-docker build -t adaptivefiltering:latest .
+docker run -t -p 8888:8888 ssciwr/adaptivefiltering:latest
 ```
 
-You can start the the JupyterLab frontend by doing:
-
-```
-docker run -t -p 8888:8888 adaptivefiltering:latest
-```
+Having executed above command, paste the URL given on the command line into your browser and start using `adaptivefiltering` by looking at the provided Jupyter notebooks.
+This image is limited to working with non-proprietary filtering backends (PDAL only).
 
 ### Using Pip
 
-We advise you to use Conda instead for two reasons:
+We advise you to use Conda as `adaptivefiltering` depends on a lot of other Python packages, some of which have external C/C++ dependencies. Using Conda, you get all of these installed automatically, using pip you might need to do a lot of manual work to get the same result.
 
-* We depend on a lot of other Python packages, some of which have external C/C++ dependencies. Using Conda, you get all of these installed automatically, using pip you will need to do a lot of manual work to get the same result.
-* We make use of a lot of Jupyter (Lab) extensions that require an additional activation step after installation. These steps are automatically performed in Conda and need to be done manually with pip.
+That being said, `adaptivefiltering` can be installed from PyPI:
 
-That being said, `adaptivefiltering` can be installed using a normal `pip install` workflow.
+```
+python -m pip install adaptivefiltering
+```

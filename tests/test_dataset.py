@@ -16,10 +16,10 @@ def test_show(dataset):
     # But it helps in measuring coverage of the test suite.
     dataset.show(visualization_type="hillshade")
     dataset.show(visualization_type="hillshade", resolution=5.0)
-    dataset.show(visualization_type="hillshade", classification=asprs[5])
+    dataset.show(visualization_type="hillshade", classification=asprs(5))
     dataset.show(visualization_type="slope")
     dataset.show(visualization_type="slope", resolution=5.0)
-    dataset.show(visualization_type="slope", classification=asprs[5])
+    dataset.show(visualization_type="slope", classification=asprs(5))
 
 
 def test_restriction(minimal_dataset):
@@ -73,12 +73,6 @@ def test_remove_classification(minimal_dataset):
     removed = remove_classification(minimal_dataset)
     vals = tuple(np.unique(removed.data["Classification"]))
     assert vals == (1,)
-
-
-def test_provenance(minimal_dataset):
-    # For now, only check that output to a stream works
-    with io.StringIO() as out:
-        minimal_dataset.provenance(out)
 
 
 def test_reproject_dataset(dataset):

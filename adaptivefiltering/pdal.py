@@ -63,14 +63,15 @@ def execute_pdal_pipeline(dataset=None, config=None):
 class PDALFilter(Filter, identifier="pdal"):
     """A filter implementation based on PDAL"""
 
-    def execute(self, dataset):
+    def execute(self, dataset, **variability_data):
+        # Apply variabilility without changing self
+        config = self._modify_filter_config(variability_data)
+
         dataset = PDALInMemoryDataSet.convert(dataset)
-        config = pyrsistent.thaw(self.config)
+        config = pyrsistent.thaw(config)
         config.pop("_backend", None)
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
-            provenance=dataset._provenance
-            + [f"Applying PDAL filter with the following configuration:\n{config}"],
         )
 
     @classmethod
@@ -84,23 +85,22 @@ class PDALFilter(Filter, identifier="pdal"):
 class PDALPipeline(
     PipelineMixin, PDALFilter, identifier="pdal_pipeline", backend=False
 ):
-    def execute(self, dataset):
+    def execute(self, dataset, **variability_data):
+        # Apply variabilility without changing self
+        config = self._modify_filter_config(variability_data)
+
         dataset = PDALInMemoryDataSet.convert(dataset)
-        pipeline_json = pyrsistent.thaw(self.config["filters"])
+        pipeline_json = pyrsistent.thaw(config["filters"])
         for f in pipeline_json:
             f.pop("_backend", None)
 
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=pipeline_json),
-            provenance=dataset._provenance
-            + [
-                f"Applying PDAL pipeline with the following configuration:\n{pipeline_json}"
-            ],
         )
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, provenance=[], spatial_reference=None):
+    def __init__(self, pipeline=None, spatial_reference=None):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -108,11 +108,10 @@ class PDALInMemoryDataSet(DataSet):
             already have the dataset in memory.
         :type data: pdal.pipeline
         """
-        # Store the given data and provenance array
+        # Store the given pipeline
         self.pipeline = pipeline
 
         super(PDALInMemoryDataSet, self).__init__(
-            provenance=provenance,
             spatial_reference=spatial_reference,
         )
 
@@ -161,8 +160,6 @@ class PDALInMemoryDataSet(DataSet):
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
             pipeline=pipeline,
-            provenance=dataset._provenance
-            + [f"Loaded {pipeline.arrays[0].shape[0]} points from {filename}"],
             spatial_reference=spatial_reference,
         )
 
@@ -222,10 +219,6 @@ class PDALInMemoryDataSet(DataSet):
 
             return PDALInMemoryDataSet(
                 pipeline=newdata,
-                provenance=self._provenance
-                + [
-                    f"Cropping data to only include polygons defined by:\n{str(polygons)}"
-                ],
                 spatial_reference=self.spatial_reference,
             )
 
