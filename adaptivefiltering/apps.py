@@ -1,5 +1,5 @@
 from adaptivefiltering.asprs import asprs_class_name
-from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
+from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel, reproject_dataset
 from adaptivefiltering.filter import Pipeline
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -332,7 +332,12 @@ def setup_rasterize_side_panel(dataset):
 
 
 def create_segmentation(dataset):
+    # create instance of dataset with srs of "EPSG:3857",
+    # this ensures that the slope and hillshade overlay fit the map projection.
+    dataset = reproject_dataset(dataset, "EPSG:3857")
+
     # Create the necessary widgets
+
     map_ = Map(dataset=dataset)
     map_widget = map_.show()
     finalize = ipywidgets.Button(description="Finalize")
