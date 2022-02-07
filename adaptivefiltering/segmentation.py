@@ -246,8 +246,7 @@ class Map:
         )
         layer = ipyleaflet.ImageOverlay(
             url=url,
-            bounds=((boundary_tuple[0]), (boundary_tuple[1])),
-            # rotation=90,
+            bounds=((boundary_tuple[1]), (boundary_tuple[0])),
             name=title,
         )
         # if the layler has already been loaded, do nothing.
