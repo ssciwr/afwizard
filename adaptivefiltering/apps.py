@@ -522,7 +522,9 @@ def setup_rasterize_side_panel(dataset):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = ipywidgets_jsonschema.Form(raster_schema, vertically_place_labels=True)
+    rasterization_widget_form = ipywidgets_jsonschema.Form(
+        raster_schema, vertically_place_labels=True
+    )
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
@@ -592,29 +594,33 @@ def create_segmentation(dataset):
             # Rerasterize if necessary
             nonlocal dataset
             dataset = dataset.dataset.rasterize(
-                classification=classification.children[0].value, **rasterization_widget_form.data
+                classification=classification.children[0].value,
+                **rasterization_widget_form.data,
             )
-            
+
             # put all options into a dict and filter out the numer of points
-            options  = [(option[1], option[0].split(":")[1].split(" (")[0]) for option in classification.children[0].options]
-            classification_dict={}
+            options = [
+                (option[1], option[0].split(":")[1].split(" (")[0])
+                for option in classification.children[0].options
+            ]
+            classification_dict = {}
             for key, value in options:
                 classification_dict[key] = value
-            #take only the currently active classifications for layer description.
-            classification_str = ", ".join([classification_dict[i] for i in classification.children[0].value])
-            
-            
-            title = f"""{form.data.visualization_type}: 
+            # take only the currently active classifications for layer description.
+            classification_str = ", ".join(
+                [classification_dict[i] for i in classification.children[0].value]
+            )
+
+            title = f"""{form.data.visualization_type}:
                         res: {rasterization_widget_form.data.resolution},
                         {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
                          classification: ({classification_str})
-                        
+
                         """
             # only calculate a new layer if the configuration has not been added yet.
             if title not in map_.overlay_list:
                 vis = dataset.show(**form.data).children[0]
                 map_.load_overlay(vis, title)
-              
 
     # Show the final widget
     load_raster_button.on_click(load_raster_to_map)
