@@ -590,7 +590,6 @@ def create_segmentation(dataset):
     def load_raster_to_map(b):
         with hourglass_icon(b):
             # Rerasterize if necessary
-            print(classification)
             nonlocal dataset
             dataset = dataset.dataset.rasterize(
                 classification=classification.children[0].value, **rasterization_widget_form.data
@@ -725,13 +724,9 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
             # Maybe update the classification widget if necessary
             if update_classification:
                 nonlocal classification
-                print("update classification")
                 classification.children = (classification_widget([dataset]),)
 
             # Rerasterize if necessary
-            print(classification)
-            print(classification.children)
-
             dataset = dataset.dataset.rasterize(
                 classification=classification.children[0].value,
                 **rasterization_widget_form.data,
