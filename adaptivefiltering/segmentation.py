@@ -246,7 +246,6 @@ class Map:
             bounds=((boundary_tuple[1]), (boundary_tuple[0])),
             name=title,
         )
-        # if the layler has already been loaded, do nothing.
         # load the desired layer
         self.map.add_layer(layer)
         self.overlay_list.append(title)
