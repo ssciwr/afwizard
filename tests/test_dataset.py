@@ -25,8 +25,22 @@ def test_show(dataset):
 def test_restriction(dataset):
     # Trigger generation of the UI
     dataset.restrict()
-    coordinates1 = [[[-117.284782, -55.581395], [-117.285136, -55.581856], [-117.284235, -55.581862], [-117.284782, -55.581395]]]
-    coordinates2 = [[[-117.285672, -55.581953], [-117.285597, -55.582462], [-117.28461, -55.582287], [-117.285672, -55.581953]]]
+    coordinates1 = [
+        [
+            [-117.284782, -55.581395],
+            [-117.285136, -55.581856],
+            [-117.284235, -55.581862],
+            [-117.284782, -55.581395],
+        ]
+    ]
+    coordinates2 = [
+        [
+            [-117.285672, -55.581953],
+            [-117.285597, -55.582462],
+            [-117.28461, -55.582287],
+            [-117.285672, -55.581953],
+        ]
+    ]
     # Programmatically restrict with an artificial segment
     segment = Segment(coordinates1)
     restricted = dataset.restrict(segment)

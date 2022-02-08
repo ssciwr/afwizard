@@ -142,7 +142,13 @@ def test_show_map(dataset, boundary_segmentation):
 
 def test_load_overlay(dataset):
     test_map = Map(dataset)
-    config = {'visualization_type': 'hillshade', 'alg': 'Horn', 'zFactor': 1.0, 'azimuth': 315.0, 'altitude': 30.0}
+    config = {
+        "visualization_type": "hillshade",
+        "alg": "Horn",
+        "zFactor": 1.0,
+        "azimuth": 315.0,
+        "altitude": 30.0,
+    }
     vis = dataset.show(**config).children[0]
     test_map.load_overlay(vis, "test")
 
