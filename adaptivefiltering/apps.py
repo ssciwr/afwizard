@@ -522,19 +522,16 @@ def setup_rasterize_side_panel(dataset):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = WidgetFormWithLabels(raster_schema)
-    print("test1")
+    rasterization_widget_form = ipywidgets_jsonschema.Form(raster_schema)
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
-    print("test2")
 
-    form = WidgetFormWithLabels(schema)
+    form = ipywidgets_jsonschema.Form(schema)
     formwidget = form.widget
     formwidget.layout = fullwidth
-    print("test3")
 
     # Create the classification widget
     classification = classification_widget([dataset])
@@ -542,7 +539,6 @@ def setup_rasterize_side_panel(dataset):
 
     widged_list = [rasterization_widget, formwidget, classification]
     form_list = [rasterization_widget_form, form]
-    print("test4")
 
     return widged_list, form_list
 
@@ -568,7 +564,6 @@ def create_segmentation(dataset):
     widged_list, form_list = setup_rasterize_side_panel(dataset)
     rasterization_widget, formwidget, classification = widged_list
     rasterization_widget_form, form = form_list
-    print("test5")
 
     # Arrange them into one widget
     map_widget.layout = fullwidth
@@ -611,7 +606,6 @@ def create_segmentation(dataset):
     load_raster_button.on_click(load_raster_to_map)
 
     IPython.display.display(app)
-    print("test6")
 
     # The return proxy object
     segmentation_proxy = InteractiveWidgetOutputProxy(
