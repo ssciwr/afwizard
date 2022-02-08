@@ -230,6 +230,7 @@ class Map:
         """
         Takes a visualisation and loads it into the map.
         """
+
         # Construct URL for image to use in ipyleaflet
         data = base64.b64encode(vis.value)
         data = data.decode("ascii")
@@ -246,10 +247,9 @@ class Map:
             name=title,
         )
         # if the layler has already been loaded, do nothing.
-        if title not in self.overlay_list:
-            # load the desired layer
-            self.map.add_layer(layer)
-            self.overlay_list.append(title)
+        # load the desired layer
+        self.map.add_layer(layer)
+        self.overlay_list.append(title)
 
     def show(self):
         return self.map

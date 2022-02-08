@@ -610,10 +610,11 @@ def create_segmentation(dataset):
                          classification: ({classification_str})
                         
                         """
-
-            vis = dataset.show(**form.data).children[0]
-
-            map_.load_overlay(vis, title)
+            # only calculate a new layer if the configuration has not been added yet.
+            if title not in map_.overlay_list:
+                vis = dataset.show(**form.data).children[0]
+                map_.load_overlay(vis, title)
+              
 
     # Show the final widget
     load_raster_button.on_click(load_raster_to_map)
