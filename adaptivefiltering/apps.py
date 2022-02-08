@@ -522,19 +522,19 @@ def setup_rasterize_side_panel(dataset):
     # We drop classification, because we add this as a specialized widget
     raster_schema["properties"].pop("classification")
 
-    rasterization_widget_form = ipywidgets_jsonschema.Form(raster_schema)
+    rasterization_widget_form = ipywidgets_jsonschema.Form(raster_schema, vertically_place_labels=True)
     rasterization_widget = rasterization_widget_form.widget
     rasterization_widget.layout = fullwidth
 
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
 
-    form = ipywidgets_jsonschema.Form(schema)
+    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
     formwidget = form.widget
     formwidget.layout = fullwidth
 
     # Create the classification widget
-    classification = classification_widget([dataset])
+    classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
     widged_list = [rasterization_widget, formwidget, classification]
@@ -590,13 +590,27 @@ def create_segmentation(dataset):
     def load_raster_to_map(b):
         with hourglass_icon(b):
             # Rerasterize if necessary
-
+            print(classification)
             nonlocal dataset
             dataset = dataset.dataset.rasterize(
-                classification=classification.value, **rasterization_widget_form.data
+                classification=classification.children[0].value, **rasterization_widget_form.data
             )
-
-            title = f"{form.data.visualization_type}: res: {rasterization_widget_form.data.resolution}, {form.data.items()}"
+            
+            # put all options into a dict and filter out the numer of points
+            options  = [(option[1], option[0].split(":")[1].split(" (")[0]) for option in classification.children[0].options]
+            classification_dict={}
+            for key, value in options:
+                classification_dict[key] = value
+            #take only the currently active classifications for layer description.
+            classification_str = ", ".join([classification_dict[i] for i in classification.children[0].value])
+            
+            
+            title = f"""{form.data.visualization_type}: 
+                        res: {rasterization_widget_form.data.resolution},
+                        {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
+                         classification: ({classification_str})
+                        
+                        """
 
             vis = dataset.show(**form.data).children[0]
 
@@ -711,9 +725,13 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
             # Maybe update the classification widget if necessary
             if update_classification:
                 nonlocal classification
+                print("update classification")
                 classification.children = (classification_widget([dataset]),)
 
             # Rerasterize if necessary
+            print(classification)
+            print(classification.children)
+
             dataset = dataset.dataset.rasterize(
                 classification=classification.children[0].value,
                 **rasterization_widget_form.data,
