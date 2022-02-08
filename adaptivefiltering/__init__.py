@@ -16,6 +16,7 @@ from adaptivefiltering.apps import (
 )
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet, remove_classification, reproject_dataset
+from adaptivefiltering.execute import apply_adaptive_pipeline
 from adaptivefiltering.filter import load_filter, save_filter
 from adaptivefiltering.lastools import set_lastools_directory
 from adaptivefiltering.library import (
@@ -41,6 +42,7 @@ __all__ = [
     "select_best_pipeline",
     "select_pipeline_from_library",
     "select_pipelines_from_library",
+    "apply_adaptive_pipeline",
     "execute_interactive",
     "remove_classification",
     "reproject_dataset",

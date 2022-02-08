@@ -1,3 +1,5 @@
+from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.execute import apply_adaptive_pipeline
 from adaptivefiltering.library import add_filter_library
 from adaptivefiltering.segmentation import Segmentation
 
@@ -53,7 +55,7 @@ def validate_segmentation(ctx, param, filename):
         # TODO: Restrict the exception we are expecting here
         raise click.BadParameter(f"Segmentation file was not {filename} readable")
 
-    return filename
+    return seg
 
 
 @click.command()
@@ -66,12 +68,6 @@ def validate_segmentation(ctx, param, filename):
     help="The data files to work on. This may either be an LAS/LAZ file or a directory containing such files. This argument can be given multiple times to provide multiple data files.",
 )
 @click.option(
-    "--library",
-    type=click.Path(exists=True, file_okay=False),
-    multiple=True,
-    help="A filter library location that adaptivefiltering should take into account. Can be given multiple times.",
-)
-@click.option(
     "--segmentation",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
@@ -79,12 +75,37 @@ def validate_segmentation(ctx, param, filename):
     help="The GeoJSON file that describes the segmentation of the dataset. This is expected to be generated either by the Jupyter UI or otherwise provide the necessary information about what filter pipelines to apply.",
 )
 @click.option(
+    "--library",
+    type=click.Path(exists=True, file_okay=False),
+    multiple=True,
+    help="A filter library location that adaptivefiltering should take into account. Can be given multiple times.",
+)
+@click.option(
     "--dry-run",
     type=bool,
     is_flag=True,
     help="When given, adaptivefiltering does not perform any ground point filtering. Instead, it gives verbose information about what would be done if adaptivefiltering was run without the --dry-run flag.",
 )
-def main(data, segmentation, library, dry_run):
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False),
+    default="output",
+    help="The directory to place output files (both LAS/LAZ and GeoTiff) should be placed.",
+)
+@click.option(
+    "--resolution",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=0.5,
+    help="The meshing resolution to use for generating GeoTiff files",
+    metavar="FLOAT",
+)
+@click.option(
+    "--compress",
+    type=bool,
+    is_flag=True,
+    help="Whether LAZ files should be written instead of LAS.",
+)
+def main(data, segmentation, library, dry_run, output_dir, resolution, compress):
     """Command Line Interface for adaptivefiltering
 
     This CLI is used once you have finished the interactive exploration
@@ -103,8 +124,15 @@ def main(data, segmentation, library, dry_run):
         for filename in data:
             click.echo(f"* {filename}")
         click.echo()
-
-    # TODO: Do the actual work
+    else:
+        # Call Python API
+        apply_adaptive_pipeline(
+            datasets=[DataSet(ds) for ds in data],
+            segmentation=segmentation,
+            output_dir=output_dir,
+            resolution=resolution,
+            compress=compress,
+        )
 
 
 if __name__ == "__main__":
