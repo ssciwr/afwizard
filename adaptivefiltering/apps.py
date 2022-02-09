@@ -21,83 +21,24 @@ import itertools
 import numpy as np
 import pyrsistent
 import pytools
+import wrapt
 
 
 fullwidth = ipywidgets.Layout(width="100%")
 
 
-class InteractiveWidgetOutputProxy:
-    def __init__(self, creator, finalization_hook=lambda obj: obj):
-        """An object to capture interactive widget output
+def return_proxy(creator, widget):
+    # Create a new proxy object by calling the creator once
+    proxy = wrapt.ObjectProxy(creator())
 
-        This class is a workaround to the general problem that it is extremely
-        hard to create asynchronous Jupyter widgets that block the frontend until
-        user interaction has occured. We solve it by immediately returning this
-        proxy object which is constantly updated according to widget state until
-        it is finalized. To the user, the proxy object should behave exactly like
-        the original object (duck typing).
+    # Define a handler that updates the proxy
+    def _update_proxy(_):
+        proxy.__wrapped__ = creator()
 
-        :param creator:
-            A callable accepting no parameters that constructs the return
-            object. It will typically depend on widget state.
-        :type creator: Callable
-        :param finalization_hook:
-            A callable accepting the an object and return a modified version of it.
-            This callable is called exactly once when the proxy is finalized. The
-            default callable is no-op.
-        """
-        # Save the creator function for later use
-        self._creator = creator
-        self._finalization_hook = finalization_hook
+    # Register handler that triggers proxy update
+    widget.observe(_update_proxy, names=("value", "selected_index"), type="change")
 
-        # Try instantiating the object
-        try:
-            self._obj = creator()
-        except:
-            self._obj = None
-
-        # Store whether this object has been finalized
-        self._finalized = False
-
-    def _finalize(self):
-        """Finalize the return object.
-
-        After this function is called once, no further updates of the return
-        object are carried out.
-        """
-        self._obj = self._creator()
-        self._obj = self._finalization_hook(self._obj)
-        self._finalized = True
-
-    def __getattribute__(self, attr):
-        # White list the attributes we always use from the proxy object
-        if attr in (
-            "_creator",
-            "_finalize",
-            "_finalized",
-            "_finalization_hook",
-            "_obj",
-        ):
-            # Using the object baseclass here prevents infinite recursion
-            return object.__getattribute__(self, attr)
-
-        # If not finalized, we recreate the object on every member access
-        if not self._finalized:
-            self._obj = self._creator()
-
-        # Forward this to the actual object
-        return getattr(self._obj, attr)
-
-    def __iter__(self):
-        # The necessity of this method is a mystery to me. I suspect that CPython
-        # has some sort of built-in magic regarding iteration that bypasses regular
-        # member access. Without this method, Python would claim the proxy is not
-        # iterable even if self._obj is perfectly iterable.
-        return self._obj.__iter__()
-
-    def _ipython_display_(self):
-        # Make sure that Jupyter prints the repr of our object instead of the proxy
-        print(self._obj.__repr__())
+    return proxy
 
 
 @contextlib.contextmanager
@@ -499,15 +440,15 @@ def pipeline_tuning(datasets=[], pipeline=None):
     IPython.display.display(app)
 
     # Implement finalization
-    pipeline_proxy = InteractiveWidgetOutputProxy(
+    pipeline_proxy = return_proxy(
         lambda: pipeline.copy(
             _variability=pipeline_form.batchdata, **pipeline_form.data
-        )
+        ),
+        pipeline_form,
     )
 
     def _finalize(_):
         app.layout.display = "none"
-        pipeline_proxy._finalize()
 
     finalize.on_click(_finalize)
 
@@ -651,13 +592,12 @@ def create_segmentation(dataset, show_right_side=False):
     IPython.display.display(app)
 
     # The return proxy object
-    segmentation_proxy = InteractiveWidgetOutputProxy(
-        lambda: Segmentation(map_.return_segmentation())
+    segmentation_proxy = return_proxy(
+        lambda: Segmentation(map_.return_segmentation()), map_.map
     )
 
     def _finalize(_):
         app.layout.display = "none"
-        segmentation_proxy._finalize()
 
     finalize.on_click(_finalize)
 
@@ -689,7 +629,7 @@ def create_upload(filetype):
     upload.layout = layout
     app = ipywidgets.VBox([upload, confirm_button])
     IPython.display.display(app)
-    upload_proxy = InteractiveWidgetOutputProxy(lambda: upload)
+    upload_proxy = return_proxy(lambda: upload, upload)
 
     def _finalize(_):
         app.layout.display = "none"
@@ -943,13 +883,12 @@ def select_pipeline_from_library(multiple=False):
     IPython.display.display(app)
 
     # Return proxy handling
-    proxy = InteractiveWidgetOutputProxy(accessor)
+    proxy = return_proxy(accessor, filter_list_widget)
 
     def _finalize(_):
         # If nothing has been selected, the finalize button is no-op
         if accessor():
             app.layout.display = "none"
-            proxy._finalize()
 
     button.on_click(_finalize)
 
@@ -992,7 +931,7 @@ def select_best_pipeline(dataset=None, pipelines=None):
     if dataset is None:
         raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
 
-    if not pipelines:
+    if pipelines is None:
         raise AdaptiveFilteringError(
             "At least one pipeline needs to be passed to 'select_best_pipeline'"
         )
@@ -1065,11 +1004,10 @@ def select_best_pipeline(dataset=None, pipelines=None):
         return pipeline_accessors[index]()
 
     # Return proxy handling
-    proxy = InteractiveWidgetOutputProxy(_return_handler)
+    proxy = return_proxy(_return_handler, tabs)
 
     def _finalize(_):
         app.layout.display = "none"
-        proxy._finalize()
 
     finalize.on_click(_finalize)
 
