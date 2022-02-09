@@ -185,6 +185,18 @@ class DataSet:
 
         return dataset.restrict(segmentation)
 
+    def create_segmentation(self):
+        """ 
+            create one or multiple segmentations from a dataset.
+        """
+
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+        dataset = PDALInMemoryDataSet.convert(self)
+
+        return dataset.create_segmentation()
+
+
+
     @classmethod
     def convert(cls, dataset):
         """Convert this dataset to an instance of DataSet
