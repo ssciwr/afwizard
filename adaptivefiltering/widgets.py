@@ -48,6 +48,9 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
 
         widget.observe(_change_checker, names="value")
 
+        def _register_observer(h, n, t):
+            widget.observe(h, names=n, type=t)
+
         def _setter(_d):
             widget.value = pyrsistent.thaw(_d)
 
@@ -55,6 +58,7 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
             getter=lambda: pyrsistent.pvector(widget.value),
             setter=_setter,
             widgets=[ipywidgets.VBox(widgets)],
+            register_observer=_register_observer,
         )
 
 
@@ -67,6 +71,7 @@ BatchDataWidgetFormElement = collections.namedtuple(
         "subelements",
         "batchdata_getter",
         "batchdata_setter",
+        "register_observer",
     ],
 )
 
@@ -80,6 +85,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         subelements=[],
         batchdata_getter=lambda: [],
         batchdata_setter=lambda _: None,
+        register_observer=lambda h, n, t: None,
     ):
         return BatchDataWidgetFormElement(
             getter=getter,
@@ -88,6 +94,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             subelements=subelements,
             batchdata_getter=batchdata_getter,
             batchdata_setter=batchdata_setter,
+            register_observer=register_observer,
         )
 
     @property
@@ -205,6 +212,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             widgets=original.widgets,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
+            register_observer=original.register_observer,
         )
 
     def _construct_object(self, schema, label=None, root=False):
@@ -235,6 +243,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             subelements=original.subelements,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
+            register_observer=original.register_observer,
         )
 
     def _construct_array(self, schema, label=None, root=False):
@@ -264,6 +273,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             subelements=original.subelements,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
+            register_observer=original.register_observer,
         )
 
     def _construct_anyof(self, schema, label=None, key="anyOf"):
@@ -291,6 +301,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
                 selector.index
             ].batchdata_getter(),
             batchdata_setter=_setter,
+            register_observer=original.register_observer,
         )
 
 
