@@ -35,6 +35,7 @@ extensions = [
     "nbsphinx",
     "nbsphinx_link",
     "sphinx_lfs_content",
+    "sphinx_click",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
