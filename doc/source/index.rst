@@ -3,6 +3,10 @@
    :caption: Contents:
 
    intro
-   workflows
+   datasets
+   libraries
+   selection
+   filtering
+   execution
    user_API
    developer_API

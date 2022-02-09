@@ -5,6 +5,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
+import subprocess
 import sys
 
 # -- Path setup --------------------------------------------------------------
@@ -21,9 +22,12 @@ copyright = "2021, Scientific Software Center, Heidelberg University"
 author = "Dominic Kempf"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = "0.1.2"
 
 # -- General configuration ---------------------------------------------------
+
+# Make sure to install the project - several of our extensions rely on it
+subprocess.run("python -m pip install ../..".split())
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -34,7 +38,7 @@ extensions = [
     "sphinx_rtd_theme",
     "nbsphinx",
     "nbsphinx_link",
-    "sphinx_lfs_content",
+    "sphinx_click",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,9 +64,6 @@ html_static_path = ["_static"]
 
 # Make sure that classes are documented by their init method
 autoclass_content = "init"
-
-# A command that resolves our chicken-egg situation
-lfs_content_post_commands = ["python -m pip install ../.."]
 
 # This is an extension that allows us to preserve the default arguments of functions
 # as written in code without evaluating them.

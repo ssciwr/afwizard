@@ -25,7 +25,7 @@ def apply_adaptive_pipeline(
     be used from Python or through adaptivefiltering's command line interface.
 
     :param datasets:
-        One or more datasets of type :ref:`~adaptivefilter.DataSet`.
+        One or more datasets of type :ref:`~adaptivefiltering.dataset.DataSet`.
     :type datasets: list
     :param segmentation:
         The segmentation that provides the geometric information about the spatial
