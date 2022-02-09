@@ -478,7 +478,7 @@ def create_segmentation(dataset):
 
     # The return proxy object
     segmentation_proxy = return_proxy(
-        lambda: Segmentation(map_.return_segmentation(), map_)
+        lambda: Segmentation(map_.return_segmentation()), map_.map
     )
 
     def _finalize(_):
