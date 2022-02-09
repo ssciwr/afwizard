@@ -133,18 +133,7 @@ def validate_suffix(ctx, param, suffix):
     type=click.Path(file_okay=False, exists=True),
     help="The directory where to find a LASTools installation",
 )
-def main(
-    data,
-    segmentation,
-    library,
-    dry_run,
-    output_dir,
-    resolution,
-    compress,
-    suffix,
-    opals_dir,
-    lastools_dir,
-):
+def main(**args):
     """Command Line Interface for adaptivefiltering
 
     This CLI is used once you have finished the interactive exploration
@@ -154,28 +143,23 @@ def main(
     """
 
     # Register all filter libraries with adaptivefiltering
-    for lib in library:
+    for lib in args.pop("library"):
         add_filter_library(path=lib)
 
     # Set the OPALS and LASTools paths
-    set_opals_directory(opals_dir)
-    set_lastools_directory(lastools_dir)
+    set_opals_directory(args.pop("opals_dir"))
+    set_lastools_directory(args.pop("lastools_dir"))
 
     # Maybe print a list of data files that will be processed
-    if dry_run:
+    if args.pop("dry_run"):
         click.echo("The following data files will be read:")
-        for filename in data:
+        for filename in args["data"]:
             click.echo(f"* {filename}")
         click.echo()
     else:
         # Call Python API
         apply_adaptive_pipeline(
-            datasets=[DataSet(ds) for ds in data],
-            segmentation=segmentation,
-            output_dir=output_dir,
-            resolution=resolution,
-            compress=compress,
-            suffix=suffix,
+            datasets=[DataSet(ds) for ds in args.pop("data")], **args
         )
 
 
