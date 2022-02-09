@@ -231,9 +231,6 @@ class PDALInMemoryDataSet(DataSet):
         if segmentation is None:
             from adaptivefiltering.apps import create_segmentation
 
-            restricted = create_segmentation(self)
-            restricted._finalization_hook = apply_restriction
-
-            return restricted
+            return create_segmentation(self, finalization_hook=apply_restriction)
         else:
             return apply_restriction(segmentation)

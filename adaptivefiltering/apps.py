@@ -36,7 +36,9 @@ def return_proxy(creator, widget):
         proxy.__wrapped__ = creator()
 
     # Register handler that triggers proxy update
-    widget.observe(_update_proxy, names=("value", "selected_index"), type="change")
+    widget.observe(
+        _update_proxy, names=("value", "selected_index", "data"), type="change"
+    )
 
     return proxy
 
@@ -486,7 +488,7 @@ def setup_rasterize_side_panel(dataset):
     return widged_list, form_list
 
 
-def create_segmentation(dataset, show_right_side=False):
+def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda x: x):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
@@ -593,18 +595,21 @@ def create_segmentation(dataset, show_right_side=False):
 
     # The return proxy object
     segmentation_proxy = return_proxy(
-        lambda: Segmentation(map_.return_segmentation()), map_.map
+        lambda: Segmentation(map_.return_segmentation()), map_.draw_control
     )
 
     def _finalize(_):
         app.layout.display = "none"
+        segmentation_proxy.__wrapped__ = finalization_hook(
+            segmentation_proxy.__wrapped__
+        )
 
     finalize.on_click(_finalize)
 
     return segmentation_proxy
 
 
-def create_upload(filetype):
+def create_upload(filetype, finalization_hook=lambda x: x):
     """Create a Jupyter UI snippet that allows a user to upload a file
 
     :param filetype:
@@ -633,7 +638,7 @@ def create_upload(filetype):
 
     def _finalize(_):
         app.layout.display = "none"
-        upload_proxy._finalize()
+        upload_proxy.__wrapped__ = finalization_hook(upload_proxy.__wrapped__)
 
     confirm_button.on_click(_finalize)
     return upload_proxy
