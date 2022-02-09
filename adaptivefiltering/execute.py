@@ -6,6 +6,7 @@ from adaptivefiltering.segmentation import Segmentation
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 import os
+import shutil
 import subprocess
 
 
@@ -95,5 +96,8 @@ def apply_adaptive_pipeline(
             f"pdal merge {' '.join(ds.filename for ds in filtered_segments)} {las_output}"
         )
 
-        # TODO: What derivative results do we want to generate. Or would it be quite
-        #      normal to calculate these with a different tool.
+        # Provide GeoTiff output for this dataset
+        gtiff_output = os.path.join(output_dir, f"{filename}_{suffix}.tiff")
+        merged = DataSet(las_output)
+        rastered = merged.rasterize(resolution=resolution)
+        shutil.move(rastered.filename, gtiff_output)
