@@ -340,6 +340,5 @@ def upload_button(directory=None, filetype=""):
     elif not os.path.isdir(directory):
         print("The directory: " + directory + "does not exist and will be created.")
         os.mkdir(directory)
-    uploaded_data = create_upload(filetype)
-    uploaded_data._finalization_hook = _save_data
-    return uploaded_data
+
+    return create_upload(filetype, finalization_hook=_save_data)
