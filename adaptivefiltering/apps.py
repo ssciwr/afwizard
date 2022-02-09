@@ -545,7 +545,9 @@ def setup_rasterize_side_panel(dataset):
     return widged_list, form_list
 
 
-def create_segmentation(dataset):
+
+
+def create_segmentation(dataset, show_right_side = False):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
@@ -567,6 +569,9 @@ def create_segmentation(dataset):
     rasterization_widget, formwidget, classification = widged_list
     rasterization_widget_form, form = form_list
 
+
+    if show_right_side==True:
+        print("show right side")
     # Arrange them into one widget
     map_widget.layout = fullwidth
     finalize.layout = fullwidth
@@ -575,8 +580,11 @@ def create_segmentation(dataset):
     load_raster_button = ipywidgets.Button(
         description="Load rasterization", layout=fullwidth
     )
+
+    load_raster_label = ipywidgets.Box((ipywidgets.Label("Add Geotiff layer to the map:"),))
+
     controls = ipywidgets.VBox(
-        [load_raster_button, rasterization_widget, formwidget, classification, finalize]
+        [finalize,load_raster_label,load_raster_button, rasterization_widget, formwidget, classification]
     )
 
     # Create the overall app layout
@@ -588,6 +596,9 @@ def create_segmentation(dataset):
         footer=None,
         pane_widths=[1, 3, 0],
     )
+
+    #used to prevent recalculation of geotiff layers
+    parameter_cache = []          
 
     def load_raster_to_map(b):
         with hourglass_icon(b):
@@ -612,15 +623,18 @@ def create_segmentation(dataset):
             )
 
             title = f"""{form.data.visualization_type}:
-                        res: {rasterization_widget_form.data.resolution},
-                        {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
-                         classification: ({classification_str})
+                        res: {rasterization_widget_form.data.resolution}"""
+            #this string is used to prevent recalculation of geotiffs    
+            new_parameter_str = f"""{form.data.visualization_type}:
+                        res: {rasterization_widget_form.data.resolution}
+                       {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
+                         classification: ({classification_str}))"""
 
-                        """
             # only calculate a new layer if the configuration has not been added yet.
-            if title not in map_.overlay_list:
+            if new_parameter_str not in parameter_cache:
                 vis = dataset.show(**form.data).children[0]
                 map_.load_overlay(vis, title)
+                parameter_cache.append(new_parameter_str)
 
     # Show the final widget
     load_raster_button.on_click(load_raster_to_map)
