@@ -834,7 +834,7 @@ def select_best_pipeline(dataset=None, pipelines=None):
     if dataset is None:
         raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
 
-    if not pipelines:
+    if pipelines is None:
         raise AdaptiveFilteringError(
             "At least one pipeline needs to be passed to 'select_best_pipeline'"
         )
