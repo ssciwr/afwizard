@@ -291,28 +291,36 @@ class Map:
         self.layer_control = ipyleaflet.LayersControl(position="topright")
         self.map.add_control(self.layer_control)
 
-    def load_segmentation(self, segmentation):
+    def load_segmentation(self, segmentation, override=False):
         """Imports a segmentation object onto the map.
 
         :param segmentation:
             A segmentation object which is to be loaded.
         :type segmentation: Segmentation
         """
-        if isinstance(segmentation, str):
-            segmentation = Segmentation.load(segmentation)
 
-        # save current polygon data
-        current_data = self.draw_control.data
-        # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
-        new_polygons = [
-            new_polygon
-            for new_polygon in segmentation["features"]
-            if not new_polygon["geometry"]
-            in [data["geometry"] for data in current_data]
-        ]
-        # adds the new polygons to the current data
-        new_data = current_data + new_polygons
-        self.draw_control.data = new_data
+        if override==True:
+            self.draw_control.data = [
+                new_polygon
+                for new_polygon in segmentation["features"]]
+
+        else:
+            if isinstance(segmentation, str):
+                segmentation = Segmentation.load(segmentation)
+            # save current polygon data
+            current_data = self.draw_control.data
+            # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
+            
+            # adds the new polygons to the current data
+            new_polygons = [
+                new_polygon
+                for new_polygon in segmentation["features"]
+                if not new_polygon["geometry"]
+                in [data["geometry"] for data in current_data]
+            ]
+            new_data = current_data + new_polygons
+                
+            self.draw_control.data = new_data
 
     def load_hexbin_boundary(self, dataset=None, segmentation=None):
         """

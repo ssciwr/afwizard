@@ -22,7 +22,7 @@ import numpy as np
 import pyrsistent
 import pytools
 import wrapt
-
+from ipyleaflet import Marker
 
 fullwidth = ipywidgets.Layout(width="100%")
 
@@ -149,7 +149,8 @@ def expand_variability_string(varlist, type_="string", samples_for_continuous=5)
 
             # Check for weird patterns like "0-5-10"
             if len(range_) > 2:
-                raise ValueError(f"Given an invalid range of parameters: '{part}'")
+                raise ValueError(
+                    f"Given an invalid range of parameters: '{part}'")
 
         if type_ == "integer":
             range_ = part.split("-")
@@ -163,7 +164,8 @@ def expand_variability_string(varlist, type_="string", samples_for_continuous=5)
                         yield i
 
             if len(range_) > 2:
-                raise ValueError(f"Given an invalid range of parameters: '{part}'")
+                raise ValueError(
+                    f"Given an invalid range of parameters: '{part}'")
 
         if type_ == "string":
             yield part
@@ -316,7 +318,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
         # If ground was already in the classification, we keep the values
         if history:
             old_classes = history[-1].classification.value
-            had_ground = 2 in [o[1] for o in history[-1].classification.options]
+            had_ground = 2 in [o[1]
+                               for o in history[-1].classification.options]
             classes = old_classes if had_ground else None
         else:
             classes = None
@@ -356,8 +359,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
     def _delete_history_item(_):
         i = center.selected_index
         nonlocal history
-        history = history[:i] + history[i + 1 :]
-        center.children = center.children[:i] + center.children[i + 1 :]
+        history = history[:i] + history[i + 1:]
+        center.children = center.children[:i] + center.children[i + 1:]
         center.selected_index = len(center.children) - 1
 
         # This ensures that widgets are updated when this tab is removed
@@ -418,7 +421,8 @@ def pipeline_tuning(datasets=[], pipeline=None):
         center=center,
         right_sidebar=ipywidgets.VBox(
             [
-                ipywidgets.HTML("Ground point filtering controls:", layout=fullwidth),
+                ipywidgets.HTML(
+                    "Ground point filtering controls:", layout=fullwidth),
                 preview,
                 finalize,
                 ipywidgets.HBox([delete, delete_all]),
@@ -500,18 +504,15 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
 
     map_ = Map(dataset=dataset)
     map_widget = map_.show()
-    finalize = ipywidgets.Button(description="Finalize")
+    finalize = ipywidgets.Button(
+        description="Finalize")
 
     widged_list, form_list = setup_rasterize_side_panel(dataset)
     rasterization_widget, formwidget, classification = widged_list
     rasterization_widget_form, form = form_list
 
-    if show_right_side == True:
-        print("show right side")
-    # Arrange them into one widget
     map_widget.layout = fullwidth
     finalize.layout = fullwidth
-
     # Get a visualization button and add it to the control panel
     load_raster_button = ipywidgets.Button(
         description="Load rasterization", layout=fullwidth
@@ -521,26 +522,94 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
         (ipywidgets.Label("Add Geotiff layer to the map:"),)
     )
 
-    controls = ipywidgets.VBox(
-        [
-            finalize,
-            load_raster_label,
-            load_raster_button,
-            rasterization_widget,
-            formwidget,
-            classification,
-        ]
+    # The return proxy object
+    segmentation_proxy = return_proxy(
+        lambda: Segmentation(map_.return_segmentation()), map_.draw_control
     )
 
-    # Create the overall app layout
-    app = ipywidgets.AppLayout(
-        header=None,
-        left_sidebar=controls,
-        center=map_widget,
-        right_sidebar=None,
-        footer=None,
-        pane_widths=[1, 3, 0],
-    )
+    if show_right_side == True:
+        print("show right side")
+        # right side controls
+        # these are used to assign a segmentation to each 
+        
+        def _update_seg_pin(b):
+            print(b.description)
+           
+            index = int(b.description.split("Seg ")[1])-1
+            
+            coordinates = np.squeeze((segmentation_proxy["features"][index]["geometry"]["coordinates"]))
+            coordinates_mean = list(np.mean(coordinates, axis=0))
+            marker = Marker(location=coordinates_mean, draggable=False)
+            map_.map.add_layer(marker)
+            # this doesnt show
+        def _update_seg_list(_):
+            print(segmentation_proxy)
+            features = segmentation_proxy["features"]
+
+            new_button = ipywidgets.Button(description = f"Seg {len( features )}" ,)
+            new_button.on_click(_update_seg_pin)
+
+            right_side.children = (*right_side.children,new_button)
+
+        map_.draw_control.observe(_update_seg_list, names="data")
+        ride_side_label = ipywidgets.Box(
+            (ipywidgets.Label("Assign Pipelines to Segmentations"),)
+        )
+        
+
+
+
+        right_side = ipywidgets.VBox([
+        ride_side_label,
+        
+        
+        ])
+
+
+        # Arrange controls into one widget
+
+        controls = ipywidgets.VBox(
+            [
+                load_raster_label,
+                load_raster_button,
+                rasterization_widget,
+                formwidget,
+                classification,
+            ])
+        # Create the overall app layout
+
+        app = ipywidgets.AppLayout(
+            header=ipywidgets.HBox([finalize], layout=ipywidgets.Layout(height='1', width='auto')),
+            left_sidebar=controls,
+            center=map_widget,
+            right_sidebar=right_side,
+            footer=None,
+            pane_widths=[1, 3, 1],
+        )
+
+    else:
+        print("only left")
+        # Arrange them into one widget
+
+        controls = ipywidgets.VBox(
+            [
+                finalize,
+                load_raster_label,
+                load_raster_button,
+                rasterization_widget,
+                formwidget,
+                classification,
+            ])
+        # Create the overall app layout
+
+        app = ipywidgets.AppLayout(
+            header=None,
+            left_sidebar=controls,
+            center=map_widget,
+            right_sidebar=None,
+            footer=None,
+            pane_widths=[1, 3, 0],
+        )
 
     # used to prevent recalculation of geotiff layers
     parameter_cache = []
@@ -571,7 +640,8 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
                 classification_dict[key] = value
             # take only the currently active classifications for layer description.
             classification_str = ", ".join(
-                [classification_dict[i] for i in classification.children[0].value]
+                [classification_dict[i]
+                    for i in classification.children[0].value]
             )
 
             title = f"""{form.data.visualization_type}:
@@ -592,11 +662,6 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
     load_raster_button.on_click(load_raster_to_map)
 
     IPython.display.display(app)
-
-    # The return proxy object
-    segmentation_proxy = return_proxy(
-        lambda: Segmentation(map_.return_segmentation()), map_.draw_control
-    )
 
     def _finalize(_):
         app.layout.display = "none"
@@ -677,7 +742,8 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
     )
 
     # Get a container widget for the visualization itself
-    content = ipywidgets.Box([ipywidgets.Label("Currently rendering visualization...")])
+    content = ipywidgets.Box(
+        [ipywidgets.Label("Currently rendering visualization...")])
 
     # Create the overall app layout
     app = ipywidgets.AppLayout(
@@ -742,11 +808,13 @@ def select_pipeline_from_library(multiple=False):
 
     # Collect checkboxes in the selection menu
     library_checkboxes = [
-        ipywidgets.Checkbox(value=True, description=library_name(lib), indent=False)
+        ipywidgets.Checkbox(
+            value=True, description=library_name(lib), indent=False)
         for lib in get_filter_libraries()
     ]
     backend_checkboxes = {
-        name: ipywidgets.Checkbox(value=cls.enabled(), description=name, indent=False)
+        name: ipywidgets.Checkbox(
+            value=cls.enabled(), description=name, indent=False)
         for name, cls in Filter._filter_impls.items()
         if Filter._filter_is_backend[name]
     }
@@ -766,7 +834,8 @@ def select_pipeline_from_library(multiple=False):
 
     # Create checkbox widgets for the all authors
     author_checkboxes = {
-        author: ipywidgets.Checkbox(value=True, description=author, indent=False)
+        author: ipywidgets.Checkbox(
+            value=True, description=author, indent=False)
         for author in all_authors
     }
 
@@ -789,7 +858,8 @@ def select_pipeline_from_library(multiple=False):
 
     # Create the pipeline description widget
     metadata_schema = load_schema("pipeline.json")["properties"]["metadata"]
-    metadata_form = WidgetFormWithLabels(metadata_schema, vertically_place_labels=True)
+    metadata_form = WidgetFormWithLabels(
+        metadata_schema, vertically_place_labels=True)
 
     def metadata_updater(change):
         # The details of how to access this from the change object differs
@@ -934,7 +1004,8 @@ def select_best_pipeline(dataset=None, pipelines=None):
     :rtype: adaptivefiltering.filter.Pipeline
     """
     if dataset is None:
-        raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
+        raise AdaptiveFilteringError(
+            "A dataset is required for 'select_best_pipeline'")
 
     if pipelines is None:
         raise AdaptiveFilteringError(
@@ -969,7 +1040,8 @@ def select_best_pipeline(dataset=None, pipelines=None):
 
         # Insert the variability form
         vis.right_sidebar = ipywidgets.VBox(
-            children=[ipywidgets.Label("Customization points:"), varform.widget]
+            children=[ipywidgets.Label(
+                "Customization points:"), varform.widget]
         )
         vis.pane_widths = [1, 2, 1]
 
@@ -987,7 +1059,8 @@ def select_best_pipeline(dataset=None, pipelines=None):
     # Tabs that contain the interactive execution with all given pipelines
     if len(subwidgets) > 1:
         tabs = ipywidgets.Tab(
-            children=subwidgets, titles=[f"#{i}" for i in range(len(pipelines))]
+            children=subwidgets, titles=[
+                f"#{i}" for i in range(len(pipelines))]
         )
     elif len(subwidgets) == 1:
         tabs = subwidgets[0]
