@@ -561,10 +561,7 @@ def create_segmentation(dataset, show_right_side = False):
     map_widget = map_.show()
     finalize = ipywidgets.Button(description="Finalize")
 
-    # add control surface for rasterization overlay.
-    if not isinstance(dataset, DigitalSurfaceModel):
-        dataset = dataset.rasterize()
-
+  
     widged_list, form_list = setup_rasterize_side_panel(dataset)
     rasterization_widget, formwidget, classification = widged_list
     rasterization_widget_form, form = form_list
@@ -604,10 +601,15 @@ def create_segmentation(dataset, show_right_side = False):
         with hourglass_icon(b):
             # Rerasterize if necessary
             nonlocal dataset
-            dataset = dataset.dataset.rasterize(
-                classification=classification.children[0].value,
-                **rasterization_widget_form.data,
-            )
+            if not isinstance(dataset, DigitalSurfaceModel):
+                dataset = dataset.rasterize(classification=classification.children[0].value,
+                    **rasterization_widget_form.data,)
+
+            else:
+                dataset = dataset.dataset.rasterize(
+                    classification=classification.children[0].value,
+                    **rasterization_widget_form.data,
+                )
 
             # put all options into a dict and filter out the numer of points
             options = [
