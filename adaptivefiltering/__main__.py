@@ -5,6 +5,7 @@ from adaptivefiltering.segmentation import Segmentation
 
 import click
 import os
+import re
 
 
 def _locate_lidar_datasets(paths):
@@ -58,6 +59,14 @@ def validate_segmentation(ctx, param, filename):
     return seg
 
 
+def validate_suffix(ctx, param, suffix):
+    if not re.fullmatch("[a-z0-9_]*", suffix):
+        raise click.BadParameter(
+            f"Suffix should consist of lowercase letters, numbers and underscores only"
+        )
+    return suffix
+
+
 @click.command()
 @click.option(
     "--data",
@@ -105,7 +114,16 @@ def validate_segmentation(ctx, param, filename):
     is_flag=True,
     help="Whether LAZ files should be written instead of LAS.",
 )
-def main(data, segmentation, library, dry_run, output_dir, resolution, compress):
+@click.option(
+    "--suffix",
+    type=str,
+    default="filtered",
+    help="The suffix to add to filtered datasets.",
+    callback=validate_suffix,
+)
+def main(
+    data, segmentation, library, dry_run, output_dir, resolution, compress, suffix
+):
     """Command Line Interface for adaptivefiltering
 
     This CLI is used once you have finished the interactive exploration
@@ -132,6 +150,7 @@ def main(data, segmentation, library, dry_run, output_dir, resolution, compress)
             output_dir=output_dir,
             resolution=resolution,
             compress=compress,
+            suffix=suffix,
         )
 
 

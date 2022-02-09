@@ -9,6 +9,7 @@ def apply_adaptive_pipeline(
     output_dir="output",
     resolution=0.5,
     compress=False,
+    suffix="filtered",
 ):
     """Python API to apply a fully configured adaptive pipeline
 
@@ -32,7 +33,10 @@ def apply_adaptive_pipeline(
     :type resolution: float
     :param compress:
         Whether to write LAZ files instead of LAS>
-    :type compress: boll
+    :type compress: bool
+    :param suffix:
+        A suffix to use for files after applying filtering
+    :type suffix: str
     """
 
     if isinstance(datasets, DataSet):
@@ -49,4 +53,6 @@ def apply_adaptive_pipeline(
             "Segmentations are expected to be of type adaptivefiltering.segmentation.Segmentation"
         )
 
-    print("Now doing work")
+    # We treat each given dataset file individually.
+    for ds in datasets:
+        pass
