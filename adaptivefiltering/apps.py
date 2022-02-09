@@ -36,7 +36,9 @@ def return_proxy(creator, widget):
         proxy.__wrapped__ = creator()
 
     # Register handler that triggers proxy update
-    widget.observe(_update_proxy, names=("value", "selected_index"), type="change")
+    widget.observe(
+        _update_proxy, names=("value", "selected_index", "data"), type="change"
+    )
 
     return proxy
 
@@ -593,7 +595,7 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
 
     # The return proxy object
     segmentation_proxy = return_proxy(
-        lambda: Segmentation(map_.return_segmentation()), map_.map
+        lambda: Segmentation(map_.return_segmentation()), map_.draw_control
     )
 
     def _finalize(_):
