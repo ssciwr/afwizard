@@ -1,6 +1,8 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.execute import apply_adaptive_pipeline
+from adaptivefiltering.lastools import set_lastools_directory
 from adaptivefiltering.library import add_filter_library
+from adaptivefiltering.opals import set_opals_directory
 from adaptivefiltering.segmentation import Segmentation
 
 import click
@@ -121,8 +123,27 @@ def validate_suffix(ctx, param, suffix):
     help="The suffix to add to filtered datasets.",
     callback=validate_suffix,
 )
+@click.option(
+    "--opals-dir",
+    type=click.Path(file_okay=False, exists=True),
+    help="The directory where to find an OPALS installation",
+)
+@click.option(
+    "--lastools-dir",
+    type=click.Path(file_okay=False, exists=True),
+    help="The directory where to find a LASTools installation",
+)
 def main(
-    data, segmentation, library, dry_run, output_dir, resolution, compress, suffix
+    data,
+    segmentation,
+    library,
+    dry_run,
+    output_dir,
+    resolution,
+    compress,
+    suffix,
+    opals_dir,
+    lastools_dir,
 ):
     """Command Line Interface for adaptivefiltering
 
@@ -135,6 +156,10 @@ def main(
     # Register all filter libraries with adaptivefiltering
     for lib in library:
         add_filter_library(path=lib)
+
+    # Set the OPALS and LASTools paths
+    set_opals_directory(opals_dir)
+    set_lastools_directory(lastools_dir)
 
     # Maybe print a list of data files that will be processed
     if dry_run:
