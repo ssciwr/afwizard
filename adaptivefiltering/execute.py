@@ -1,6 +1,12 @@
 from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.filter import load_filter
+from adaptivefiltering.library import locate_filter
+from adaptivefiltering.paths import get_temporary_filename
 from adaptivefiltering.segmentation import Segmentation
 from adaptivefiltering.utils import AdaptiveFilteringError
+
+import os
+import subprocess
 
 
 def apply_adaptive_pipeline(
@@ -53,6 +59,41 @@ def apply_adaptive_pipeline(
             "Segmentations are expected to be of type adaptivefiltering.segmentation.Segmentation"
         )
 
+    # Determine the extension of LAS/LAZ files
+    extension = "laz" if compress else "las"
+
     # We treat each given dataset file individually.
     for ds in datasets:
-        pass
+        # A data structure to store all the filtered bits in
+        filtered_segments = []
+
+        # We apply each segment individually
+        for segment in segmentation:
+            # Restrict the dataset to the subset
+            rds = ds.restrict(Segmentation(segment))
+
+            # Get the pipeline object for this filtering
+            pipeline = load_filter(locate_filter(segment["properties"]["pipeline"]))
+
+            # Apply!
+            filtered = pipeline.execute(rds)
+
+            # Save this to a file in order to be able to free memory
+            filename = get_temporary_filename(extension=extension)
+            saved = filtered.save(filename, compress=compress)
+            del filtered
+
+            filtered_segments.append(saved)
+
+        # Join the segments in this dataset file. We use subprocess for this
+        # because our PDAL execution code from Python is not really fit for
+        # multiple input files.
+        _, filename = os.path.split(ds.filename)
+        filename, _ = os.path.splitext(filename)
+        las_output = os.path.join(output_dir, f"{filename}_{suffix}.{extension}")
+        subprocess.run(
+            f"pdal merge {' '.join(ds.filename for ds in filtered_segments)} {las_output}"
+        )
+
+        # TODO: What derivative results do we want to generate. Or would it be quite
+        #      normal to calculate these with a different tool.
