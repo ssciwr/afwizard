@@ -189,6 +189,11 @@ class PDALInMemoryDataSet(DataSet):
             spatial_reference=self.spatial_reference,
         )
 
+    def create_segmentation(self):
+        from adaptivefiltering.apps import create_segmentation
+
+        return create_segmentation(self, show_right_side=True)
+
     def restrict(self, segmentation=None):
         # If a single Segment is given, we convert it to a segmentation
 

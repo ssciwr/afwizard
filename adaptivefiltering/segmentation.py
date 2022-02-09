@@ -222,118 +222,33 @@ class Map:
         self.setup_map(boundary_segmentation)
         self.setup_controls()
 
-        # set up overlay dict.
+        # set up overlay list.
         # this stores the parameters used in the load_overlay function to avoid multipole calculations of the same overlay
+        self.overlay_list = []
 
-        self.overlay_dict = {}
-
-    def load_overlay(
-        self,
-        map_type,
-        classification=None,
-        resolution=0.5,
-        azimuth=315,
-        altitude=30,
-        opacity=0.6,
-    ):
+    def load_overlay(self, vis, title):
         """
-        Calculates either a hillshade or a slope map of the dataset and layers it ontop the satelite map.
-        stores the entered parameters in "overlay_dict" to ensure, that the overlays are not calculated, when already present.
-
-        :param _type: Can either be "Hillshade" or "Slope"
-        :type _type: String
-        :param classification: a asprs classification that will be passed on to the visualisation function. Defaults to all classification values.
-        :type classification: asprs
-        :param resolution:resolution for the visualisation. Default = 2
-        :type resolution: int
-        :param azimuth:azimuth for the visualisation. Default = 315
-        :type azimuth: int
-        :param altitude: angle altitude for the visualisation. Default = 45
-        :type altitude: int
-        :param opacity: Sets the opacity of the layer, does not trigger recalculation of layers. Default = 0.6
-        :type opacity: float
+        Takes a visualisation and loads it into the map.
         """
 
-        # If no classification value was given, we use all classes
-        if classification is None:
-            classification = asprs(slice(None))
+        # Construct URL for image to use in ipyleaflet
+        data = base64.b64encode(vis.value)
+        data = data.decode("ascii")
+        url = "data:image/{};base64,".format("png") + data
 
-        if self.dataset == None:
-            raise AdaptiveFilteringError(
-                "No dataset was given to calculate the hillshade or slope."
-            )
-
-        if map_type not in ("hillshade", "slope"):
-            raise AdaptiveFilteringError(
-                f"map_type can only be 'hillshade' or 'slope', not {map_type}"
-            )
-
-        # set azimuth and angle_altitude to zero for _type =="Slope"
-        # This makes it easer to find preexisting slope overlays
-        if map_type == "slope":
-            azimuth = 0
-            altitude = 0
-
-        key_from_input = (
-            "_type:"
-            + map_type
-            + ",class:"
-            + str(classification)
-            + ",res:"
-            + str(resolution)
-            + ",az:"
-            + str(azimuth)
-            + ",ang:"
-            + str(altitude)
+        # convert the edges into a tuple
+        boundary_tuple = (
+            (self.boundary_edges["minY"], self.boundary_edges["minX"]),
+            (self.boundary_edges["maxY"], self.boundary_edges["maxX"]),
         )
-
-        # if the dict is not empty, try to remove all layers present in the dict.
-        for layer in self.overlay_dict.values():
-            if layer.name == map_type:
-                try:
-                    self.map.remove_layer(layer)
-                except ipyleaflet.LayerException as e:
-                    continue
-
-        # if the desired hs is not already present, calculate it.
-        # if it is, it will simply be loaded at the end of the function.
-        if key_from_input not in self.overlay_dict.keys():
-            rastered = self.dataset.rasterize(
-                classification=classification, resolution=resolution
-            )
-
-            # calculate the hillshade or slope
-            if map_type == "hillshade":
-                canvas = gdal_visualization(
-                    rastered,
-                    visualization_type="hillshade",
-                    azimuth=azimuth,
-                    altitude=altitude,
-                )
-            elif map_type == "slope":
-                canvas = gdal_visualization(rastered, visualization_type="slope")
-
-            # Construct URL for image to use in ipyleaflet
-            data = base64.b64encode(canvas.value)
-            data = data.decode("ascii")
-            url = "data:image/{};base64,".format("png") + data
-
-            # convert the edges into a tuple
-            boundary_tuple = (
-                (self.boundary_edges["minY"], self.boundary_edges["minX"]),
-                (self.boundary_edges["maxY"], self.boundary_edges["maxX"]),
-            )
-
-            # save the overlay to the dict.
-            self.overlay_dict[key_from_input] = ipyleaflet.ImageOverlay(
-                url=url,
-                bounds=((boundary_tuple[0]), (boundary_tuple[1])),
-                rotation=90,
-                name=map_type,
-            )
+        layer = ipyleaflet.ImageOverlay(
+            url=url,
+            bounds=((boundary_tuple[1]), (boundary_tuple[0])),
+            name=title,
+        )
         # load the desired layer
-        self.overlay_dict[key_from_input].opacity = opacity
-        self.map.add_layer(self.overlay_dict[key_from_input])
+        self.map.add_layer(layer)
+        self.overlay_list.append(title)
 
     def show(self):
         return self.map

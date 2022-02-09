@@ -1,5 +1,5 @@
 from adaptivefiltering.asprs import asprs_class_name
-from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
+from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel, reproject_dataset
 from adaptivefiltering.filter import Pipeline, Filter, update_data
 from adaptivefiltering.library import (
     get_filter_libraries,
@@ -456,24 +456,139 @@ def pipeline_tuning(datasets=[], pipeline=None):
     return pipeline_proxy
 
 
-def create_segmentation(dataset):
+def setup_rasterize_side_panel(dataset):
+    # Get a widget for rasterization
+    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
+
+    # We drop classification, because we add this as a specialized widget
+    raster_schema["properties"].pop("classification")
+
+    rasterization_widget_form = ipywidgets_jsonschema.Form(
+        raster_schema, vertically_place_labels=True
+    )
+    rasterization_widget = rasterization_widget_form.widget
+    rasterization_widget.layout = fullwidth
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+
+    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
+    formwidget = form.widget
+    formwidget.layout = fullwidth
+
+    # Create the classification widget
+    classification = ipywidgets.Box([classification_widget([dataset])])
+    classification.layout = fullwidth
+
+    widged_list = [rasterization_widget, formwidget, classification]
+    form_list = [rasterization_widget_form, form]
+
+    return widged_list, form_list
+
+
+def create_segmentation(dataset, show_right_side=False):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
     """
-
+    # create instance of dataset with srs of "EPSG:3857",
+    # this ensures that the slope and hillshade overlay fit the map projection.
+    dataset = reproject_dataset(dataset, "EPSG:3857")
     # Create the necessary widgets
+
     map_ = Map(dataset=dataset)
     map_widget = map_.show()
     finalize = ipywidgets.Button(description="Finalize")
 
+    widged_list, form_list = setup_rasterize_side_panel(dataset)
+    rasterization_widget, formwidget, classification = widged_list
+    rasterization_widget_form, form = form_list
+
+    if show_right_side == True:
+        print("show right side")
     # Arrange them into one widget
-    layout = ipywidgets.Layout(width="100%")
-    map_widget.layout = layout
-    finalize.layout = layout
-    app = ipywidgets.VBox([map_widget, finalize])
+    map_widget.layout = fullwidth
+    finalize.layout = fullwidth
+
+    # Get a visualization button and add it to the control panel
+    load_raster_button = ipywidgets.Button(
+        description="Load rasterization", layout=fullwidth
+    )
+
+    load_raster_label = ipywidgets.Box(
+        (ipywidgets.Label("Add Geotiff layer to the map:"),)
+    )
+
+    controls = ipywidgets.VBox(
+        [
+            finalize,
+            load_raster_label,
+            load_raster_button,
+            rasterization_widget,
+            formwidget,
+            classification,
+        ]
+    )
+
+    # Create the overall app layout
+    app = ipywidgets.AppLayout(
+        header=None,
+        left_sidebar=controls,
+        center=map_widget,
+        right_sidebar=None,
+        footer=None,
+        pane_widths=[1, 3, 0],
+    )
+
+    # used to prevent recalculation of geotiff layers
+    parameter_cache = []
+
+    def load_raster_to_map(b):
+        with hourglass_icon(b):
+            # Rerasterize if necessary
+            nonlocal dataset
+            if not isinstance(dataset, DigitalSurfaceModel):
+                dataset = dataset.rasterize(
+                    classification=classification.children[0].value,
+                    **rasterization_widget_form.data,
+                )
+
+            else:
+                dataset = dataset.dataset.rasterize(
+                    classification=classification.children[0].value,
+                    **rasterization_widget_form.data,
+                )
+
+            # put all options into a dict and filter out the numer of points
+            options = [
+                (option[1], option[0].split(":")[1].split(" (")[0])
+                for option in classification.children[0].options
+            ]
+            classification_dict = {}
+            for key, value in options:
+                classification_dict[key] = value
+            # take only the currently active classifications for layer description.
+            classification_str = ", ".join(
+                [classification_dict[i] for i in classification.children[0].value]
+            )
+
+            title = f"""{form.data.visualization_type}:
+                        res: {rasterization_widget_form.data.resolution}"""
+            # this string is used to prevent recalculation of geotiffs
+            new_parameter_str = f"""{form.data.visualization_type}:
+                        res: {rasterization_widget_form.data.resolution}
+                       {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
+                         classification: ({classification_str}))"""
+
+            # only calculate a new layer if the configuration has not been added yet.
+            if new_parameter_str not in parameter_cache:
+                vis = dataset.show(**form.data).children[0]
+                map_.load_overlay(vis, title)
+                parameter_cache.append(new_parameter_str)
 
     # Show the final widget
+    load_raster_button.on_click(load_raster_to_map)
+
     IPython.display.display(app)
 
     # The return proxy object
@@ -546,27 +661,9 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
 
-    # Get a widget for rasterization
-    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
-
-    # We drop classification, because we add this as a specialized widget
-    raster_schema["properties"].pop("classification")
-
-    rasterization_widget_form = ipywidgets_jsonschema.Form(
-        raster_schema, vertically_place_labels=True
-    )
-    rasterization_widget = rasterization_widget_form.widget
-    rasterization_widget.layout = fullwidth
-
-    # Get a widget that allows configuration of the visualization method
-    schema = load_schema("visualization.json")
-    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
-    formwidget = form.widget
-    formwidget.layout = fullwidth
-
-    # Create the classification widget
-    classification = ipywidgets.Box([classification_widget([dataset])])
-    classification.layout = fullwidth
+    widged_list, form_list = setup_rasterize_side_panel(dataset)
+    rasterization_widget, formwidget, classification = widged_list
+    rasterization_widget_form, form = form_list
 
     # Get a visualization button and add it to the control panel
     button = ipywidgets.Button(description="Visualize", layout=fullwidth)
