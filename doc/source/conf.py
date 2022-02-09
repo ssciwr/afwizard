@@ -34,7 +34,6 @@ extensions = [
     "sphinx_rtd_theme",
     "nbsphinx",
     "nbsphinx_link",
-    "sphinx_lfs_content",
     "sphinx_click",
 ]
 
@@ -61,9 +60,6 @@ html_static_path = ["_static"]
 
 # Make sure that classes are documented by their init method
 autoclass_content = "init"
-
-# A command that resolves our chicken-egg situation
-lfs_content_post_commands = ["python -m pip install ../.."]
 
 # This is an extension that allows us to preserve the default arguments of functions
 # as written in code without evaluating them.
