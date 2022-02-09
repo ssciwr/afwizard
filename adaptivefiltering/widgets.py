@@ -49,7 +49,7 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
         widget.observe(_change_checker, names="value")
 
         def _register_observer(h, n, t):
-            widget.observe(h, names=n, types=t)
+            widget.observe(h, names=n, type=t)
 
         def _setter(_d):
             widget.value = pyrsistent.thaw(_d)
