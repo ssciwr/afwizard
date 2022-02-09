@@ -6,7 +6,7 @@ import ipywidgets
 import os
 import pytest
 
-from . import minimal_dataset
+from . import dataset, minimal_dataset
 
 
 @dataclasses.dataclass
@@ -17,18 +17,11 @@ class Obj:
 def test_return_proxy():
     # Create a proxy for a widget state
     w = ipywidgets.Text()
-    proxy = InteractiveWidgetOutputProxy(lambda: Obj(w.value))
+    proxy = return_proxy(lambda: Obj(w.value), w)
     assert proxy.data == ""
 
     # Update the widget and observe changes of the proxy
     w.value = "Foo"
-    assert proxy.data == "Foo"
-
-    # Finalize the proxy
-    proxy._finalize()
-
-    # Ensure that changes to the widgets do not change the proxy anymore
-    w.value = "Bar"
     assert proxy.data == "Foo"
 
 
@@ -67,8 +60,8 @@ def test_pipeline_tuning(minimal_dataset):
     p = pipeline_tuning(minimal_dataset, pipeline=p)
 
 
-def test_create_segmentation(minimal_dataset):
-    create_segmentation(minimal_dataset)
+def test_create_segmentation(dataset):
+    create_segmentation(dataset)
 
 
 def test_show_interactive(minimal_dataset):

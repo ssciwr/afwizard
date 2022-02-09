@@ -22,14 +22,28 @@ def test_show(dataset):
     dataset.show(visualization_type="slope", classification=asprs(5))
 
 
-def test_restriction(minimal_dataset):
+def test_restriction(dataset):
     # Trigger generation of the UI
-    minimal_dataset.restrict()
-    coordinates1 = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]
-    coordinates2 = [[0.2, 0.2], [0.4, 1.0], [1.0, 1.0], [1.0, 0.0], [0.2, 0.2]]
+    dataset.restrict()
+    coordinates1 = [
+        [
+            [-117.284782, -55.581395],
+            [-117.285136, -55.581856],
+            [-117.284235, -55.581862],
+            [-117.284782, -55.581395],
+        ]
+    ]
+    coordinates2 = [
+        [
+            [-117.285672, -55.581953],
+            [-117.285597, -55.582462],
+            [-117.28461, -55.582287],
+            [-117.285672, -55.581953],
+        ]
+    ]
     # Programmatically restrict with an artificial segment
     segment = Segment(coordinates1)
-    restricted = minimal_dataset.restrict(segment)
+    restricted = dataset.restrict(segment)
     restricted.show()
 
     # test for two polygons
@@ -48,7 +62,7 @@ def test_restriction(minimal_dataset):
             },
         ]
     )
-    restricted = minimal_dataset.restrict(segmentation)
+    restricted = dataset.restrict(segmentation)
     restricted.show()
 
 

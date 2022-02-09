@@ -1,5 +1,5 @@
 from adaptivefiltering.asprs import asprs_class_name
-from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel
+from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel, reproject_dataset
 from adaptivefiltering.filter import Pipeline, Filter, update_data
 from adaptivefiltering.library import (
     get_filter_libraries,
@@ -21,83 +21,24 @@ import itertools
 import numpy as np
 import pyrsistent
 import pytools
+import wrapt
 
 
 fullwidth = ipywidgets.Layout(width="100%")
 
 
-class InteractiveWidgetOutputProxy:
-    def __init__(self, creator, finalization_hook=lambda obj: obj):
-        """An object to capture interactive widget output
+def return_proxy(creator, widget):
+    # Create a new proxy object by calling the creator once
+    proxy = wrapt.ObjectProxy(creator())
 
-        This class is a workaround to the general problem that it is extremely
-        hard to create asynchronous Jupyter widgets that block the frontend until
-        user interaction has occured. We solve it by immediately returning this
-        proxy object which is constantly updated according to widget state until
-        it is finalized. To the user, the proxy object should behave exactly like
-        the original object (duck typing).
+    # Define a handler that updates the proxy
+    def _update_proxy(_):
+        proxy.__wrapped__ = creator()
 
-        :param creator:
-            A callable accepting no parameters that constructs the return
-            object. It will typically depend on widget state.
-        :type creator: Callable
-        :param finalization_hook:
-            A callable accepting the an object and return a modified version of it.
-            This callable is called exactly once when the proxy is finalized. The
-            default callable is no-op.
-        """
-        # Save the creator function for later use
-        self._creator = creator
-        self._finalization_hook = finalization_hook
+    # Register handler that triggers proxy update
+    widget.observe(_update_proxy, names=("value", "selected_index"), type="change")
 
-        # Try instantiating the object
-        try:
-            self._obj = creator()
-        except:
-            self._obj = None
-
-        # Store whether this object has been finalized
-        self._finalized = False
-
-    def _finalize(self):
-        """Finalize the return object.
-
-        After this function is called once, no further updates of the return
-        object are carried out.
-        """
-        self._obj = self._creator()
-        self._obj = self._finalization_hook(self._obj)
-        self._finalized = True
-
-    def __getattribute__(self, attr):
-        # White list the attributes we always use from the proxy object
-        if attr in (
-            "_creator",
-            "_finalize",
-            "_finalized",
-            "_finalization_hook",
-            "_obj",
-        ):
-            # Using the object baseclass here prevents infinite recursion
-            return object.__getattribute__(self, attr)
-
-        # If not finalized, we recreate the object on every member access
-        if not self._finalized:
-            self._obj = self._creator()
-
-        # Forward this to the actual object
-        return getattr(self._obj, attr)
-
-    def __iter__(self):
-        # The necessity of this method is a mystery to me. I suspect that CPython
-        # has some sort of built-in magic regarding iteration that bypasses regular
-        # member access. Without this method, Python would claim the proxy is not
-        # iterable even if self._obj is perfectly iterable.
-        return self._obj.__iter__()
-
-    def _ipython_display_(self):
-        # Make sure that Jupyter prints the repr of our object instead of the proxy
-        print(self._obj.__repr__())
+    return proxy
 
 
 @contextlib.contextmanager
@@ -499,15 +440,15 @@ def pipeline_tuning(datasets=[], pipeline=None):
     IPython.display.display(app)
 
     # Implement finalization
-    pipeline_proxy = InteractiveWidgetOutputProxy(
+    pipeline_proxy = return_proxy(
         lambda: pipeline.copy(
             _variability=pipeline_form.batchdata, **pipeline_form.data
-        )
+        ),
+        pipeline_form,
     )
 
     def _finalize(_):
         app.layout.display = "none"
-        pipeline_proxy._finalize()
 
     finalize.on_click(_finalize)
 
@@ -515,34 +456,148 @@ def pipeline_tuning(datasets=[], pipeline=None):
     return pipeline_proxy
 
 
-def create_segmentation(dataset):
+def setup_rasterize_side_panel(dataset):
+    # Get a widget for rasterization
+    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
+
+    # We drop classification, because we add this as a specialized widget
+    raster_schema["properties"].pop("classification")
+
+    rasterization_widget_form = ipywidgets_jsonschema.Form(
+        raster_schema, vertically_place_labels=True
+    )
+    rasterization_widget = rasterization_widget_form.widget
+    rasterization_widget.layout = fullwidth
+
+    # Get a widget that allows configuration of the visualization method
+    schema = load_schema("visualization.json")
+
+    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
+    formwidget = form.widget
+    formwidget.layout = fullwidth
+
+    # Create the classification widget
+    classification = ipywidgets.Box([classification_widget([dataset])])
+    classification.layout = fullwidth
+
+    widged_list = [rasterization_widget, formwidget, classification]
+    form_list = [rasterization_widget_form, form]
+
+    return widged_list, form_list
+
+
+def create_segmentation(dataset, show_right_side=False):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
     """
-
+    # create instance of dataset with srs of "EPSG:3857",
+    # this ensures that the slope and hillshade overlay fit the map projection.
+    dataset = reproject_dataset(dataset, "EPSG:3857")
     # Create the necessary widgets
+
     map_ = Map(dataset=dataset)
     map_widget = map_.show()
     finalize = ipywidgets.Button(description="Finalize")
 
+    widged_list, form_list = setup_rasterize_side_panel(dataset)
+    rasterization_widget, formwidget, classification = widged_list
+    rasterization_widget_form, form = form_list
+
+    if show_right_side == True:
+        print("show right side")
     # Arrange them into one widget
-    layout = ipywidgets.Layout(width="100%")
-    map_widget.layout = layout
-    finalize.layout = layout
-    app = ipywidgets.VBox([map_widget, finalize])
+    map_widget.layout = fullwidth
+    finalize.layout = fullwidth
+
+    # Get a visualization button and add it to the control panel
+    load_raster_button = ipywidgets.Button(
+        description="Load rasterization", layout=fullwidth
+    )
+
+    load_raster_label = ipywidgets.Box(
+        (ipywidgets.Label("Add Geotiff layer to the map:"),)
+    )
+
+    controls = ipywidgets.VBox(
+        [
+            finalize,
+            load_raster_label,
+            load_raster_button,
+            rasterization_widget,
+            formwidget,
+            classification,
+        ]
+    )
+
+    # Create the overall app layout
+    app = ipywidgets.AppLayout(
+        header=None,
+        left_sidebar=controls,
+        center=map_widget,
+        right_sidebar=None,
+        footer=None,
+        pane_widths=[1, 3, 0],
+    )
+
+    # used to prevent recalculation of geotiff layers
+    parameter_cache = []
+
+    def load_raster_to_map(b):
+        with hourglass_icon(b):
+            # Rerasterize if necessary
+            nonlocal dataset
+            if not isinstance(dataset, DigitalSurfaceModel):
+                dataset = dataset.rasterize(
+                    classification=classification.children[0].value,
+                    **rasterization_widget_form.data,
+                )
+
+            else:
+                dataset = dataset.dataset.rasterize(
+                    classification=classification.children[0].value,
+                    **rasterization_widget_form.data,
+                )
+
+            # put all options into a dict and filter out the numer of points
+            options = [
+                (option[1], option[0].split(":")[1].split(" (")[0])
+                for option in classification.children[0].options
+            ]
+            classification_dict = {}
+            for key, value in options:
+                classification_dict[key] = value
+            # take only the currently active classifications for layer description.
+            classification_str = ", ".join(
+                [classification_dict[i] for i in classification.children[0].value]
+            )
+
+            title = f"""{form.data.visualization_type}:
+                        res: {rasterization_widget_form.data.resolution}"""
+            # this string is used to prevent recalculation of geotiffs
+            new_parameter_str = f"""{form.data.visualization_type}:
+                        res: {rasterization_widget_form.data.resolution}
+                       {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
+                         classification: ({classification_str}))"""
+
+            # only calculate a new layer if the configuration has not been added yet.
+            if new_parameter_str not in parameter_cache:
+                vis = dataset.show(**form.data).children[0]
+                map_.load_overlay(vis, title)
+                parameter_cache.append(new_parameter_str)
 
     # Show the final widget
+    load_raster_button.on_click(load_raster_to_map)
+
     IPython.display.display(app)
 
     # The return proxy object
-    segmentation_proxy = InteractiveWidgetOutputProxy(
-        lambda: Segmentation(map_.return_segmentation())
+    segmentation_proxy = return_proxy(
+        lambda: Segmentation(map_.return_segmentation()), map_.map
     )
 
     def _finalize(_):
         app.layout.display = "none"
-        segmentation_proxy._finalize()
 
     finalize.on_click(_finalize)
 
@@ -574,7 +629,7 @@ def create_upload(filetype):
     upload.layout = layout
     app = ipywidgets.VBox([upload, confirm_button])
     IPython.display.display(app)
-    upload_proxy = InteractiveWidgetOutputProxy(lambda: upload)
+    upload_proxy = return_proxy(lambda: upload, upload)
 
     def _finalize(_):
         app.layout.display = "none"
@@ -606,27 +661,9 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
 
-    # Get a widget for rasterization
-    raster_schema = copy.deepcopy(load_schema("rasterize.json"))
-
-    # We drop classification, because we add this as a specialized widget
-    raster_schema["properties"].pop("classification")
-
-    rasterization_widget_form = ipywidgets_jsonschema.Form(
-        raster_schema, vertically_place_labels=True
-    )
-    rasterization_widget = rasterization_widget_form.widget
-    rasterization_widget.layout = fullwidth
-
-    # Get a widget that allows configuration of the visualization method
-    schema = load_schema("visualization.json")
-    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
-    formwidget = form.widget
-    formwidget.layout = fullwidth
-
-    # Create the classification widget
-    classification = ipywidgets.Box([classification_widget([dataset])])
-    classification.layout = fullwidth
+    widged_list, form_list = setup_rasterize_side_panel(dataset)
+    rasterization_widget, formwidget, classification = widged_list
+    rasterization_widget_form, form = form_list
 
     # Get a visualization button and add it to the control panel
     button = ipywidgets.Button(description="Visualize", layout=fullwidth)
@@ -846,13 +883,12 @@ def select_pipeline_from_library(multiple=False):
     IPython.display.display(app)
 
     # Return proxy handling
-    proxy = InteractiveWidgetOutputProxy(accessor)
+    proxy = return_proxy(accessor, filter_list_widget)
 
     def _finalize(_):
         # If nothing has been selected, the finalize button is no-op
         if accessor():
             app.layout.display = "none"
-            proxy._finalize()
 
     button.on_click(_finalize)
 
@@ -895,7 +931,7 @@ def select_best_pipeline(dataset=None, pipelines=None):
     if dataset is None:
         raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
 
-    if not pipelines:
+    if pipelines is None:
         raise AdaptiveFilteringError(
             "At least one pipeline needs to be passed to 'select_best_pipeline'"
         )
@@ -968,11 +1004,10 @@ def select_best_pipeline(dataset=None, pipelines=None):
         return pipeline_accessors[index]()
 
     # Return proxy handling
-    proxy = InteractiveWidgetOutputProxy(_return_handler)
+    proxy = return_proxy(_return_handler, tabs)
 
     def _finalize(_):
         app.layout.display = "none"
-        proxy._finalize()
 
     finalize.on_click(_finalize)
 
