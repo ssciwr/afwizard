@@ -533,23 +533,34 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
         # these are used to assign a segmentation to each 
         
         def _update_seg_pin(b):
-            print(b.description)
-           
-            index = int(b.description.split("Seg ")[1])-1
+            print(b)
+            index = int(b.owner.description.split("Seg ")[1])-1
             
             coordinates = np.squeeze((segmentation_proxy["features"][index]["geometry"]["coordinates"]))
             coordinates_mean = list(np.mean(coordinates, axis=0))
-            marker = Marker(location=coordinates_mean, draggable=False)
+            marker = Marker(location=[coordinates_mean[1],coordinates_mean[0] ], draggable=False)
+            for layer in map_.map.layers:
+                if type(layer)==Marker:
+                    
+                    map_.map.remove_layer(layer)
+
             map_.map.add_layer(marker)
+
             # this doesnt show
         def _update_seg_list(_):
             print(segmentation_proxy)
             features = segmentation_proxy["features"]
 
-            new_button = ipywidgets.Button(description = f"Seg {len( features )}" ,)
-            new_button.on_click(_update_seg_pin)
+            # new_button = ipywidgets.Button(description = f"Seg {len( features )}" ,)
+            # new_button.on_click(_update_seg_pin)
 
-            right_side.children = (*right_side.children,new_button)
+            # right_side.children = (*right_side.children,new_button)
+            new_dropdown = ipywidgets.Dropdown(
+                options = [("Pipeline 1", "pip1"),("Pipeline 2", "pip2") ],
+                description = f"Seg {len( features )}",
+            )
+            new_dropdown.observe(_update_seg_pin, names="value")
+            right_side.children = (*right_side.children,new_dropdown)
 
         map_.draw_control.observe(_update_seg_list, names="data")
         ride_side_label = ipywidgets.Box(
