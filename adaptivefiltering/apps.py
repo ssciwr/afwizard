@@ -533,7 +533,6 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
         # these are used to assign a segmentation to each 
         
         def _update_seg_pin(b):
-            print(b)
             index = int(b.owner.description.split("Seg ")[1])-1
             
             coordinates = np.squeeze((segmentation_proxy["features"][index]["geometry"]["coordinates"]))
@@ -674,13 +673,32 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
 
     IPython.display.display(app)
 
-    def _finalize(_):
-        app.layout.display = "none"
-        segmentation_proxy.__wrapped__ = finalization_hook(
-            segmentation_proxy.__wrapped__
-        )
+    if show_right_side == True:
+        def _finalize_segmentations(_):
+            app.layout.display = "none"
+            if(len(right_side.children)>1):
+                for segmentation, dropdown in zip(segmentation_proxy["features"], right_side.children[1:]):
+                    segmentation["pipeline"] = dropdown.value
+            
+            segmentation_proxy.__wrapped__ = finalization_hook(
+                segmentation_proxy.__wrapped__
+            )
 
-    finalize.on_click(_finalize)
+
+
+        finalize.on_click(_finalize_segmentations)
+    
+
+
+
+    else:
+        def _finalize_simple(_):
+            app.layout.display = "none"
+            segmentation_proxy.__wrapped__ = finalization_hook(
+                segmentation_proxy.__wrapped__
+            )
+
+        finalize.on_click(_finalize_simple)
 
     return segmentation_proxy
 
