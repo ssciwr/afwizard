@@ -4,6 +4,7 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import adaptivefiltering
 import os
 import subprocess
 import sys
@@ -22,12 +23,9 @@ copyright = "2021, Scientific Software Center, Heidelberg University"
 author = "Dominic Kempf"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.2"
+release = adaptivefiltering.__version__
 
 # -- General configuration ---------------------------------------------------
-
-# Make sure to install the project - several of our extensions rely on it
-subprocess.run("python -m pip install ../..".split())
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
