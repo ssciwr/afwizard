@@ -133,7 +133,8 @@ class Filter:
                 # This is a discrete variation
                 if len(splitted) > 1:
                     varschema["enum"] = [
-                        as_number_type(v.strip()) for v in var["values"].split(",")
+                        as_number_type(varschema["type"], v.strip())
+                        for v in var["values"].split(",")
                     ]
                 else:
                     mn, mx = var["values"].split("-")
