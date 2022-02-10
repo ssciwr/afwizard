@@ -205,6 +205,14 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             else:
                 b1.value = True
 
+        def _register_observer(h, n, t):
+            original.register_observer(h, n, t)
+            b1.observe(h, names=n, type=t)
+            b2.observe(h, names=n, type=t)
+            var.observe(h, names=n, type=t)
+            name.observe(h, names=n, type=t)
+            descr.observe(h, names=n, type=t)
+
         # Wrap the result in our new form element
         return self.construct_element(
             getter=original.getter,
@@ -212,7 +220,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             widgets=original.widgets,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
-            register_observer=original.register_observer,
+            register_observer=_register_observer,
         )
 
     def _construct_object(self, schema, label=None, root=False):
