@@ -299,10 +299,10 @@ class Map:
         :type segmentation: Segmentation
         """
 
-        if override==True:
+        if override == True:
             self.draw_control.data = [
-                new_polygon
-                for new_polygon in segmentation["features"]]
+                new_polygon for new_polygon in segmentation["features"]
+            ]
 
         else:
             if isinstance(segmentation, str):
@@ -310,7 +310,7 @@ class Map:
             # save current polygon data
             current_data = self.draw_control.data
             # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
-            
+
             # adds the new polygons to the current data
             new_polygons = [
                 new_polygon
@@ -319,7 +319,7 @@ class Map:
                 in [data["geometry"] for data in current_data]
             ]
             new_data = current_data + new_polygons
-                
+
             self.draw_control.data = new_data
 
     def load_hexbin_boundary(self, dataset=None, segmentation=None):
