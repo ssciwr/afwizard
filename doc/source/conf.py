@@ -4,7 +4,9 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import adaptivefiltering
 import os
+import subprocess
 import sys
 
 # -- Path setup --------------------------------------------------------------
@@ -21,7 +23,7 @@ copyright = "2021, Scientific Software Center, Heidelberg University"
 author = "Dominic Kempf"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = adaptivefiltering.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -34,7 +36,7 @@ extensions = [
     "sphinx_rtd_theme",
     "nbsphinx",
     "nbsphinx_link",
-    "sphinx_lfs_content",
+    "sphinx_click",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,9 +62,6 @@ html_static_path = ["_static"]
 
 # Make sure that classes are documented by their init method
 autoclass_content = "init"
-
-# A command that resolves our chicken-egg situation
-lfs_content_post_commands = ["python -m pip install ../.."]
 
 # This is an extension that allows us to preserve the default arguments of functions
 # as written in code without evaluating them.

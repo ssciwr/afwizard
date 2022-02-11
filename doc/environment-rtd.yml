@@ -30,6 +30,7 @@ dependencies:
     - m2r2
     - nbsphinx
     - nbsphinx-link
-    - sphinx_lfs_content
+    - sphinx-click
     - xmltodict
     - pyproj
+    - ..

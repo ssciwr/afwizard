@@ -20,8 +20,8 @@ def test_segmentation():
     mp = geojson.utils.generate_random("Polygon")
 
     # Assert that the metadata is validated and accessible
-    segment = Segment(mp, metadata=dict(profile="Foobar"))
-    assert segment.metadata["profile"] == "Foobar"
+    segment = Segment(mp, metadata=dict(pipeline="Foobar"))
+    assert segment.metadata["pipeline"] == "Foobar"
 
     # Use geojson serialization
     geojson.dumps(segment)
