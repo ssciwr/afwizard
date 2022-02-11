@@ -23,6 +23,8 @@ import pyrsistent
 import pytools
 import wrapt
 from ipyleaflet import Marker
+import functools
+
 
 fullwidth = ipywidgets.Layout(width="100%")
 
@@ -527,12 +529,12 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
         # right side controls
         # these are used to assign a segmentation to each
 
-        def _update_seg_pin(b):
-            index = int(b.owner.description.split("Seg ")[1]) - 1
+        def on_button_clicked(b, segmentation_=None):
+            return _update_seg_pin(segmentation_)
 
-            coordinates = np.squeeze(
-                (segmentation_proxy["features"][index]["geometry"]["coordinates"])
-            )
+        def _update_seg_pin(segmentation):
+            print(segmentation)
+            coordinates = np.squeeze((segmentation["geometry"]["coordinates"]))
             coordinates_mean = list(np.mean(coordinates, axis=0))
             marker = Marker(
                 location=[coordinates_mean[1], coordinates_mean[0]], draggable=False
@@ -546,20 +548,40 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
 
             # this doesnt show
 
-        def _update_seg_list(_):
-            print(segmentation_proxy)
-            features = segmentation_proxy["features"]
-
-            # new_button = ipywidgets.Button(description = f"Seg {len( features )}" ,)
-            # new_button.on_click(_update_seg_pin)
-
-            # right_side.children = (*right_side.children,new_button)
-            new_dropdown = ipywidgets.Dropdown(
-                options=[("Pipeline 1", "pip1"), ("Pipeline 2", "pip2")],
-                description=f"Seg {len( features )}",
+        def _update_seg_list(draw_control_change_event):
+            print(
+                f"old: {len(draw_control_change_event.old)}, new {len(draw_control_change_event.new)}"
             )
-            new_dropdown.observe(_update_seg_pin, names="value")
-            right_side.children = (*right_side.children, new_dropdown)
+
+            print(draw_control_change_event)
+            print()
+            if draw_control_change_event.new > draw_control_change_event.old:
+                features = segmentation_proxy["features"]
+
+                # new_button = ipywidgets.Button(description = f"Seg {len( features )}" ,)
+                # new_button.on_click(_update_seg_pin)
+
+                # right_side.children = (*right_side.children,new_button)
+                label = ipywidgets.Label(
+                    f"Seg {len( features )}", layout=ipywidgets.Layout(width="80%")
+                )
+                button = ipywidgets.Button(
+                    icon="fa-location-dot", layout=ipywidgets.Layout(width="20%")
+                )
+                button.on_click(
+                    functools.partial(on_button_clicked, segmentation_=features[-1])
+                )
+
+                new_dropdown = ipywidgets.Dropdown(
+                    options=[("Pipeline 1", "pip1"), ("Pipeline 2", "pip2")],
+                    layout=fullwidth,
+                )
+
+                box = ipywidgets.VBox(
+                    children=[ipywidgets.HBox(children=[label, button]), new_dropdown]
+                )
+
+                right_side.children = right_side.children + (box,)
 
         map_.draw_control.observe(_update_seg_list, names="data")
         ride_side_label = ipywidgets.Box(
