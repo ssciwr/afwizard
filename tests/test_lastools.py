@@ -3,8 +3,6 @@ from adaptivefiltering.lastools import *
 import pyrsistent
 import pytest
 
-from . import minimal_dataset
-
 
 @pytest.mark.skipif(not lastools_is_present(), reason="LASTools not found.")
 def test_lastools(minimal_dataset):

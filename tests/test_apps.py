@@ -6,8 +6,6 @@ import ipywidgets
 import os
 import pytest
 
-from . import dataset, minimal_dataset
-
 
 @dataclasses.dataclass
 class Obj:
