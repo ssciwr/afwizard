@@ -3,9 +3,6 @@ from adaptivefiltering.paths import get_temporary_filename
 from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.asprs import asprs
 
-from . import dataset, minimal_dataset
-
-import io
 import numpy as np
 import os
 import pytest

@@ -1,16 +1,8 @@
-from adaptivefiltering.segmentation import (
-    Segment,
-    Segmentation,
-    Map,
-    get_min_max_values,
-    swap_coordinates,
-)
-from adaptivefiltering.dataset import DataSet
+from adaptivefiltering.segmentation import *
 from adaptivefiltering.utils import convert_Segmentation
 
 import geojson
 import os
-from . import dataset, boundary_segmentation
 import pytest
 import numpy as np
 
