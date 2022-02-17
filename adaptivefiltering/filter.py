@@ -247,8 +247,10 @@ class Filter:
         :return: The widget form
         :rtype: :class:`~adaptivefiltering.widgets.BatchDataWidgetForm`
         """
-        form = BatchDataWidgetForm(self.form_schema(), vertically_place_labels=True)
-        form.data = self.config
+        form = BatchDataWidgetForm(
+            pyrsistent.thaw(self.form_schema()), vertically_place_labels=True
+        )
+        form.data = pyrsistent.thaw(self.config)
         return form
 
     def __add__(self, other):
