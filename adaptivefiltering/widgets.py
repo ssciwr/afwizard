@@ -52,10 +52,10 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
             widget.observe(h, names=n, type=t)
 
         def _setter(_d):
-            widget.value = pyrsistent.thaw(_d)
+            widget.value = _d
 
         return self.construct_element(
-            getter=lambda: pyrsistent.pvector(widget.value),
+            getter=lambda: widget.value,
             setter=_setter,
             widgets=[ipywidgets.VBox(widgets)],
             register_observer=_register_observer,
