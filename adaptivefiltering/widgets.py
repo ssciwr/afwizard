@@ -286,7 +286,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
     def _construct_anyof(self, schema, label=None, key="anyOf"):
         original = super()._construct_anyof(schema, label, key)
-        selector = original.widgets[0].children[0]
+        selector = original.widgets[0].children[-1].children[0]
 
         def _setter(_data):
             for subel in original.subelements:
