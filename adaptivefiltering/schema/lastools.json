@@ -18,8 +18,15 @@
         "step": {
           "default": 1.0,
           "type": "number"
+        },
+        "type": {
+          "const": "lasground_new",
+          "type": "string"
         }
       },
+      "required": [
+        "type"
+      ],
       "title": "lasground_new (LASTools)",
       "type": "object"
     }

@@ -72,6 +72,12 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
         # Build the argument list
         args = []
         for k, v in config.items():
+            # The type key is just there to disambiguate filter schemas,
+            # it is not actually part of the backend but could be used in
+            # the future to also expose lasground.exe
+            if k == "type":
+                continue
+
             strv = stringify_value(v)
             if strv != "":
                 args.append(f"-{k}")
