@@ -294,9 +294,9 @@ class DigitalSurfaceModel:
         )
 
         # Controls for saving this image
-        patterns = {"PNG": "*.png", "GeoTiff": "*.tiff"}
+        patterns = {"PNG": "*.png", "GeoTiff": "*.tiff", "LAS": "*.las", "LAZ": "*.laz"}
         selector = ipywidgets.Dropdown(
-            options=["PNG", "GeoTiff"],
+            options=["PNG", "GeoTiff", "LAS", "LAZ"],
             value="PNG",
             description="Type:",
             layout=ipywidgets.Layout(width="50%"),
@@ -342,6 +342,13 @@ class DigitalSurfaceModel:
                 if selector.value == "PNG":
                     with open(filename.value, "wb") as f:
                         f.write(vis.value)
+
+                # LAS/LAZ export is simple, just access the underlying dataset
+                if selector.value == "LAS":
+                    self.dataset.save(filename.value, compress=False, overwrite=False)
+
+                if selector.value == "LAZ":
+                    self.dataset.save(filename.value, compress=True, overwrite=True)
 
         button.on_click(_save_to_file)
 
