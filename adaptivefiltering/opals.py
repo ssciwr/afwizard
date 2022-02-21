@@ -238,7 +238,9 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
             final_filter = self.copy(outFile=outFile)
         except jsonschema.ValidationError:
             shutil.copy(dataset.filename, outFile)
-            dataset = OPALSDataManagerObject(filename=outFile)
+            dataset = OPALSDataManagerObject(
+                filename=outFile, spatial_reference=dataset.spatial_reference
+            )
 
         # Apply variabilility without changing filter
         config = final_filter._modify_filter_config(variability_data)
