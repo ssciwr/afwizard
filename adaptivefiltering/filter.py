@@ -137,9 +137,31 @@ class Filter:
                         for v in var["values"].split(",")
                     ]
                 else:
-                    mn, mx = var["values"].split("-")
-                    varschema["minimum"] = as_number_type(varschema["type"], mn)
-                    varschema["maximum"] = as_number_type(varschema["type"], mx)
+                    slice_ = var["values"].split(":")
+                    if len(slice_) == 1:
+                        varschema["enum"] = [
+                            as_number_type(varschema["type"], splitted[0].strip())
+                        ]
+                    elif len(slice_) == 2:
+                        varschema["minimum"] = as_number_type(
+                            varschema["type"], slice_[0]
+                        )
+                        varschema["maximum"] = as_number_type(
+                            varschema["type"], slice_[1]
+                        )
+                    elif len(slice_) == 3:
+                        options = []
+                        current = as_number_type(varschema["type"], slice_[0])
+                        while current <= as_number_type(varschema["type"], slice_[1]):
+                            options.append(current)
+                            current = current + as_number_type(
+                                varschema["type"], slice_[2]
+                            )
+                        varschema["enum"] = options
+                    else:
+                        raise AdaptiveFilteringError(
+                            f"Variability string '{splitted[0]}' not understood!"
+                        )
             else:
                 raise NotImplementedError(
                     f"Variability for type {var['type']} not implemented."
