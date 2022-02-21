@@ -180,6 +180,7 @@ class PDALInMemoryDataSet(DataSet):
                 "filename": filename,
                 "type": "writers.las",
                 "compression": compress,
+                "a_srs": self.spatial_reference,
             },
         )
 
