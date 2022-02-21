@@ -27,16 +27,16 @@ def test_expand_variability():
     assert tuple(expand_variability_string("foo, bar")) == ("foo", "bar")
     assert tuple(expand_variability_string("  foo,bar")) == ("foo", "bar")
     assert tuple(expand_variability_string("1,2,3")) == ("1", "2", "3")
-    assert tuple(expand_variability_string("1-2")) == ("1-2",)
-    assert tuple(expand_variability_string("1-2", type_="integer")) == (1, 2)
-    assert tuple(expand_variability_string("1-2", type_="number")) == (
+    assert tuple(expand_variability_string("1:2")) == ("1:2",)
+    assert tuple(expand_variability_string("1:2", type_="integer")) == (1, 2)
+    assert tuple(expand_variability_string("1:2", type_="number")) == (
         1.0,
         1.25,
         1.5,
         1.75,
         2.0,
     )
-    assert tuple(expand_variability_string("1-2,5", type_="number")) == (
+    assert tuple(expand_variability_string("1:2,5", type_="number")) == (
         1.0,
         1.25,
         1.5,
@@ -44,6 +44,12 @@ def test_expand_variability():
         2.0,
         5,
     )
+    assert tuple(expand_variability_string("1:5:2", type_="integer")) == (1, 3, 5)
+
+    for var, truth in zip(
+        expand_variability_string("1:2:0.3", type_="number"), (1.0, 1.3, 1.6, 1.9)
+    ):
+        assert abs(var - truth) < 1e-8
 
 
 #

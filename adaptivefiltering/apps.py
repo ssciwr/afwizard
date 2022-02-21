@@ -135,34 +135,50 @@ def expand_variability_string(varlist, type_="string", samples_for_continuous=5)
 
         # If this is a numeric parameter it might also have ranges specified by dashes
         if type_ == "number":
-            range_ = part.split("-")
+            slice_ = part.split(":")
 
-            if len(range_) == 1:
+            # This is not a range
+            if len(slice_) == 1:
                 yield float(part)
 
-            # If a range was found we handle this
-            if len(range_) == 2:
+            # This is a start/stop range that we sample with 5 intervals
+            if len(slice_) == 2:
                 for i in range(samples_for_continuous):
-                    yield float(range_[0]) + i / (samples_for_continuous - 1) * (
-                        float(range_[1]) - float(range_[0])
+                    yield float(slice_[0]) + i / (samples_for_continuous - 1) * (
+                        float(slice_[1]) - float(slice_[0])
                     )
 
+            # This is a slice with start, stop and step
+            if len(slice_) == 3:
+                current = float(slice_[0])
+                while current <= float(slice_[1]):
+                    yield current
+                    current = current + float(slice_[2])
+
             # Check for weird patterns like "0-5-10"
-            if len(range_) > 2:
+            if len(slice_) > 3:
                 raise ValueError(f"Given an invalid range of parameters: '{part}'")
 
         if type_ == "integer":
-            range_ = part.split("-")
+            slice_ = part.split(":")
 
-            if len(range_) == 1:
+            # This is not a range
+            if len(slice_) == 1:
                 yield int(part)
 
-            if len(range_) == 2:
-                if type_ == "integer":
-                    for i in range(int(range_[0]), int(range_[1]) + 1):
-                        yield i
+            # This is a start/stop range
+            if len(slice_) == 2:
+                for i in range(int(slice_[0]), int(slice_[1]) + 1):
+                    yield i
 
-            if len(range_) > 2:
+            # This is a range with start/stop and step
+            if len(slice_) == 3:
+                current = int(slice_[0])
+                while current <= int(slice_[1]):
+                    yield current
+                    current = current + int(slice_[2])
+
+            if len(slice_) > 3:
                 raise ValueError(f"Given an invalid range of parameters: '{part}'")
 
         if type_ == "string":
