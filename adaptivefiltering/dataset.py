@@ -185,7 +185,7 @@ class DataSet:
 
         return dataset.restrict(segmentation)
 
-    def create_segmentation(self):
+    def create_segmentation(self, pipelines=None):
         """
         create one or multiple segmentations from a dataset.
         """
@@ -194,7 +194,7 @@ class DataSet:
 
         dataset = PDALInMemoryDataSet.convert(self)
 
-        return dataset.create_segmentation()
+        return dataset.create_segmentation(pipelines=pipelines)
 
     @classmethod
     def convert(cls, dataset):

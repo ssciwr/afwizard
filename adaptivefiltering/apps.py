@@ -490,7 +490,19 @@ def setup_rasterize_side_panel(dataset):
     return widged_list, form_list
 
 
-def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda x: x):
+def assign_pipeline(segmentation, pipelines, finalization_hook=lambda x: x):
+    """
+    Load a Segmentation object with one or more multipolygons and a list of pipelines.
+    Each multipolygon can be assigned to one pipeline.
+
+    """
+
+    print()
+
+
+def create_segmentation(
+    dataset, show_right_side=False, finalization_hook=lambda x: x, pipelines=None
+):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
@@ -529,51 +541,54 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
         # right side controls
         # these are used to assign a segmentation to each
 
-        def on_button_clicked(b, segmentation_=None):
-            return _update_seg_pin(segmentation_)
+        # passes the segment to the _update_seg_pin function
+        def on_button_clicked(b, coordinates_mean=None):
+            return _update_seg_pin(coordinates_mean)
 
-        def _update_seg_pin(segmentation):
-            print(segmentation)
-            coordinates = np.squeeze((segmentation["geometry"]["coordinates"]))
-            coordinates_mean = list(np.mean(coordinates, axis=0))
+        # holds a segmentation and calculates
+        def _update_seg_pin(coordinates_mean):
+            # initilizes a new marker
             marker = Marker(
                 location=[coordinates_mean[1], coordinates_mean[0]], draggable=False
             )
+            # removes the previous marker from the map
             for layer in map_.map.layers:
                 if type(layer) == Marker:
 
                     map_.map.remove_layer(layer)
-
+            # adds the new marker to the selected polygon
             map_.map.add_layer(marker)
 
             # this doesnt show
 
         def _update_seg_list(draw_control_change_event):
-            print(
-                f"old: {len(draw_control_change_event.old)}, new {len(draw_control_change_event.new)}"
-            )
 
-            print(draw_control_change_event)
-            print()
-            if draw_control_change_event.new > draw_control_change_event.old:
+            if len(draw_control_change_event.new) > len(draw_control_change_event.old):
                 features = segmentation_proxy["features"]
+                # calculate the geometry center of the new segmentation.
+                # this is passed through the button to update the pin
+                coordinates = np.squeeze((features[-1]["geometry"]["coordinates"]))
+                coordinates_mean = list(np.mean(coordinates, axis=0))
 
-                # new_button = ipywidgets.Button(description = f"Seg {len( features )}" ,)
-                # new_button.on_click(_update_seg_pin)
-
-                # right_side.children = (*right_side.children,new_button)
                 label = ipywidgets.Label(
-                    f"Seg {len( features )}", layout=ipywidgets.Layout(width="80%")
+                    f"Segmentation {len( features )}",
+                    layout=ipywidgets.Layout(width="80%"),
                 )
                 button = ipywidgets.Button(
                     icon="fa-location-dot", layout=ipywidgets.Layout(width="20%")
                 )
                 button.on_click(
-                    functools.partial(on_button_clicked, segmentation_=features[-1])
+                    functools.partial(
+                        on_button_clicked, coordinates_mean=coordinates_mean
+                    )
                 )
 
+                # pipelines need to know where they are stored/found
+                # author is a placeholder
                 new_dropdown = ipywidgets.Dropdown(
-                    options=[("Pipeline 1", "pip1"), ("Pipeline 2", "pip2")],
+                    options=[
+                        (pipeline.title, pipeline.location) for pipeline in pipelines
+                    ],
                     layout=fullwidth,
                 )
 
@@ -582,6 +597,16 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
                 )
 
                 right_side.children = right_side.children + (box,)
+            else:
+                print("one instance was removed")
+                for i, (new_feature, old_feature) in enumerate(
+                    zip(draw_control_change_event.new, draw_control_change_event.old)
+                ):
+                    print("new", new_feature)
+                    print("old", old_feature)
+                    if new_feature != old_feature:
+                        print(i)
+                    print()
 
         map_.draw_control.observe(_update_seg_list, names="data")
         ride_side_label = ipywidgets.Box(
