@@ -4,7 +4,6 @@ from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.pdal import PDALFilter
 
-from . import dataset, minimal_dataset, boundary_segmentation
 
 import io
 import numpy as np

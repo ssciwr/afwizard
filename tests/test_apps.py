@@ -15,7 +15,7 @@ class Obj:
 def test_return_proxy():
     # Create a proxy for a widget state
     w = ipywidgets.Text()
-    proxy = return_proxy(lambda: Obj(w.value), w)
+    proxy = return_proxy(lambda: Obj(w.value), [w])
     assert proxy.data == ""
 
     # Update the widget and observe changes of the proxy
