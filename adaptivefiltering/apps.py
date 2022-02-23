@@ -590,10 +590,10 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
 
     # passes the segment to the _update_seg_pin function
     def on_button_clicked(b, layer_data=None):
-        return _update_seg_pin(layer_data)
+        return _update_seg_marker(layer_data)
 
     # holds a segmentation and calculates
-    def _update_seg_pin(layer_data):
+    def _update_seg_marker(layer_data):
         # initilizes a new marker
         layer_data.properties["style"]["color"] = "red"
         layer_data.properties["style"]["fillOpacity"] = "0"
@@ -623,7 +623,7 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
             ]
         )
 
-        # for every new
+        # for every new feature we ccreate alocation button, a nametag and a dropdown menu with all pipeline options.
         for i, feature in enumerate(segmentation["features"]):
 
             label = ipywidgets.Label(
@@ -657,8 +657,7 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
         for i, (feature, dropdown_widget) in enumerate(
             zip(assigned_segmentation["features"], dropdown_list)
         ):
-            feature.properties["pipeline"] = dropdown_widget.value
-            print(i)
+            feature["properties"]["pipeline"] = dropdown_widget.value
         return assigned_segmentation
 
     controls, map_ = setup_overlay_control(dataset, with_map=True)
@@ -692,6 +691,7 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
         )
 
     finalize.on_click(_finalize_simple)
+
     return segmentation_proxy
 
 
