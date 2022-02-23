@@ -319,7 +319,6 @@ class Map:
 
         # check if segmentation has draw style information.
 
-        print(segmentation.keys())
         if "style" not in segmentation.properties.keys():
             segmentation.properties["style"] = {
                 "pane": "overlayPane",
