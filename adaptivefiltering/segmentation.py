@@ -88,13 +88,20 @@ class Segmentation(geojson.FeatureCollection):
     def show(self):
         """Create a new InteractiveMap with bounds from the segmentation.
 
-        :param grid:
-             The grid object which holds the map and the right side interface
-        :type grid: ipyleaflet.grid
+        :
         """
 
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
+
+    def convert(self, srs_in, srs_out="EPSG:4326"):
+        """
+        This transforms the segmentation into a new spatial reference system.
+        For this program all segmentations should be in EPSG:4326.
+
+        """
+
+        return convert_Segmentation(self, srs_out, srs_in)
 
     @property
     def __geo_interface__(self):
@@ -127,13 +134,23 @@ def get_min_max_values(segmentation):
 
 def swap_coordinates(segmentation):
     new_features = copy.deepcopy(segmentation["features"])
-
     for feature, new_feature in zip(segmentation["features"], new_features):
-        coord_array = np.asarray(feature["geometry"]["coordinates"])
-        if len(coord_array.shape) == 2:
-            coord_array = np.expand_dims(coord_array, 0)
-        coord_array[:, :, [0, 1]] = coord_array[:, :, [1, 0]]
-        new_feature["geometry"]["coordinates"] = coord_array.tolist()
+        if feature["geometry"]["type"] == "Polygon":
+
+            feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
+
+        polygon_list = []
+        for polygon in feature["geometry"]["coordinates"]:
+            polygon_list.append([])
+            for hole in polygon:
+                polygon_list[-1].append([])
+                for coordinate in hole:
+                    polygon_list[-1][-1].append([coordinate[1], coordinate[0]])
+
+        if feature["geometry"]["type"] == "Polygon":
+            polygon_list = polygon_list[0]
+        new_feature["geometry"]["coordinates"] = polygon_list
+
     return Segmentation(new_features)
 
 
@@ -299,6 +316,33 @@ class Map:
             A segmentation object which is to be loaded.
         :type segmentation: Segmentation
         """
+
+        # check if segmentation has draw style information.
+
+        print(segmentation.keys())
+        if "style" not in segmentation.properties.keys():
+            segmentation.properties["style"] = {
+                "pane": "overlayPane",
+                "attribution": "null",
+                "bubblingMouseEvents": "true",
+                "fill": "true",
+                "smoothFactor": 1,
+                "noClip": "false",
+                "stroke": "true",
+                "color": "black",
+                "weight": 4,
+                "opacity": 0.5,
+                "lineCap": "round",
+                "lineJoin": "round",
+                "dashArray": "null",
+                "dashOffset": "null",
+                "fillColor": "black",
+                "fillOpacity": 0.1,
+                "fillRule": "evenodd",
+                "interactive": "true",
+                "clickable": "true",
+            }
+
         self.map.add_layer(ipyleaflet.GeoJSON(data=segmentation, name=name))
 
     def load_segmentation(self, segmentation, override=False):
