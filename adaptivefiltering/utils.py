@@ -45,6 +45,11 @@ def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
             new_feature["geometry"]["coordinates"].append(
                 np.stack([output_x, output_y], axis=1).tolist()
             )
+
+        if feature["geometry"]["type"] == "MultiPolygon":
+            new_feature["geometry"]["coordinates"] = [
+                new_feature["geometry"]["coordinates"]
+            ]
     return Segmentation(new_features)
 
 
