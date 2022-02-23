@@ -1,6 +1,5 @@
 from adaptivefiltering.widgets import *
 
-import jsonschema
 import pyrsistent
 import pytest
 

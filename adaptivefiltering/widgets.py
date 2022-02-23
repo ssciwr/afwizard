@@ -52,10 +52,10 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
             widget.observe(h, names=n, type=t)
 
         def _setter(_d):
-            widget.value = pyrsistent.thaw(_d)
+            widget.value = _d
 
         return self.construct_element(
-            getter=lambda: pyrsistent.pvector(widget.value),
+            getter=lambda: widget.value,
             setter=_setter,
             widgets=[ipywidgets.VBox(widgets)],
             register_observer=_register_observer,
@@ -286,7 +286,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
     def _construct_anyof(self, schema, label=None, key="anyOf"):
         original = super()._construct_anyof(schema, label, key)
-        selector = original.widgets[0].children[0]
+        selector = original.widgets[0].children[-1].children[0]
 
         def _setter(_data):
             for subel in original.subelements:

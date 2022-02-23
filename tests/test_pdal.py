@@ -1,8 +1,6 @@
 from adaptivefiltering.pdal import *
 from adaptivefiltering.paths import get_temporary_filename
 
-from . import dataset, minimal_dataset
-
 import jsonschema
 import os
 import pyrsistent
