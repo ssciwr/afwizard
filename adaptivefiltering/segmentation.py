@@ -107,6 +107,7 @@ class Segmentation(geojson.FeatureCollection):
 def get_min_max_values(segmentation):
     # goes over all features in the segmentation and return the min and max coordinates in a dict.
     min_max_dict = {"minX": [], "maxX": [], "minY": [], "maxY": []}
+
     for feature in segmentation["features"]:
         for coord_array in feature["geometry"]["coordinates"]:
             coord_array = np.asarray(coord_array)
@@ -291,8 +292,17 @@ class Map:
         self.layer_control = ipyleaflet.LayersControl(position="topright")
         self.map.add_control(self.layer_control)
 
+    def load_geojson(self, segmentation, name=""):
+        """Imports a segmentation objectas an actual layer.
+
+        :param segmentation:
+            A segmentation object which is to be loaded.
+        :type segmentation: Segmentation
+        """
+        self.map.add_layer(ipyleaflet.GeoJSON(data=segmentation, name=name))
+
     def load_segmentation(self, segmentation, override=False):
-        """Imports a segmentation object onto the map.
+        """Imports a segmentation object into the draw control data
 
         :param segmentation:
             A segmentation object which is to be loaded.
