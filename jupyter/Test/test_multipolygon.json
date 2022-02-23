@@ -1,0 +1,160 @@
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              [
+                8.70615,
+                49.424174
+              ],
+              [
+                8.705893,
+                49.423713
+              ],
+              [
+                8.706493,
+                49.423964
+              ],
+              [
+                8.70615,
+                49.424174
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                8.705957,
+                49.423616
+              ],
+              [
+                8.706,
+                49.423309
+              ],
+              [
+                8.706708,
+                49.423322
+              ],
+              [
+                8.705957,
+                49.423616
+              ]
+            ]
+          ]
+        ],
+        "type": "MultiPolygon"
+      },
+      "properties": {
+        "style": {
+          "attribution": null,
+          "bubblingMouseEvents": true,
+          "clickable": true,
+          "color": "black",
+          "dashArray": null,
+          "dashOffset": null,
+          "fill": true,
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": true,
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": false,
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": true,
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              [
+                8.706944,
+                49.42423
+              ],
+              [
+                8.706944,
+                49.423881
+              ],
+              [
+                8.70645,
+                49.42416
+              ],
+              [
+                8.706944,
+                49.42423
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                8.70703,
+                49.423462
+              ],
+              [
+                8.706837,
+                49.423309
+              ],
+              [
+                8.706343,
+                49.423281
+              ],
+              [
+                8.706408,
+                49.423378
+              ],
+              [
+                8.706493,
+                49.423616
+              ],
+              [
+                8.706708,
+                49.423643
+              ],
+              [
+                8.70703,
+                49.423462
+              ]
+            ]
+          ]
+        ],
+        "type": "MultiPolygon"
+      },
+      "properties": {
+        "style": {
+          "attribution": null,
+          "bubblingMouseEvents": true,
+          "clickable": true,
+          "color": "black",
+          "dashArray": null,
+          "dashOffset": null,
+          "fill": true,
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": true,
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": false,
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": true,
+          "weight": 4
+        },
+        "test": "something"
+      },
+      "type": "Feature"
+    }
+  ],
+  "type": "FeatureCollection"
+}
