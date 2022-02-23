@@ -187,6 +187,14 @@ class DataSet:
 
     def crop_segmentation(self):
 
+        """
+            Interactivly  creates a segmentation object from the dataset.
+
+        return:
+            A segmentation object.
+        :rtype:  adaptivefiltering.segmentation.Segmentation
+        """
+
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
@@ -198,6 +206,21 @@ class DataSet:
         Load a Segmentation object with one or more multipolygons and a list of pipelines.
         Each multipolygon can be assigned to one pipeline.
 
+
+        :param segmentation:
+            This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
+            If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_Segmentation.
+        :type: adaptivefiltering.segmentation.Segmentation
+
+        :param pipelines:
+            All pipelines that one wants to link with the given segmentations.
+
+        :type: list of adaptivefiltering.filter.Pipeline
+
+
+        :return:
+            A segmentation object with added pipeline information
+        :rtype:  adaptivefiltering.segmentation.Segmentation
         """
 
         from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -212,6 +235,10 @@ class DataSet:
 
         This is used internally to convert datasets between different
         representations.
+
+        :return:
+            A dataset with transformed datapoints.
+        :rtype: adaptivefiltering.DataSet
         """
         return dataset.save(get_temporary_filename(extension="las"))
 
