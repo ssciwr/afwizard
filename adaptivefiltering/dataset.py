@@ -203,13 +203,14 @@ class DataSet:
 
     def assign_pipeline(self, segmentation, pipelines):
         """
-        Load a Segmentation object with one or more multipolygons and a list of pipelines.
+        Load a segmentation object with one or more multipolygons and a list of pipelines.
         Each multipolygon can be assigned to one pipeline.
 
 
         :param segmentation:
             This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
             If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_Segmentation.
+            It might be necessary to swap the lon and lat coordinates. See  segmentation.swap_coordinates
         :type: adaptivefiltering.segmentation.Segmentation
 
         :param pipelines:

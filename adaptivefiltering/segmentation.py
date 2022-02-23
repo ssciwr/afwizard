@@ -99,6 +99,15 @@ class Segmentation(geojson.FeatureCollection):
         This transforms the segmentation into a new spatial reference system.
         For this program all segmentations should be in EPSG:4326.
 
+        :param srs_in:
+            Current spatial reference system of the segmentation.
+            Must be either EPSG or wkt.
+
+        :param srs_out:
+            Desired spatial reference system.
+            Must be either EPSG or wkt.
+
+
         """
 
         return convert_Segmentation(self, srs_out, srs_in)
@@ -133,6 +142,11 @@ def get_min_max_values(segmentation):
 
 
 def swap_coordinates(segmentation):
+    """
+    Takes a segmentation and swaps the lon and lat coordinates.
+
+
+    """
     new_features = copy.deepcopy(segmentation["features"])
     for feature, new_feature in zip(segmentation["features"], new_features):
         if feature["geometry"]["type"] == "Polygon":
@@ -319,8 +333,8 @@ class Map:
 
         # check if segmentation has draw style information.
 
-        if "style" not in segmentation.properties.keys():
-            segmentation.properties["style"] = {
+        if "style" not in segmentation["properties"].keys():
+            segmentation["properties"]["style"] = {
                 "pane": "overlayPane",
                 "attribution": "null",
                 "bubblingMouseEvents": "true",
