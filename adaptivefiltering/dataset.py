@@ -185,16 +185,26 @@ class DataSet:
 
         return dataset.restrict(segmentation)
 
-    def create_segmentation(self, pipelines=None):
+    def crop_segmentation(self):
+
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset = PDALInMemoryDataSet.convert(self)
+
+        return dataset.crop_segmentation()
+
+    def assign_pipeline(self, segmentation, pipelines):
         """
-        create one or multiple segmentations from a dataset.
+        Load a Segmentation object with one or more multipolygons and a list of pipelines.
+        Each multipolygon can be assigned to one pipeline.
+
         """
 
         from adaptivefiltering.pdal import PDALInMemoryDataSet
 
         dataset = PDALInMemoryDataSet.convert(self)
 
-        return dataset.create_segmentation(pipelines=pipelines)
+        return dataset.assign_pipeline(segmentation=segmentation, pipelines=pipelines)
 
     @classmethod
     def convert(cls, dataset):
