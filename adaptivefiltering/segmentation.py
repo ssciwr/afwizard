@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, locate_file
 from adaptivefiltering.utils import (
     is_iterable,
     convert_Segmentation,
@@ -71,6 +71,7 @@ class Segmentation(geojson.FeatureCollection):
             return segmentations
 
         elif isinstance(filename, str):
+            filename = locate_file(filename)
             with open(filename, "r") as f:
                 return Segmentation(geojson.load(f))
 
@@ -111,6 +112,46 @@ class Segmentation(geojson.FeatureCollection):
         """
 
         return convert_Segmentation(self, srs_out, srs_in)
+
+    def merge_classes(self):
+        """
+        If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
+        Warning, if members of the same class have different metadata it will not be preserved.
+        """
+
+        new_segmentation = Segmentation([])
+        added_classes = {}
+        for feature in self["features"]:
+            if "class" in feature["properties"]:
+                if feature["properties"]["class"] not in added_classes.keys():
+                    # stores the class label and the index of the new segmentation associated with that class
+                    added_classes[feature["properties"]["class"]] = len(
+                        new_segmentation["features"]
+                    )
+                    new_segmentation["features"].append(feature)
+                    if (
+                        new_segmentation["features"][-1]["geometry"]["type"]
+                        == "Polygon"
+                    ):
+                        new_segmentation["features"][-1]["geometry"][
+                            "type"
+                        ] = "MultiPolygon"
+                        new_segmentation["features"][-1]["geometry"]["coordinates"] = [
+                            new_segmentation["features"][-1]["geometry"]["coordinates"]
+                        ]
+                else:
+                    class_index = added_classes[feature["properties"]["class"]]
+                    if feature["geometry"]["type"] == "Polygon":
+                        new_segmentation["features"][class_index]["geometry"][
+                            "coordinates"
+                        ].append(feature["geometry"]["coordinates"])
+                    elif feature["geometry"]["type"] == "MultiPolygon":
+                        for coordinates in feature["geometry"]["coordinates"]:
+                            new_segmentation["features"][class_index]["geometry"][
+                                "coordinates"
+                            ].append(coordinates)
+
+        return new_segmentation
 
     @property
     def __geo_interface__(self):
@@ -169,7 +210,9 @@ def swap_coordinates(segmentation):
 
 
 class Map:
-    def __init__(self, dataset=None, segmentation=None, in_srs=None):
+    def __init__(
+        self, dataset=None, segmentation=None, in_srs=None, inlude_draw_controle=True
+    ):
         """Manage the interactive map use to create segmentations
 
         It can be initilized with a dataset from which it will detect the boundaries and show them on the map.
@@ -240,6 +283,7 @@ class Map:
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
+        self.inlude_draw_controle = inlude_draw_controle
 
         self.dataset = dataset  # needed for overlay function.
 
@@ -307,7 +351,8 @@ class Map:
         }
 
         # add draw control
-        self.map.add_control(self.draw_control)
+        if self.inlude_draw_controle:
+            self.map.add_control(self.draw_control)
 
         # add zoom control
         self.zoom_slider = ipywidgets.IntSlider(
