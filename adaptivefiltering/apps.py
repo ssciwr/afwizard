@@ -477,7 +477,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
     return pipeline_proxy
 
 
-def setup_overlay_control(dataset, with_map=False):
+def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     """
     This function creates the rasterization control widged for the restrict, assign_pipeline and show_ineractive widgets
 
@@ -562,7 +562,7 @@ def setup_overlay_control(dataset, with_map=False):
         # this ensures that the slope and hillshade overlay fit the map projection.
         dataset = reproject_dataset(dataset, "EPSG:3857")
         # Create the map
-        map_ = Map(dataset)
+        map_ = Map(dataset, inlude_draw_controle=inlude_draw_controle)
         load_raster_button.on_click(load_raster_to_map)
 
         load_raster_label = ipywidgets.Box(
@@ -676,8 +676,9 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
             feature["properties"]["pipeline"] = dropdown_widget.value
         return assigned_segmentation
 
-    controls, map_ = setup_overlay_control(dataset, with_map=True)
-
+    controls, map_ = setup_overlay_control(
+        dataset, with_map=True, inlude_draw_controle=False
+    )
     map_widget = map_.show()
     map_widget.layout = fullwidth
 
