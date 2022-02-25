@@ -22,7 +22,6 @@ import numpy as np
 import pyrsistent
 import pytools
 import wrapt
-from ipyleaflet import Marker
 import functools
 
 
@@ -597,11 +596,27 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
         )
 
 
-def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x: x):
+def assign_pipeline(dataset, segmentation, pipelines):
     """
-    Load a Segmentation object with one or more multipolygons and a list of pipelines.
+    Load a segmentation object with one or more multipolygons and a list of pipelines.
     Each multipolygon can be assigned to one pipeline.
 
+
+    :param segmentation:
+        This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
+        If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_Segmentation.
+        It might be necessary to swap the lon and lat coordinates. See  segmentation.swap_coordinates
+    :type: adaptivefiltering.segmentation.Segmentation
+
+    :param pipelines:
+        All pipelines that one wants to link with the given segmentations.
+
+    :type: list of adaptivefiltering.filter.Pipeline
+
+
+    :return:
+        A segmentation object with added pipeline information
+    :rtype:  adaptivefiltering.segmentation.Segmentation
     """
 
     # passes the segment to the _update_seg_pin function
@@ -621,9 +636,7 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
         map_.load_geojson(layer_data, "Current Segmentation")
 
     def _create_right_side_menu():
-        ride_side_label = ipywidgets.Box(
-            (ipywidgets.Label("Assign Pipelines to Segmentations"),)
-        )
+        right_side_label = ipywidgets.Label("Assign Pipelines to Segmentations")
 
         # pipeline author has to be replaced with the storage location
 
@@ -635,7 +648,7 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
         dropdown_list = []
         right_side = ipywidgets.VBox(
             [
-                ride_side_label,
+                right_side_label,
             ]
         )
 
@@ -676,6 +689,8 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
             feature["properties"]["pipeline"] = dropdown_widget.value
         return assigned_segmentation
 
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
     controls, map_ = setup_overlay_control(
         dataset, with_map=True, inlude_draw_controle=False
     )
@@ -703,9 +718,6 @@ def assign_pipeline(dataset, segmentation, pipelines, finalization_hook=lambda x
 
     def _finalize_simple(_):
         app.layout.display = "none"
-        segmentation_proxy.__wrapped__ = finalization_hook(
-            segmentation_proxy.__wrapped__
-        )
 
     finalize.on_click(_finalize_simple)
 
