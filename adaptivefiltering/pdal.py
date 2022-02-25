@@ -118,12 +118,7 @@ class PDALInMemoryDataSet(DataSet):
 
     @property
     def data(self):
-        if self.pipeline is None:
-            # This allows us to write empty datasets which is required to have sane
-            # return values on widgets that allow interactive updates.
-            return np.zeros(shape=(1, 1, 1))
-        else:
-            return self.pipeline.arrays[0]
+        return self.pipeline.arrays[0]
 
     @classmethod
     def convert(cls, dataset):

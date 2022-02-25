@@ -773,9 +773,7 @@ def apply_restriction(dataset, segmentation=None):
     # If this is interactive, construct the widgets
     controls, map_ = setup_overlay_control(dataset, with_map=True)
     finalize = ipywidgets.Button(description="Finalize")
-    segmentation_proxy = return_proxy(
-        lambda: PDALInMemoryDataSet(spatial_reference=dataset.spatial_reference), []
-    )
+    segmentation_proxy = return_proxy(lambda: dataset, [])
 
     map_widget = map_.show()
 
@@ -784,7 +782,7 @@ def apply_restriction(dataset, segmentation=None):
 
     # Create the overall app layout
     app = ipywidgets.AppLayout(
-        header=ipywidgets.VBox([finalize]),
+        header=ipywidgets.Box([finalize]),
         left_sidebar=controls,
         center=map_widget,
         right_sidebar=None,
