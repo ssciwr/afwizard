@@ -1,7 +1,7 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.visualization import gdal_visualization
+from adaptivefiltering.visualization import visualization_dispatcher
 
 from osgeo import gdal
 
@@ -283,7 +283,7 @@ class DigitalSurfaceModel:
         jsonschema.validate(kwargs, schema=schema)
 
         # Call the correct visualization function
-        vis = gdal_visualization(self, **kwargs)
+        vis = visualization_dispatcher(self, **kwargs)
         vis.layout = ipywidgets.Layout(width="70%")
         box_layout = ipywidgets.Layout(
             width="100%", flex_flow="column", align_items="center", display="flex"

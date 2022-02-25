@@ -7,7 +7,6 @@ from adaptivefiltering.utils import (
     merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.visualization import gdal_visualization
 
 import base64
 import geojson

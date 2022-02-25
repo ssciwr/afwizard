@@ -420,7 +420,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
     visualization_form = ipywidgets_jsonschema.Form(
-        schema, vertically_place_labels=True
+        schema, vertically_place_labels=True, use_sliders=True
     )
     visualization_form_widget = visualization_form.widget
     visualization_form_widget.layout = fullwidth
@@ -504,7 +504,9 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     # Get a widget that allows configuration of the visualization method
     schema = load_schema("visualization.json")
 
-    form = ipywidgets_jsonschema.Form(schema, vertically_place_labels=True)
+    form = ipywidgets_jsonschema.Form(
+        schema, vertically_place_labels=True, use_sliders=True
+    )
     formwidget = form.widget
     formwidget.layout = fullwidth
 
