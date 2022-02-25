@@ -50,7 +50,7 @@ def test_convert_segmentation(boundary_segmentation):
     assert (test3_coord - test_coord).all() < 1e-10
 
 
-def test_swap_coordinates_segmentation():
+def test_swap_coordinates_segmentation(multipolygon_segmentation):
     test_json = {
         "features": [
             {
@@ -76,9 +76,14 @@ def test_swap_coordinates_segmentation():
     test_seg = Segmentation(test_json)
 
     test_seg_swapped = swap_coordinates(test_seg)
+    multipolygon_segmentation_swapped = swap_coordinates(multipolygon_segmentation)
+
     assert test_seg_swapped["features"][0]["geometry"]["coordinates"] == [
         [[1, 0], [1, 0], [1, 0]]
     ]
+    assert multipolygon_segmentation_swapped["features"][0]["geometry"][
+        "coordinates"
+    ] == [[[[0, 1], [1, 1], [1, 0], [0, 1]]], [[[0, 0], [0, 1], [1, 0], [0, 0]]]]
 
 
 def test_get_min_max_values():

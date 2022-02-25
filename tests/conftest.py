@@ -79,6 +79,40 @@ def boundary_segmentation():
     )
 
 
+@pytest.fixture
+def multipolygon_segmentation():
+    return adaptivefiltering.segmentation.Segmentation(
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "MultiPolygon",
+                        "coordinates": [
+                            [[[1, 0], [1, 1], [0, 1], [1, 0]]],
+                            [[[0, 0], [1, 0], [0, 1], [0, 0]]],
+                        ],
+                    },
+                    "properties": {
+                        "class": "A",
+                    },
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[0, 0], [1, 0], [0, 1], [0, 0]]],
+                    },
+                    "properties": {
+                        "class": "A",
+                    },
+                },
+            ],
+        }
+    )
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--runslow", action="store_true", default=False, help="Run slow tests"
