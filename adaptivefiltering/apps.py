@@ -515,7 +515,6 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     load_raster_button = ipywidgets.Button(
         description="Load rasterization", layout=fullwidth
     )
-    parameter_cache = []
 
     def load_raster_to_map(b):
         with hourglass_icon(b):
@@ -533,32 +532,9 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
                     **rasterization_widget_form.data,
                 )
 
-            # put all options into a dict and filter out the numer of points
-            options = [
-                (option[1], option[0].split(":")[1].split(" (")[0])
-                for option in classification.children[0].options
-            ]
-            classification_dict = {}
-            for key, value in options:
-                classification_dict[key] = value
-            # take only the currently active classifications for layer description.
-            classification_str = ", ".join(
-                [classification_dict[i] for i in classification.children[0].value]
-            )
-
-            title = f"""{form.data.visualization_type}:
-                        res: {rasterization_widget_form.data.resolution}"""
-            # this string is used to prevent recalculation of geotiffs
-            new_parameter_str = f"""{form.data.visualization_type}:
-                        res: {rasterization_widget_form.data.resolution}
-                       {", ".join([str(key) + ": " + str(value) for key, value in form.data.items()])},
-                         classification: ({classification_str}))"""
-
-            # only calculate a new layer if the configuration has not been added yet.
-            if new_parameter_str not in parameter_cache:
-                vis = dataset.show(**form.data).children[0]
-                map_.load_overlay(vis, title)
-                parameter_cache.append(new_parameter_str)
+            title = f"{form.data['visualization_type']}, res: {rasterization_widget_form.data['resolution']}"
+            vis = dataset.show(**form.data).children[0]
+            map_.load_overlay(vis, title)
 
     # case for restrict
     if with_map:
