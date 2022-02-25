@@ -179,11 +179,14 @@ class DataSet:
             shown in Jupyter.
         :type: adaptivefiltering.segmentation.Segmentation
         """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-        dataset = PDALInMemoryDataSet.convert(self)
+        from adaptivefiltering.segmentation import Segment, Segmentation
+        from adaptivefiltering.apps import apply_restriction
 
-        return dataset.restrict(segmentation)
+        if isinstance(segmentation, Segment):
+            segmentation = Segmentation([segmentation.__geo_interface__])
+
+        return apply_restriction(self, segmentation)
 
     @classmethod
     def convert(cls, dataset):

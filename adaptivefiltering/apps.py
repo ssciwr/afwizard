@@ -7,9 +7,15 @@ from adaptivefiltering.library import (
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import Map, Segmentation
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.segmentation import Map, Segmentation, swap_coordinates
+from adaptivefiltering.utils import (
+    AdaptiveFilteringError,
+    merge_segmentation_features,
+    convert_segmentation,
+)
 from adaptivefiltering.widgets import WidgetFormWithLabels
+
+from osgeo import ogr
 
 import collections
 import contextlib
@@ -724,31 +730,59 @@ def assign_pipeline(dataset, segmentation, pipelines):
     return segmentation_proxy
 
 
-def create_segmentation(
-    dataset,
-    finalization_hook=lambda x: x,
-):
+def apply_restriction(dataset, segmentation=None):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
     """
 
+    dataset = as_pdal(dataset)
+
+    def apply_restriction(seg):
+        # not yet sure why the swap is necessary
+        seg = swap_coordinates(seg)
+
+        # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
+        seg = convert_segmentation(seg, dataset.spatial_reference)
+
+        # if multiple polygons have been selected they will be merged in one multipolygon
+        # this guarentees, that len(seg[features]) is always 1.
+        seg = merge_segmentation_features(seg)
+
+        # Construct a WKT Polygon for the clipping
+        # this will be either a single polygon or a multipolygon
+        polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
+        polygons_wkt = polygons.ExportToWkt()
+
+        from adaptivefiltering.pdal import execute_pdal_pipeline
+
+        # Apply the cropping filter with all polygons
+        newdata = execute_pdal_pipeline(
+            dataset=dataset, config={"type": "filters.crop", "polygon": polygons_wkt}
+        )
+
+        return PDALInMemoryDataSet(
+            pipeline=newdata,
+            spatial_reference=dataset.spatial_reference,
+        )
+
+    # Maybe this is not meant to be interactive
+    if segmentation is not None:
+        return apply_restriction(segmentation)
+
+    # If this is interactive, construct the widgets
     controls, map_ = setup_overlay_control(dataset, with_map=True)
-
-    segmentation_proxy = return_proxy(
-        lambda: Segmentation(map_.return_segmentation()), [map_.draw_control]
-    )
-
     finalize = ipywidgets.Button(description="Finalize")
+    segmentation_proxy = return_proxy(lambda: dataset, [])
+
     map_widget = map_.show()
 
     map_widget.layout = fullwidth
     finalize.layout = fullwidth
 
     # Create the overall app layout
-
     app = ipywidgets.AppLayout(
-        header=ipywidgets.VBox([finalize]),
+        header=ipywidgets.Box([finalize]),
         left_sidebar=controls,
         center=map_widget,
         right_sidebar=None,
@@ -757,14 +791,11 @@ def create_segmentation(
     )
 
     # Show the final widget
-
     IPython.display.display(app)
 
     def _finalize_simple(_):
         app.layout.display = "none"
-        segmentation_proxy.__wrapped__ = finalization_hook(
-            segmentation_proxy.__wrapped__
-        )
+        segmentation_proxy.__wrapped__ = apply_restriction(map_.return_segmentation())
 
     finalize.on_click(_finalize_simple)
 
