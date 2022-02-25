@@ -1,9 +1,9 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, locate_file
 from adaptivefiltering.utils import (
     is_iterable,
-    convert_Segmentation,
+    convert_segmentation,
     merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
@@ -71,6 +71,7 @@ class Segmentation(geojson.FeatureCollection):
             return segmentations
 
         elif isinstance(filename, str):
+            filename = locate_file(filename)
             with open(filename, "r") as f:
                 return Segmentation(geojson.load(f))
 
@@ -88,13 +89,51 @@ class Segmentation(geojson.FeatureCollection):
     def show(self):
         """Create a new InteractiveMap with bounds from the segmentation.
 
-        :param grid:
-             The grid object which holds the map and the right side interface
-        :type grid: ipyleaflet.grid
+        :
         """
 
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
+
+    def merge_classes(self):
+        """
+        If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
+        Warning, if members of the same class have different metadata it will not be preserved.
+        """
+
+        new_segmentation = Segmentation([])
+        added_classes = {}
+        for feature in self["features"]:
+            if "class" in feature["properties"]:
+                if feature["properties"]["class"] not in added_classes.keys():
+                    # stores the class label and the index of the new segmentation associated with that class
+                    added_classes[feature["properties"]["class"]] = len(
+                        new_segmentation["features"]
+                    )
+                    new_segmentation["features"].append(feature)
+                    if (
+                        new_segmentation["features"][-1]["geometry"]["type"]
+                        == "Polygon"
+                    ):
+                        new_segmentation["features"][-1]["geometry"][
+                            "type"
+                        ] = "MultiPolygon"
+                        new_segmentation["features"][-1]["geometry"]["coordinates"] = [
+                            new_segmentation["features"][-1]["geometry"]["coordinates"]
+                        ]
+                else:
+                    class_index = added_classes[feature["properties"]["class"]]
+                    if feature["geometry"]["type"] == "Polygon":
+                        new_segmentation["features"][class_index]["geometry"][
+                            "coordinates"
+                        ].append(feature["geometry"]["coordinates"])
+                    elif feature["geometry"]["type"] == "MultiPolygon":
+                        for coordinates in feature["geometry"]["coordinates"]:
+                            new_segmentation["features"][class_index]["geometry"][
+                                "coordinates"
+                            ].append(coordinates)
+
+        return new_segmentation
 
     @property
     def __geo_interface__(self):
@@ -107,6 +146,7 @@ class Segmentation(geojson.FeatureCollection):
 def get_min_max_values(segmentation):
     # goes over all features in the segmentation and return the min and max coordinates in a dict.
     min_max_dict = {"minX": [], "maxX": [], "minY": [], "maxY": []}
+
     for feature in segmentation["features"]:
         for coord_array in feature["geometry"]["coordinates"]:
             coord_array = np.asarray(coord_array)
@@ -125,19 +165,36 @@ def get_min_max_values(segmentation):
 
 
 def swap_coordinates(segmentation):
-    new_features = copy.deepcopy(segmentation["features"])
+    """
+    Takes a segmentation and swaps the lon and lat coordinates.
 
+
+    """
+    new_features = copy.deepcopy(segmentation["features"])
     for feature, new_feature in zip(segmentation["features"], new_features):
-        coord_array = np.asarray(feature["geometry"]["coordinates"])
-        if len(coord_array.shape) == 2:
-            coord_array = np.expand_dims(coord_array, 0)
-        coord_array[:, :, [0, 1]] = coord_array[:, :, [1, 0]]
-        new_feature["geometry"]["coordinates"] = coord_array.tolist()
+        if feature["geometry"]["type"] == "Polygon":
+
+            feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
+
+        polygon_list = []
+        for polygon in feature["geometry"]["coordinates"]:
+            polygon_list.append([])
+            for hole in polygon:
+                polygon_list[-1].append([])
+                for coordinate in hole:
+                    polygon_list[-1][-1].append([coordinate[1], coordinate[0]])
+
+        if feature["geometry"]["type"] == "Polygon":
+            polygon_list = polygon_list[0]
+        new_feature["geometry"]["coordinates"] = polygon_list
+
     return Segmentation(new_features)
 
 
 class Map:
-    def __init__(self, dataset=None, segmentation=None, in_srs=None):
+    def __init__(
+        self, dataset=None, segmentation=None, in_srs=None, inlude_draw_controle=True
+    ):
         """Manage the interactive map use to create segmentations
 
         It can be initilized with a dataset from which it will detect the boundaries and show them on the map.
@@ -208,6 +265,7 @@ class Map:
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
+        self.inlude_draw_controle = inlude_draw_controle
 
         self.dataset = dataset  # needed for overlay function.
 
@@ -275,7 +333,8 @@ class Map:
         }
 
         # add draw control
-        self.map.add_control(self.draw_control)
+        if self.inlude_draw_controle:
+            self.map.add_control(self.draw_control)
 
         # add zoom control
         self.zoom_slider = ipywidgets.IntSlider(
@@ -291,28 +350,71 @@ class Map:
         self.layer_control = ipyleaflet.LayersControl(position="topright")
         self.map.add_control(self.layer_control)
 
-    def load_segmentation(self, segmentation):
-        """Imports a segmentation object onto the map.
+    def load_geojson(self, segmentation, name=""):
+        """Imports a segmentation objectas an actual layer.
 
         :param segmentation:
             A segmentation object which is to be loaded.
         :type segmentation: Segmentation
         """
-        if isinstance(segmentation, str):
-            segmentation = Segmentation.load(segmentation)
 
-        # save current polygon data
-        current_data = self.draw_control.data
-        # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
-        new_polygons = [
-            new_polygon
-            for new_polygon in segmentation["features"]
-            if not new_polygon["geometry"]
-            in [data["geometry"] for data in current_data]
-        ]
-        # adds the new polygons to the current data
-        new_data = current_data + new_polygons
-        self.draw_control.data = new_data
+        # check if segmentation has draw style information.
+
+        if "style" not in segmentation["properties"].keys():
+            segmentation["properties"]["style"] = {
+                "pane": "overlayPane",
+                "attribution": "null",
+                "bubblingMouseEvents": "true",
+                "fill": "true",
+                "smoothFactor": 1,
+                "noClip": "false",
+                "stroke": "true",
+                "color": "black",
+                "weight": 4,
+                "opacity": 0.5,
+                "lineCap": "round",
+                "lineJoin": "round",
+                "dashArray": "null",
+                "dashOffset": "null",
+                "fillColor": "black",
+                "fillOpacity": 0.1,
+                "fillRule": "evenodd",
+                "interactive": "true",
+                "clickable": "true",
+            }
+
+        self.map.add_layer(ipyleaflet.GeoJSON(data=segmentation, name=name))
+
+    def load_segmentation(self, segmentation, override=False):
+        """Imports a segmentation object into the draw control data
+
+        :param segmentation:
+            A segmentation object which is to be loaded.
+        :type segmentation: Segmentation
+        """
+
+        if override:
+            self.draw_control.data = [
+                new_polygon for new_polygon in segmentation["features"]
+            ]
+
+        else:
+            if isinstance(segmentation, str):
+                segmentation = Segmentation.load(segmentation)
+            # save current polygon data
+            current_data = self.draw_control.data
+            # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
+
+            # adds the new polygons to the current data
+            new_polygons = [
+                new_polygon
+                for new_polygon in segmentation["features"]
+                if not new_polygon["geometry"]
+                in [data["geometry"] for data in current_data]
+            ]
+            new_data = current_data + new_polygons
+
+            self.draw_control.data = new_data
 
     def load_hexbin_boundary(self, dataset=None, segmentation=None):
         """
@@ -374,7 +476,7 @@ class Map:
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
         if dataset:
-            boundary_segmentation = convert_Segmentation(
+            boundary_segmentation = convert_segmentation(
                 boundary_segmentation, "EPSG:4326", self.original_srs
             )
 

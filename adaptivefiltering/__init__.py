@@ -13,6 +13,7 @@ from adaptivefiltering.apps import (
     select_pipeline_from_library,
     select_pipelines_from_library,
     select_best_pipeline,
+    assign_pipeline,
 )
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet, remove_classification, reproject_dataset
@@ -42,6 +43,7 @@ __all__ = [
     "select_best_pipeline",
     "select_pipeline_from_library",
     "select_pipelines_from_library",
+    "assign_pipeline",
     "apply_adaptive_pipeline",
     "execute_interactive",
     "remove_classification",

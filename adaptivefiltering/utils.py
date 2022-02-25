@@ -23,28 +23,57 @@ def stringify_value(value):
     return str(value)
 
 
-def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
+def convert_segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
+    """
+    This transforms the segmentation into a new spatial reference system.
+        For this program all segmentations should be in EPSG:4326.
+        :param segmentation:
+            The segmentation that should be transformed
+        :type: adaptivefiltering.segmentation.Segmentation
+
+
+        :param srs_in:
+            Current spatial reference system of the segmentation.
+            Must be either EPSG or wkt.
+        :type: str
+
+        :param srs_out:
+            Desired spatial reference system.
+            Must be either EPSG or wkt.
+        :type: str
+
+
+        :return: Transformed segmentation.
+        :rtype: adaptivefiltering.segmentation.Segmentation
+
+    """
+
     from adaptivefiltering.segmentation import Segmentation
     from pyproj import Transformer
 
     new_features = copy.deepcopy(segmentation["features"])
 
     for feature, new_feature in zip(segmentation["features"], new_features):
-        feature_coords = np.asarray(list(coords(feature)))
-        # geojson polygons should always be a three dimensional list, in case they have been reduced this will buffer them again
-        if len(feature_coords.shape) == 2:
-            feature_coords = [feature_coords]
 
-        new_feature["geometry"]["coordinates"] = []
+        if feature["geometry"]["type"] == "Polygon":
+            feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
+        polygon_list = []
         transformer = Transformer.from_crs(srs_in, srs_out)
-        for coordinates in feature_coords:
-            output_x, output_y = transformer.transform(
-                coordinates[:, 0], coordinates[:, 1]
-            )
-            # the x and y arrays are merged into the new Segmentation.
-            new_feature["geometry"]["coordinates"].append(
-                np.stack([output_x, output_y], axis=1).tolist()
-            )
+
+        for polygon in feature["geometry"]["coordinates"]:
+
+            polygon_list.append([])
+            for hole in polygon:
+                hole = np.asarray(hole)
+
+                output_x, output_y = transformer.transform(hole[:, 0], hole[:, 1])
+                polygon_list[-1].append(np.stack([output_x, output_y], axis=1).tolist())
+
+        if feature["geometry"]["type"] == "Polygon":
+            polygon_list = polygon_list[0]
+
+        new_feature["geometry"]["coordinates"] = polygon_list
+
     return Segmentation(new_features)
 
 

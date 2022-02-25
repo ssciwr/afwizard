@@ -22,12 +22,13 @@ import numpy as np
 import pyrsistent
 import pytools
 import wrapt
+import functools
 
 
 fullwidth = ipywidgets.Layout(width="100%")
 
 
-def return_proxy(creator, widget):
+def return_proxy(creator, widgets):
     # Create a new proxy object by calling the creator once
     proxy = wrapt.ObjectProxy(creator())
 
@@ -36,9 +37,10 @@ def return_proxy(creator, widget):
         proxy.__wrapped__ = creator()
 
     # Register handler that triggers proxy update
-    widget.observe(
-        _update_proxy, names=("value", "selected_index", "data"), type="change"
-    )
+    for widget in widgets:
+        widget.observe(
+            _update_proxy, names=("value", "selected_index", "data"), type="change"
+        )
 
     return proxy
 
@@ -462,7 +464,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         lambda: pipeline.copy(
             _variability=pipeline_form.batchdata, **pipeline_form.data
         ),
-        pipeline_form,
+        [pipeline_form],
     )
 
     def _finalize(_):
@@ -474,8 +476,14 @@ def pipeline_tuning(datasets=[], pipeline=None):
     return pipeline_proxy
 
 
-def setup_rasterize_side_panel(dataset):
+def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
+    """
+    This function creates the rasterization control widged for the restrict, assign_pipeline and show_ineractive widgets
+
+    """
+
     # Get a widget for rasterization
+
     raster_schema = copy.deepcopy(load_schema("rasterize.json"))
 
     # We drop classification, because we add this as a specialized widget
@@ -498,67 +506,9 @@ def setup_rasterize_side_panel(dataset):
     classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
-    widged_list = [rasterization_widget, formwidget, classification]
-    form_list = [rasterization_widget_form, form]
-
-    return widged_list, form_list
-
-
-def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda x: x):
-    """The Jupyter UI to create a segmentation object from scratch.
-
-    The use of this UI will soon be described in detail.
-    """
-    # create instance of dataset with srs of "EPSG:3857",
-    # this ensures that the slope and hillshade overlay fit the map projection.
-    dataset = reproject_dataset(dataset, "EPSG:3857")
-    # Create the necessary widgets
-
-    map_ = Map(dataset=dataset)
-    map_widget = map_.show()
-    finalize = ipywidgets.Button(description="Finalize")
-
-    widged_list, form_list = setup_rasterize_side_panel(dataset)
-    rasterization_widget, formwidget, classification = widged_list
-    rasterization_widget_form, form = form_list
-
-    if show_right_side == True:
-        print("show right side")
-    # Arrange them into one widget
-    map_widget.layout = fullwidth
-    finalize.layout = fullwidth
-
-    # Get a visualization button and add it to the control panel
     load_raster_button = ipywidgets.Button(
         description="Load rasterization", layout=fullwidth
     )
-
-    load_raster_label = ipywidgets.Box(
-        (ipywidgets.Label("Add Geotiff layer to the map:"),)
-    )
-
-    controls = ipywidgets.VBox(
-        [
-            finalize,
-            load_raster_label,
-            load_raster_button,
-            rasterization_widget,
-            formwidget,
-            classification,
-        ]
-    )
-
-    # Create the overall app layout
-    app = ipywidgets.AppLayout(
-        header=None,
-        left_sidebar=controls,
-        center=map_widget,
-        right_sidebar=None,
-        footer=None,
-        pane_widths=[1, 3, 0],
-    )
-
-    # used to prevent recalculation of geotiff layers
     parameter_cache = []
 
     def load_raster_to_map(b):
@@ -604,23 +554,219 @@ def create_segmentation(dataset, show_right_side=False, finalization_hook=lambda
                 map_.load_overlay(vis, title)
                 parameter_cache.append(new_parameter_str)
 
+    # case for restrict
+    if with_map:
+
+        # create instance of dataset with srs of "EPSG:3857",
+        # this ensures that the slope and hillshade overlay fit the map projection.
+        dataset = reproject_dataset(dataset, "EPSG:3857")
+        # Create the map
+        map_ = Map(dataset, inlude_draw_controle=inlude_draw_controle)
+        load_raster_button.on_click(load_raster_to_map)
+
+        load_raster_label = ipywidgets.Box(
+            (ipywidgets.Label("Add Geotiff layer to the map:"),)
+        )
+        controls = ipywidgets.VBox(
+            [
+                load_raster_label,
+                load_raster_button,
+                rasterization_widget,
+                formwidget,
+                classification,
+            ]
+        )
+        return controls, map_
+    # case for show_interactive
+    else:
+        controls = ipywidgets.VBox(
+            [
+                load_raster_button,
+                rasterization_widget,
+                formwidget,
+                classification,
+            ]
+        )
+        return (
+            controls,
+            form,
+            classification,
+            rasterization_widget_form,
+            load_raster_button,
+        )
+
+
+def assign_pipeline(dataset, segmentation, pipelines):
+    """
+    Load a segmentation object with one or more multipolygons and a list of pipelines.
+    Each multipolygon can be assigned to one pipeline.
+
+
+    :param segmentation:
+        This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
+        If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_segmentation.
+        It might be necessary to swap the lon and lat coordinates. See  segmentation.swap_coordinates
+    :type: adaptivefiltering.segmentation.Segmentation
+
+    :param pipelines:
+        All pipelines that one wants to link with the given segmentations.
+
+    :type: list of adaptivefiltering.filter.Pipeline
+
+
+    :return:
+        A segmentation object with added pipeline information
+    :rtype:  adaptivefiltering.segmentation.Segmentation
+    """
+
+    # passes the segment to the _update_seg_pin function
+    def on_button_clicked(b, layer_data=None):
+        return _update_seg_marker(layer_data)
+
+    # holds a segmentation and calculates
+    def _update_seg_marker(layer_data):
+        # initilizes a new marker
+        layer_data.properties["style"]["color"] = "red"
+        layer_data.properties["style"]["fillOpacity"] = "0"
+
+        for layer in map_.map.layers:
+            if layer.name == "Current Segmentation":
+                map_.map.remove_layer(layer)
+
+        map_.load_geojson(layer_data, "Current Segmentation")
+
+    def _create_right_side_menu():
+        right_side_label = ipywidgets.Label("Assign Pipelines to Segmentations")
+
+        # pipeline author has to be replaced with the storage location
+
+        # the no pipeline option ensures, that the user picks one pipeline.
+        dropdown_options = [("no Pipeline", "")] + [
+            (pipeline.title, pipeline.author) for pipeline in pipelines
+        ]
+        # used for assigning dropdown_values to the segmentation_proxy
+        dropdown_list = []
+        right_side = ipywidgets.VBox(
+            [
+                right_side_label,
+            ]
+        )
+
+        # for every new feature we ccreate alocation button, a nametag and a dropdown menu with all pipeline options.
+        for i, feature in enumerate(segmentation["features"]):
+
+            label = ipywidgets.Label(
+                f"Segmentation {i}",
+                layout=ipywidgets.Layout(width="80%"),
+            )
+            map_.load_geojson(feature, label.value)
+            last_layer = map_.map.layers[-1]
+            button = ipywidgets.Button(
+                icon="fa-location-dot", layout=ipywidgets.Layout(width="20%")
+            )
+            button.on_click(
+                functools.partial(on_button_clicked, layer_data=last_layer.data)
+            )
+
+            new_dropdown = ipywidgets.Dropdown(
+                options=dropdown_options,
+                layout=fullwidth,
+            )
+            dropdown_list.append(new_dropdown)
+            box = ipywidgets.VBox(
+                children=[ipywidgets.HBox(children=[label, button]), new_dropdown]
+            )
+
+            right_side.children = right_side.children + (box,)
+        return right_side, dropdown_list
+
+    def _assign_pipelines():
+        assigned_segmentation = copy.deepcopy(segmentation)
+
+        for i, (feature, dropdown_widget) in enumerate(
+            zip(assigned_segmentation["features"], dropdown_list)
+        ):
+            feature["properties"]["pipeline"] = dropdown_widget.value
+        return assigned_segmentation
+
+    dataset = PDALInMemoryDataSet.convert(dataset)
+
+    controls, map_ = setup_overlay_control(
+        dataset, with_map=True, inlude_draw_controle=False
+    )
+    map_widget = map_.show()
+    map_widget.layout = fullwidth
+
+    finalize = ipywidgets.Button(description="Finalize")
+    finalize.layout = fullwidth
+
+    # Create the overall app layout
+    right_side, dropdown_list = _create_right_side_menu()
+
+    app = ipywidgets.AppLayout(
+        header=ipywidgets.HBox(
+            [finalize], layout=ipywidgets.Layout(height="1", width="auto")
+        ),
+        left_sidebar=controls,
+        center=map_widget,
+        right_sidebar=right_side,
+        footer=None,
+        pane_widths=[1, 3, 1],
+    )
+    segmentation_proxy = return_proxy(lambda: _assign_pipelines(), dropdown_list)
+    IPython.display.display(app)
+
+    def _finalize_simple(_):
+        app.layout.display = "none"
+
+    finalize.on_click(_finalize_simple)
+
+    return segmentation_proxy
+
+
+def create_segmentation(
+    dataset,
+    finalization_hook=lambda x: x,
+):
+    """The Jupyter UI to create a segmentation object from scratch.
+
+    The use of this UI will soon be described in detail.
+    """
+
+    controls, map_ = setup_overlay_control(dataset, with_map=True)
+
+    segmentation_proxy = return_proxy(
+        lambda: Segmentation(map_.return_segmentation()), [map_.draw_control]
+    )
+
+    finalize = ipywidgets.Button(description="Finalize")
+    map_widget = map_.show()
+
+    map_widget.layout = fullwidth
+    finalize.layout = fullwidth
+
+    # Create the overall app layout
+
+    app = ipywidgets.AppLayout(
+        header=ipywidgets.VBox([finalize]),
+        left_sidebar=controls,
+        center=map_widget,
+        right_sidebar=None,
+        footer=None,
+        pane_widths=[1, 3, 0],
+    )
+
     # Show the final widget
-    load_raster_button.on_click(load_raster_to_map)
 
     IPython.display.display(app)
 
-    # The return proxy object
-    segmentation_proxy = return_proxy(
-        lambda: Segmentation(map_.return_segmentation()), map_.draw_control
-    )
-
-    def _finalize(_):
+    def _finalize_simple(_):
         app.layout.display = "none"
         segmentation_proxy.__wrapped__ = finalization_hook(
             segmentation_proxy.__wrapped__
         )
 
-    finalize.on_click(_finalize)
+    finalize.on_click(_finalize_simple)
 
     return segmentation_proxy
 
@@ -650,7 +796,7 @@ def create_upload(filetype, finalization_hook=lambda x: x):
     upload.layout = layout
     app = ipywidgets.VBox([upload, confirm_button])
     IPython.display.display(app)
-    upload_proxy = return_proxy(lambda: upload, upload)
+    upload_proxy = return_proxy(lambda: upload, [upload])
 
     def _finalize(_):
         app.layout.display = "none"
@@ -682,15 +828,13 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
     if not isinstance(dataset, DigitalSurfaceModel):
         dataset = dataset.rasterize()
 
-    widged_list, form_list = setup_rasterize_side_panel(dataset)
-    rasterization_widget, formwidget, classification = widged_list
-    rasterization_widget_form, form = form_list
-
-    # Get a visualization button and add it to the control panel
-    button = ipywidgets.Button(description="Visualize", layout=fullwidth)
-    controls = ipywidgets.VBox(
-        [button, rasterization_widget, formwidget, classification]
-    )
+    (
+        controls,
+        form,
+        classification,
+        rasterization_widget_form,
+        load_raster_button,
+    ) = setup_overlay_control(dataset)
 
     # Get a container widget for the visualization itself
     content = ipywidgets.Box([ipywidgets.Label("Currently rendering visualization...")])
@@ -727,10 +871,10 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
             app.center.children = (dataset.show(**form.data),)
 
     # Get a visualization button
-    button.on_click(trigger_visualization)
+    load_raster_button.on_click(trigger_visualization)
 
     # Click the button once to trigger initial visualization
-    button.click()
+    load_raster_button.click()
 
     return app
 
@@ -904,7 +1048,7 @@ def select_pipeline_from_library(multiple=False):
     IPython.display.display(app)
 
     # Return proxy handling
-    proxy = return_proxy(accessor, filter_list_widget)
+    proxy = return_proxy(accessor, [filter_list_widget])
 
     def _finalize(_):
         # If nothing has been selected, the finalize button is no-op
@@ -1025,7 +1169,7 @@ def select_best_pipeline(dataset=None, pipelines=None):
         return pipeline_accessors[index]()
 
     # Return proxy handling
-    proxy = return_proxy(_return_handler, tabs)
+    proxy = return_proxy(_return_handler, [tabs])
 
     def _finalize(_):
         app.layout.display = "none"
