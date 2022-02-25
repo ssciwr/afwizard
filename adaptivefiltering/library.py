@@ -126,14 +126,20 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
             continue
 
         # If the title field has not been specified, use the filename
-        filter_ = load_filter(filename)
-        if filter_.title == "":
-            md = filter_.config.get("metadata", pyrsistent.pmap())
-            md = md.update({"title": filename})
-            filter_ = filter_.copy(metadata=md)
+        try:
+            filter_ = load_filter(filename)
+            if filter_.title == "":
+                md = filter_.config.get("metadata", pyrsistent.pmap())
+                md = md.update({"title": filename})
+                filter_ = filter_.copy(metadata=md)
 
-        # Add it to our list of filters
-        filters.append(filter_)
+            # Add it to our list of filters
+            filters.append(filter_)
+        except (KeyError, jsonschema.ValidationError):
+            # We ignore the filter if it cannot be validated against our schema.
+            # That is necessary to distinguish filter pipeline JSON data from
+            # other JSON data e.g. segmentations.
+            pass
 
     # Maybe override the name field in metadata
     if name is not None:
