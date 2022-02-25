@@ -64,10 +64,6 @@ def test_pipeline_tuning(minimal_dataset):
     p = pipeline_tuning(minimal_dataset, pipeline=p)
 
 
-def test_create_segmentation(dataset):
-    create_segmentation(dataset)
-
-
 def test_show_interactive(minimal_dataset):
     show_interactive(minimal_dataset)
 

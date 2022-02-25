@@ -12,6 +12,7 @@ from adaptivefiltering.utils import (
 
 from osgeo import ogr
 import json
+import numpy as np
 import os
 import pdal
 import pyrsistent
@@ -117,7 +118,12 @@ class PDALInMemoryDataSet(DataSet):
 
     @property
     def data(self):
-        return self.pipeline.arrays[0]
+        if self.pipeline is None:
+            # This allows us to write empty datasets which is required to have sane
+            # return values on widgets that allow interactive updates.
+            return np.zeros(shape=(1, 1, 1))
+        else:
+            return self.pipeline.arrays[0]
 
     @classmethod
     def convert(cls, dataset):
@@ -189,44 +195,3 @@ class PDALInMemoryDataSet(DataSet):
             filename=filename,
             spatial_reference=self.spatial_reference,
         )
-
-    def restrict(self, segmentation=None):
-        # If a single Segment is given, we convert it to a segmentation
-
-        if isinstance(segmentation, Segment):
-            segmentation = Segmentation([segmentation.__geo_interface__])
-
-        def apply_restriction(seg):
-
-            # not yet sure why the swap is necessary
-            seg = swap_coordinates(seg)
-            # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
-            seg = convert_segmentation(seg, self.spatial_reference)
-
-            # if multiple polygons have been selected they will be merged in one multipolygon
-            # this guarentees, that len(seg[features]) is always 1.
-            seg = merge_segmentation_features(seg)
-            # Construct a WKT Polygon for the clipping
-            # this will be either a single polygon or a multipolygon
-            polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
-            polygons_wkt = polygons.ExportToWkt()
-
-            from adaptivefiltering.pdal import execute_pdal_pipeline
-
-            # Apply the cropping filter with all polygons
-            newdata = execute_pdal_pipeline(
-                dataset=self, config={"type": "filters.crop", "polygon": polygons_wkt}
-            )
-
-            return PDALInMemoryDataSet(
-                pipeline=newdata,
-                spatial_reference=self.spatial_reference,
-            )
-
-        # Maybe create the segmentation
-        if segmentation is None:
-            from adaptivefiltering.apps import create_segmentation
-
-            return create_segmentation(self, finalization_hook=apply_restriction)
-        else:
-            return apply_restriction(segmentation)
