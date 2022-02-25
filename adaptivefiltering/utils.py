@@ -23,7 +23,31 @@ def stringify_value(value):
     return str(value)
 
 
-def convert_Segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
+def convert_segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
+    """
+    This transforms the segmentation into a new spatial reference system.
+        For this program all segmentations should be in EPSG:4326.
+        :param segmentation:
+            The segmentation that should be transformed
+        :type: adaptivefiltering.segmentation.Segmentation
+
+
+        :param srs_in:
+            Current spatial reference system of the segmentation.
+            Must be either EPSG or wkt.
+        :type: str
+
+        :param srs_out:
+            Desired spatial reference system.
+            Must be either EPSG or wkt.
+        :type: str
+
+
+        :return: Transformed segmentation.
+        :rtype: adaptivefiltering.segmentation.Segmentation
+
+    """
+
     from adaptivefiltering.segmentation import Segmentation
     from pyproj import Transformer
 
