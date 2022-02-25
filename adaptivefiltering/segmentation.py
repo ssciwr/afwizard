@@ -95,24 +95,6 @@ class Segmentation(geojson.FeatureCollection):
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
 
-    def convert(self, srs_in, srs_out="EPSG:4326"):
-        """
-        This transforms the segmentation into a new spatial reference system.
-        For this program all segmentations should be in EPSG:4326.
-
-        :param srs_in:
-            Current spatial reference system of the segmentation.
-            Must be either EPSG or wkt.
-
-        :param srs_out:
-            Desired spatial reference system.
-            Must be either EPSG or wkt.
-
-
-        """
-
-        return convert_Segmentation(self, srs_out, srs_in)
-
     def merge_classes(self):
         """
         If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
@@ -411,7 +393,7 @@ class Map:
         :type segmentation: Segmentation
         """
 
-        if override == True:
+        if override:
             self.draw_control.data = [
                 new_polygon for new_polygon in segmentation["features"]
             ]
