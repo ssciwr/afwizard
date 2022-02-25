@@ -3,7 +3,7 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.paths import load_schema, locate_file
 from adaptivefiltering.utils import (
     is_iterable,
-    convert_Segmentation,
+    convert_segmentation,
     merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
@@ -476,7 +476,7 @@ class Map:
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
         if dataset:
-            boundary_segmentation = convert_Segmentation(
+            boundary_segmentation = convert_segmentation(
                 boundary_segmentation, "EPSG:4326", self.original_srs
             )
 

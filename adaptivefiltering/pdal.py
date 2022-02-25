@@ -7,6 +7,7 @@ from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     check_spatial_reference,
     merge_segmentation_features,
+    convert_segmentation,
 )
 
 from osgeo import ogr
@@ -200,7 +201,7 @@ class PDALInMemoryDataSet(DataSet):
             # not yet sure why the swap is necessary
             seg = swap_coordinates(seg)
             # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
-            seg = convert_Segmentation(seg, self.spatial_reference)
+            seg = convert_segmentation(seg, self.spatial_reference)
 
             # if multiple polygons have been selected they will be merged in one multipolygon
             # this guarentees, that len(seg[features]) is always 1.
