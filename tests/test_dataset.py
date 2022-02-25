@@ -3,7 +3,7 @@ from adaptivefiltering.paths import get_temporary_filename
 from adaptivefiltering.segmentation import Segment, Segmentation
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.pdal import PDALFilter
-
+from adaptivefiltering.apps import assign_pipeline
 
 import io
 import numpy as np
@@ -22,17 +22,13 @@ def test_show(dataset):
     dataset.show(visualization_type="slope", classification=asprs(5))
 
 
-def test_crop_segmentation(dataset):
-    dataset.crop_segmentation()
-
-
 def test_assign_pipeline(dataset, boundary_segmentation):
 
     f = PDALFilter(type="filters.smrf")
 
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
-    dataset.assign_pipeline(boundary_segmentation, [pipeline, pipeline])
+    assign_pipeline(dataset, boundary_segmentation, [pipeline, pipeline])
 
 
 def test_restriction(dataset):

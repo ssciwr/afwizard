@@ -1,5 +1,5 @@
 from adaptivefiltering.segmentation import *
-from adaptivefiltering.utils import convert_Segmentation
+from adaptivefiltering.utils import convert_segmentation
 
 import geojson
 import os
@@ -41,8 +41,8 @@ def test_save_load_segmentation(tmpdir):
 
 def test_convert_segmentation(boundary_segmentation):
 
-    test2 = convert_Segmentation(boundary_segmentation, "EPSG:5243")
-    test3 = convert_Segmentation(test2, "EPSG:4326", "EPSG:5243")
+    test2 = convert_segmentation(boundary_segmentation, "EPSG:5243")
+    test3 = convert_segmentation(test2, "EPSG:4326", "EPSG:5243")
     test3_coord = np.asarray(test3["features"][0]["geometry"]["coordinates"])
     test_coord = np.asarray(
         boundary_segmentation["features"][0]["geometry"]["coordinates"]

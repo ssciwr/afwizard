@@ -604,7 +604,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
     :param segmentation:
         This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
-        If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_Segmentation.
+        If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_segmentation.
         It might be necessary to swap the lon and lat coordinates. See  segmentation.swap_coordinates
     :type: adaptivefiltering.segmentation.Segmentation
 
