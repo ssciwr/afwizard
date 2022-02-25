@@ -685,10 +685,11 @@ def assign_pipeline(dataset, segmentation, pipelines):
     # Create the overall app layout
     right_side, dropdown_list = _create_right_side_menu()
 
+    # Add finalize to the controls widgets
+    controls.children = (finalize,) + controls.children
+
     app = ipywidgets.AppLayout(
-        header=ipywidgets.HBox(
-            [finalize], layout=ipywidgets.Layout(height="1", width="auto")
-        ),
+        header=None,
         left_sidebar=controls,
         center=map_widget,
         right_sidebar=right_side,
@@ -756,9 +757,12 @@ def apply_restriction(dataset, segmentation=None):
     map_widget.layout = fullwidth
     finalize.layout = fullwidth
 
+    # Add finalize to the controls widgets
+    controls.children = (finalize,) + controls.children
+
     # Create the overall app layout
     app = ipywidgets.AppLayout(
-        header=ipywidgets.Box([finalize]),
+        header=None,
         left_sidebar=controls,
         center=map_widget,
         right_sidebar=None,
