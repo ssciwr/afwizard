@@ -190,16 +190,6 @@ class PDALInMemoryDataSet(DataSet):
             spatial_reference=self.spatial_reference,
         )
 
-    def assign_pipeline(self, segmentation, pipelines):
-        from adaptivefiltering.apps import assign_pipeline
-
-        return assign_pipeline(self, segmentation=segmentation, pipelines=pipelines)
-
-    def crop_segmentation(self):
-        from adaptivefiltering.apps import create_segmentation
-
-        return create_segmentation(self)
-
     def restrict(self, segmentation=None):
         # If a single Segment is given, we convert it to a segmentation
 
