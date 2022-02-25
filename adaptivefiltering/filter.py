@@ -270,7 +270,9 @@ class Filter:
         :rtype: :class:`~adaptivefiltering.widgets.BatchDataWidgetForm`
         """
         form = BatchDataWidgetForm(
-            pyrsistent.thaw(self.form_schema()), vertically_place_labels=True
+            pyrsistent.thaw(self.form_schema()),
+            vertically_place_labels=True,
+            preconstruct_array_items=1,
         )
         form.data = pyrsistent.thaw(self.config)
         return form
