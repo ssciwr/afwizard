@@ -5,7 +5,6 @@ from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_
 from adaptivefiltering.segmentation import Segment, Segmentation, swap_coordinates
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
-    convert_Segmentation,
     check_spatial_reference,
     merge_segmentation_features,
 )
