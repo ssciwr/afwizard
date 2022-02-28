@@ -50,6 +50,13 @@ def execute_pdal_pipeline(dataset=None, config=None):
     if dataset is not None:
         arrays.append(dataset.data)
 
+    # Check for arrays of 0 points - they throw hard to read errors in PDAL
+    for array in arrays:
+        if array.shape[0] == 0:
+            raise AdaptiveFilteringError(
+                "PDAL cannot handle point clouds with 0 points"
+            )
+
     # Define and execute the pipeline
     pipeline = pdal.Pipeline(json.dumps(config), arrays=arrays)
     _ = pipeline.execute()
