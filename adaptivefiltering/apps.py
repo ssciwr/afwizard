@@ -514,9 +514,7 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
-    load_raster_button = ipywidgets.Button(
-        description="Load rasterization", layout=fullwidth
-    )
+    load_raster_button = ipywidgets.Button(description="Visualize", layout=fullwidth)
 
     def load_raster_to_map(b):
         with hourglass_icon(b):
