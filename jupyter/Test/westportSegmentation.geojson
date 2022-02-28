@@ -1,0 +1,446 @@
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.697479,
+              -41.794266
+            ],
+            [
+              171.696165,
+              -41.794277
+            ],
+            [
+              171.696122,
+              -41.793646
+            ],
+            [
+              171.697538,
+              -41.793654
+            ],
+            [
+              171.697479,
+              -41.794266
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "A",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.697485,
+              -41.794261
+            ],
+            [
+              171.698075,
+              -41.794909
+            ],
+            [
+              171.699084,
+              -41.794981
+            ],
+            [
+              171.699084,
+              -41.793646
+            ],
+            [
+              171.697571,
+              -41.793638
+            ],
+            [
+              171.697485,
+              -41.794261
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "B",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.696173,
+              -41.794271
+            ],
+            [
+              171.697493,
+              -41.794271
+            ],
+            [
+              171.698072,
+              -41.794919
+            ],
+            [
+              171.696731,
+              -41.795231
+            ],
+            [
+              171.696103,
+              -41.795231
+            ],
+            [
+              171.696173,
+              -41.794271
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "D",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.696098,
+              -41.795227
+            ],
+            [
+              171.696103,
+              -41.795955
+            ],
+            [
+              171.697144,
+              -41.795959
+            ],
+            [
+              171.697005,
+              -41.795471
+            ],
+            [
+              171.696731,
+              -41.795243
+            ],
+            [
+              171.696098,
+              -41.795227
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "A",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.696999,
+              -41.795459
+            ],
+            [
+              171.69672,
+              -41.795239
+            ],
+            [
+              171.698067,
+              -41.794927
+            ],
+            [
+              171.698368,
+              -41.795379
+            ],
+            [
+              171.697831,
+              -41.795783
+            ],
+            [
+              171.696999,
+              -41.795459
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "D",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.696999,
+              -41.795483
+            ],
+            [
+              171.697123,
+              -41.795959
+            ],
+            [
+              171.698196,
+              -41.795983
+            ],
+            [
+              171.697863,
+              -41.795783
+            ],
+            [
+              171.696999,
+              -41.795483
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "C",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.697879,
+              -41.795779
+            ],
+            [
+              171.698201,
+              -41.795979
+            ],
+            [
+              171.699055,
+              -41.795975
+            ],
+            [
+              171.699071,
+              -41.795459
+            ],
+            [
+              171.698378,
+              -41.795387
+            ],
+            [
+              171.697879,
+              -41.795779
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "B",
+        "style": {
+          "attribution": "null",
+          "bubblingMouseEvents": "true",
+          "clickable": "true",
+          "color": "black",
+          "dashArray": "null",
+          "dashOffset": "null",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "fillRule": "evenodd",
+          "interactive": "true",
+          "lineCap": "round",
+          "lineJoin": "round",
+          "noClip": "false",
+          "opacity": 0.5,
+          "pane": "overlayPane",
+          "smoothFactor": 1,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              171.698094,
+              -41.794927
+            ],
+            [
+              171.699081,
+              -41.794975
+            ],
+            [
+              171.699076,
+              -41.795447
+            ],
+            [
+              171.698405,
+              -41.795387
+            ],
+            [
+              171.698094,
+              -41.794927
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "properties": {
+        "class": "D",
+        "style": {
+          "clickable": "true",
+          "color": "black",
+          "fill": "true",
+          "fillColor": "black",
+          "fillOpacity": 0.1,
+          "opacity": 0.5,
+          "stroke": "true",
+          "weight": 4
+        }
+      },
+      "type": "Feature"
+    }
+  ],
+  "type": "FeatureCollection"
+}
