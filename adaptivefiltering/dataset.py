@@ -394,7 +394,6 @@ def remove_classification(dataset):
         dataset=dataset,
         config={"type": "filters.assign", "value": ["Classification = 1"]},
     )
-    print(dataset.filename)
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=dataset.spatial_reference,
