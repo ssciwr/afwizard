@@ -89,6 +89,19 @@ def download_test_file(filename):
     return full_file
 
 
+def check_file_extension(filename, possible_values, default_value):
+    name, ext = os.path.splitext(filename)
+
+    if ext == "" or ext == ".":
+        ext = default_value
+    possible_extensions = [possible_ext.lower() for possible_ext in possible_values]
+    if ext.lower() not in possible_extensions:
+        raise Exception(
+            f"The file extension {ext} is not supported. Please use the following: {possible_extensions}"
+        )
+    return os.path.join(name + ext)
+
+
 def locate_file(filename):
     """Locate a file on the filesystem
 
