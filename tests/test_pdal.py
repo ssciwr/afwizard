@@ -93,6 +93,6 @@ def test_pdal_inmemory_dataset(minimal_dataset):
     assert dataset.data.shape == reloaded.data.shape
 
     # Dataset saving and reloading as LAZ
-    saved = dataset.save(get_temporary_filename("laz"), compress=True)
+    saved = dataset.save(get_temporary_filename("laz"))
     reloaded = PDALInMemoryDataSet.convert(saved)
     assert dataset.data.shape == reloaded.data.shape

@@ -80,7 +80,7 @@ def test_save_dataset(minimal_dataset):
     minimal_dataset.save(minimal_dataset.filename)
 
     # Copy to another file
-    tmpfile = get_temporary_filename()
+    tmpfile = get_temporary_filename("las")
     minimal_dataset.save(tmpfile)
     assert os.stat(tmpfile).st_size == os.stat(minimal_dataset.filename).st_size
 
