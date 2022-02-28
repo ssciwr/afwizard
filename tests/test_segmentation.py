@@ -48,10 +48,6 @@ def test_save_load_segmentation(tmpdir):
     s4 = Segmentation.load(filename=(filename, filename))
     with pytest.raises(TypeError):
         s5 = Segmentation.load(filename=4)
-    print(s)
-    print()
-    print(s2)
-    assert s == s2
 
 
 def test_convert_segmentation(boundary_segmentation):
