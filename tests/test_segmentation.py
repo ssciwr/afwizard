@@ -11,15 +11,15 @@ def test_segmentation():
     # Create a random segment
     mp = geojson.utils.generate_random("Polygon")
 
-    # Assert that the metadata is validated and accessible
-    segment = Segment(mp, metadata=dict(pipeline="Foobar"))
-    assert segment.metadata["pipeline"] == "Foobar"
-
-    # Use geojson serialization
-    geojson.dumps(segment)
-
-    # Instantiate a segmentation
-    segmentation = Segmentation([segment])
+    segmentation = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": {"type": "Polygon", "coordinates": mp},
+            },
+        ]
+    )
     geojson.dumps(segmentation)
 
 
@@ -27,7 +27,20 @@ def test_save_load_segmentation(tmpdir):
     p1 = geojson.utils.generate_random("Polygon")
     p2 = geojson.utils.generate_random("Polygon")
 
-    s = Segmentation([Segment(p1), Segment(p2)])
+    s = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": p1,
+            },
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": p2,
+            },
+        ]
+    )
     filename = os.path.join(tmpdir, "testsave.geojson")
     s.save(filename)
     s2 = Segmentation.load(filename=filename)
@@ -35,8 +48,10 @@ def test_save_load_segmentation(tmpdir):
     s4 = Segmentation.load(filename=(filename, filename))
     with pytest.raises(TypeError):
         s5 = Segmentation.load(filename=4)
-
-    assert geojson.dumps(s) == geojson.dumps(s2)
+    print(s)
+    print()
+    print(s2)
+    assert s == s2
 
 
 def test_convert_segmentation(boundary_segmentation):
