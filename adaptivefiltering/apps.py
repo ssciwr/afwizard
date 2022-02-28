@@ -974,7 +974,9 @@ def select_pipeline_from_library(multiple=False):
                 (entry,) = set(change["new"]) - set(change["old"])
                 metadata_form.data = filter_list[entry].config["metadata"]
         else:
-            metadata_form.data = filter_list[change["new"]].config["metadata"]
+            metadata_form.data = pyrsistent.thaw(
+                filter_list[change["new"]].config["metadata"]
+            )
 
     filter_list_widget.observe(metadata_updater, names="index")
 
