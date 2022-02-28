@@ -223,11 +223,17 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             name.observe(h, names=n, type=t)
             descr.observe(h, names=n, type=t)
 
+        def _resetter():
+            original.resetter()
+            b1.value = False
+            b2.value = False
+            var.value = ""
+
         # Wrap the result in our new form element
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
-            resetter=original.resetter,
+            resetter=_resetter,
             widgets=original.widgets,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
@@ -272,7 +278,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         def _getter():
             ret = []
 
-            for i, subel in enumerate(original.subelements):
+            for i, subel in enumerate(original.subelements[: len(original.getter())]):
                 data = subel.batchdata_getter()
                 for d in data:
                     d["path"].append({"index": i})
