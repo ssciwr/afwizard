@@ -26,7 +26,7 @@ def test_paths(monkeypatch, tmp_path):
     assert os.path.exists(locate_file("500k_NZ20_Westport.laz"))
 
 
-def test_set_data_directory(tmp_path):
+def test_set_data_directory(tmp_path, monkeypatch):
     # Create a test file in tmp_path
     abspath = os.path.join(tmp_path, "somefile.txt")
     open(abspath, "w").close()
@@ -40,8 +40,12 @@ def test_set_data_directory(tmp_path):
     assert abspath == locate_file("somefile.txt")
 
     # Set to some path that does not exist
+    monkeypatch.chdir(tmp_path)
     with pytest.raises(FileNotFoundError):
         set_data_directory("random")
+
+    # If we are allowed to, create it
+    set_data_directory("random", create_dir=True)
 
 
 def test_load_schema():
