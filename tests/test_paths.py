@@ -39,6 +39,10 @@ def test_set_data_directory(tmp_path):
     set_data_directory(tmp_path)
     assert abspath == locate_file("somefile.txt")
 
+    # Set to some path that does not exist
+    with pytest.raises(FileNotFoundError):
+        set_data_directory("random")
+
 
 def test_load_schema():
     # Accessing non-existent schemas raises

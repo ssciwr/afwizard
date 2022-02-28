@@ -25,9 +25,17 @@ TEST_DATA_CHECKSUM = "b1af80c173ad475c14972a32bbf86cdbdb8a2197de48ca1e40c4a9859a
 def set_data_directory(directory):
     """Set a custom root directory to locate data files
 
-    :param directory: The custom data directory
+    :param directory: The custom data directory. It is assumed to exist.
     :type directory: str
     """
+
+    # Check existence of the given data directory
+    if not os.path.exists(directory):
+        raise FileNotFoundError(
+            f"The given data directory '{directory}' does not exist!"
+        )
+
+    # Update the module variable
     global _data_dir
     _data_dir = directory
 
