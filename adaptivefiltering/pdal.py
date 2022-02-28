@@ -2,7 +2,6 @@ from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
 from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
-from adaptivefiltering.segmentation import Segment, Segmentation, swap_coordinates
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     check_spatial_reference,
