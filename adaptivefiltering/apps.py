@@ -718,9 +718,16 @@ def apply_restriction(dataset, segmentation=None):
     dataset = as_pdal(dataset)
 
     def apply_restriction(seg):
-        # not yet sure why the swap is necessary
-        seg = swap_coordinates(seg)
+        from pyproj import crs
 
+        # "EPSG:4326 specifically states that the coordinate order should be latitude, longitude.
+        # Many software packages still use longitude, latitude ordering.
+        # This situation has wreaked unimaginable havoc on project deadlines and programmer sanity."
+        # https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
+        epsg_4326 = crs.CRS("EPSG:4326")
+        ds_crs = crs.CRS(dataset.spatial_reference)
+        if epsg_4326 != ds_crs:
+            seg = swap_coordinates(seg)
         # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
         seg = convert_segmentation(seg, dataset.spatial_reference)
 
