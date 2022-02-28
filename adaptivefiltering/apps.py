@@ -534,7 +534,7 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
                     **rasterization_widget_form.data,
                 )
 
-            title = f"{form.data['visualization_type']}, res: {rasterization_widget_form.data['resolution']}"
+            title = f"Visualisation"
             vis = dataset.show(**form.data).children[0]
             map_.load_overlay(vis, title)
 
