@@ -44,7 +44,7 @@ def asprs_class_name(code):
         )
 
 
-def asprs(vals):
+def asprs(*vals):
     """Map a number of values to ASPRS classification codes
 
     :param vals:
