@@ -200,11 +200,7 @@ class DataSet:
         :type: adaptivefiltering.segmentation.Segmentation
         """
 
-        from adaptivefiltering.segmentation import Segment, Segmentation
         from adaptivefiltering.apps import apply_restriction
-
-        if isinstance(segmentation, Segment):
-            segmentation = Segmentation([segmentation.__geo_interface__])
 
         return apply_restriction(self, segmentation)
 

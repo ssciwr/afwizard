@@ -514,9 +514,7 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
-    load_raster_button = ipywidgets.Button(
-        description="Load rasterization", layout=fullwidth
-    )
+    load_raster_button = ipywidgets.Button(description="Visualize", layout=fullwidth)
 
     def load_raster_to_map(b):
         with hourglass_icon(b):
@@ -534,9 +532,8 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
                     **rasterization_widget_form.data,
                 )
 
-            title = f"{form.data['visualization_type']}, res: {rasterization_widget_form.data['resolution']}"
             vis = dataset.show(**form.data).children[0]
-            map_.load_overlay(vis, title)
+            map_.load_overlay(vis, "Visualisation")
 
     # case for restrict
     if with_map:
@@ -718,9 +715,16 @@ def apply_restriction(dataset, segmentation=None):
     dataset = as_pdal(dataset)
 
     def apply_restriction(seg):
-        # not yet sure why the swap is necessary
-        seg = swap_coordinates(seg)
+        from pyproj import crs
 
+        # "EPSG:4326 specifically states that the coordinate order should be latitude, longitude.
+        # Many software packages still use longitude, latitude ordering.
+        # This situation has wreaked unimaginable havoc on project deadlines and programmer sanity."
+        # https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
+        epsg_4326 = crs.CRS("EPSG:4326")
+        ds_crs = crs.CRS(dataset.spatial_reference)
+        if epsg_4326 != ds_crs:
+            seg = swap_coordinates(seg)
         # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
         seg = convert_segmentation(seg, dataset.spatial_reference)
 
@@ -974,7 +978,9 @@ def select_pipeline_from_library(multiple=False):
                 (entry,) = set(change["new"]) - set(change["old"])
                 metadata_form.data = filter_list[entry].config["metadata"]
         else:
-            metadata_form.data = filter_list[change["new"]].config["metadata"]
+            metadata_form.data = pyrsistent.thaw(
+                filter_list[change["new"]].config["metadata"]
+            )
 
     filter_list_widget.observe(metadata_updater, names="index")
 
