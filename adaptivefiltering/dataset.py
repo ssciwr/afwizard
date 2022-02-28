@@ -69,12 +69,7 @@ class DataSet:
         if classification is None:
             classification = asprs(slice(None))
 
-        if (
-            isinstance(classification, str)
-            or isinstance(classification, int)
-            or all(isinstance(classi, str) for classi in classification)
-        ):
-            classification = asprs(classification)
+        classification = asprs(classification)
 
         if resolution <= 0:
             raise Warning("Negative Resolutions are not possible for rasterization.")
