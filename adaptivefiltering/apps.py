@@ -514,9 +514,7 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
-    load_raster_button = ipywidgets.Button(
-        description="Load rasterization", layout=fullwidth
-    )
+    load_raster_button = ipywidgets.Button(description="Visualize", layout=fullwidth)
 
     def load_raster_to_map(b):
         with hourglass_icon(b):
@@ -981,7 +979,9 @@ def select_pipeline_from_library(multiple=False):
                 (entry,) = set(change["new"]) - set(change["old"])
                 metadata_form.data = filter_list[entry].config["metadata"]
         else:
-            metadata_form.data = filter_list[change["new"]].config["metadata"]
+            metadata_form.data = pyrsistent.thaw(
+                filter_list[change["new"]].config["metadata"]
+            )
 
     filter_list_widget.observe(metadata_updater, names="index")
 

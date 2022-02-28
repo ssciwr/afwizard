@@ -22,12 +22,28 @@ TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/relea
 TEST_DATA_CHECKSUM = "b1af80c173ad475c14972a32bbf86cdbdb8a2197de48ca1e40c4a9859afcabcb"
 
 
-def set_data_directory(directory):
+def set_data_directory(directory, create_dir=False):
     """Set a custom root directory to locate data files
 
-    :param directory: The custom data directory
+    :param directory:
+        The name of the custom data directory.
     :type directory: str
+    :param create_dir:
+        Whether adaptivefiltering should create the directory if it does
+        not already exist.
+    :type created_dir: bool
     """
+
+    # Check existence of the given data directory
+    if not os.path.exists(directory):
+        if create_dir:
+            os.makedirs(directory, exist_ok=True)
+        else:
+            raise FileNotFoundError(
+                f"The given data directory '{directory}' does not exist (Use create_dir=True to automatically create it)!"
+            )
+
+    # Update the module variable
     global _data_dir
     _data_dir = directory
 
