@@ -1,5 +1,10 @@
 from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
+from adaptivefiltering.paths import (
+    locate_file,
+    get_temporary_filename,
+    load_schema,
+    check_file_extension,
+)
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.visualization import visualization_dispatcher
 
@@ -122,7 +127,7 @@ class DataSet:
 
         return show_interactive(self)
 
-    def save(self, filename, compress=False, overwrite=False):
+    def save(self, filename, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
 
         This method writes the Lidar dataset represented by this data structure
@@ -134,9 +139,7 @@ class DataSet:
             or a relative path. Relative paths are interpreted w.r.t. the current
             working directory.
         :type filename: str
-        :param compress:
-            If true, an LAZ file will be written instead of an LAS file.
-        :type compress: bool
+
         :param overwrite:
             If this parameter is false and the specified filename does already exist,
             an error is thrown. This is done in order to prevent accidental corruption
@@ -146,6 +149,11 @@ class DataSet:
             A dataset object wrapping the written file
         :rtype: adaptivefiltering.DataSet
         """
+        # check for valid file name
+
+        filename = check_file_extension(
+            filename, [".las", ".laz"], os.path.splitext(self.filename)[1]
+        )
         # If the filenames match, this is a no-op operation
         if filename == self.filename:
             return self
@@ -157,14 +165,26 @@ class DataSet:
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
-        # Do the copy operation
-        shutil.copy(self.filename, filename)
+        # check if file extension changed.
 
-        # And return a DataSet instance
-        return DataSet(
-            filename=filename,
-            spatial_reference=self.spatial_reference,
-        )
+        if os.path.splitext(filename)[1] == os.path.splitext(self.filename)[1]:
+
+            # Do the copy operation
+            shutil.copy(self.filename, filename)
+
+            # And return a DataSet instance
+            return DataSet(
+                filename=filename,
+                spatial_reference=self.spatial_reference,
+            )
+
+        # if the file extension changed the pdal save function will be called.
+
+        else:
+            from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+            ds_pdal = PDALInMemoryDataSet.convert(self)
+            return ds_pdal.save(filename, overwrite)
 
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
