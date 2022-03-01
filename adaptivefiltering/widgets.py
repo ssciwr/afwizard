@@ -10,7 +10,12 @@ import re
 
 
 class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
-    """A subclass of WidgetForm that creates a label selection widget for arrays of strings"""
+    def __init__(self, *args, **kwargs):
+        """A widget form that creates a label selection widget for arrays of strings
+
+        All other functionality is inherited from :code:`ipywidgets_jsonschema.Form`.
+        """
+        super().__init__(*args, **kwargs)
 
     def _construct_array(self, schema, label=None, root=False):
         if "items" not in schema:
@@ -86,6 +91,10 @@ BatchDataWidgetFormElement = collections.namedtuple(
 
 class BatchDataWidgetForm(WidgetFormWithLabels):
     def __init__(self, *args, nobatch_keys=[], **kwargs):
+        """A widget form that wraps additional batch controls around widgets
+
+        The additional controls affect all scalar fields (strings, integers, numbers).
+        """
         self.nobatch_keys = nobatch_keys
         self.disable_batching = False
         super().__init__(*args, **kwargs)

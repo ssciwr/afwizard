@@ -78,6 +78,11 @@ def convert_segmentation(segmentation, srs_out, srs_in="EPSG:4326"):
 
 
 def check_spatial_reference(crs):
+    """Validate and normalize a given CRS string
+
+    We accept either WKT or an EPSG code string of the form
+    :code:`EPSG:xxxx{x}`.
+    """
     if pyproj.crs.is_wkt(crs):
         return crs
 
@@ -120,6 +125,7 @@ def merge_segmentation_features(seg):
 
 
 def as_number_type(type_, value):
+    """Transform a string to a number according to given type information"""
     if type_ == "integer":
         return int(value)
     elif type_ == "number":

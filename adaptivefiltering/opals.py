@@ -190,6 +190,7 @@ def _automated_opals_schema(mod):
 
 
 def execute_opals_module(dataset=None, config=None):
+    """Implement execution logic for OPALS modules"""
     # Create the command line
     config = pyrsistent.thaw(config)
     module = config.pop("type")

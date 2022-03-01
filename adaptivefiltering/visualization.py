@@ -8,6 +8,7 @@ import ipywidgets
 
 
 def visualization_dispatcher(dataset, visualization_type=None, **options):
+    """Dispatch to visualization implementations based on the visualization_type parameter"""
     # Dispatch by visualization type
     if visualization_type == "blended_hillshade_slope":
         return blended_hillshade_slope(dataset, **options)
@@ -17,6 +18,7 @@ def visualization_dispatcher(dataset, visualization_type=None, **options):
 
 
 def gdal_image(dataset, **options):
+    """Create a GDAL visualization of a raster dataset"""
     # Do the processing with GDAL
     vis_type = options.pop("visualization_type")
     gdal_img = gdal.DEMProcessing(
@@ -34,6 +36,7 @@ def gdal_image(dataset, **options):
 
 
 def img_as_widget(img):
+    """Create an image widget from a PIL.Image"""
     # Create and fill in-memory stream
     membuf = io.BytesIO()
     img.save(membuf, format="png")
@@ -48,6 +51,7 @@ def gdal_visualization(dataset, **options):
 
 
 def blended_hillshade_slope(dataset, blending_factor=0.5, **hillshade_options):
+    """Implemented blended hillshade/slopemap visualization"""
     # Create two images for hillshade and slopemap
     hillshade = gdal_image(dataset, visualization_type="hillshade", **hillshade_options)
     slopemap = gdal_image(dataset, visualization_type="slope")
