@@ -10,15 +10,32 @@
 
 ## Features
 
-`adaptivefiltering` is a Python package to enhance the productivity of ground point filtering workflows in archaelogy and beyond.
-We will write the main feature list here soon.
+`adaptivefiltering` is a Python package to enhance the productivity of ground point filtering workflows in archaeology and beyond.
+It provides a Jupyter-based environment for "human-in-the-loop" tuned, spatially heterogeneous ground point filterings.
+Core features
+
+* Working with Lidar datasets directly in Jupyter notebooks
+  * Loading/Storing of LAS/LAZ files
+  * Visualization using hillshade models and slope maps
+  * Applying of ground point filtering algorithms
+  * Cropping with a map-based user interface
+* Accessibility of existing filtering algorithms under a unified data model:
+  * [PDAL](https://pdal.io/): The Point Data Abstraction Library is an open source library for point cloud processing.
+  * [OPALS](https://opals.geo.tuwien.ac.at/html/stable/index.html) is a proprietary library for processing Lidar data. It can be tested freely for datasets <1M points.
+  * [LASTools](https://rapidlasso.com/) has a proprietary tool called `lasground_new` that can be used for ground point filtering.
+* Access to predefined filter pipeline settings
+  * Crowd-sourced library of filter pipelines at https://github.com/ssciwr/adaptivefiltering-library/
+  * Filter definitions can be shared with colleagues as files
+* Spatially heterogeneous application of filter pipelines
+  * Assignment of filter pipeline settings to spatial subregions in map-based user interface
+  * Command Line Interface for large scale application of filter pipelines
 
 ## Prerequisites
 
 In order to work with `adaptivefiltering`, you need the following required pieces of Software.
 
 * Python >= 3.7
-* A [WebGL-enabled](https://get.webgl.org/) browser. We recommend Google Chrome and advise you to test with it whenever you experience difficulties with visualization.
+* A [WebGL-enabled](https://get.webgl.org/) browser. We recommend Google Chrome and advise you to test with it whenever you experience difficulties with user intefaces.
 * A [Conda installation](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 
 There are alternatives to Conda for installation, but we strongly advise you to use Conda as it offers the best experience for this type of project.
