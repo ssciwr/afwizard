@@ -112,7 +112,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, filename=None, pipeline=None, spatial_reference=None):
+    def __init__(self, pipeline=None, spatial_reference=None):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -123,7 +123,6 @@ class PDALInMemoryDataSet(DataSet):
         # Store the given pipeline
         self.pipeline = pipeline
         super(PDALInMemoryDataSet, self).__init__(
-            filename=filename,
             spatial_reference=spatial_reference,
         )
 
@@ -150,11 +149,8 @@ class PDALInMemoryDataSet(DataSet):
         spatial_reference = dataset.spatial_reference
         # If dataset is of unknown type, we should first dump it to disk
 
-        if os.path.splitext(dataset.filename)[1] == ".las":
-            dataset = dataset.save(get_temporary_filename("las"))
+        dataset = dataset.save(get_temporary_filename("las"))
 
-        elif os.path.splitext(dataset.filename)[1] == ".laz":
-            dataset = dataset.save(get_temporary_filename("laz"))
         # Load the file from the given filename
         assert dataset.filename is not None
 

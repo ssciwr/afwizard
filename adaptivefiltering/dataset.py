@@ -397,7 +397,6 @@ def remove_classification(dataset):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=dataset.spatial_reference,
-        filename=dataset.filename,
     )
 
 
@@ -434,5 +433,4 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=spatial_reference,
-        filename=dataset.filename,
     )
