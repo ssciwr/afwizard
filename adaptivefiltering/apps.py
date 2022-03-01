@@ -619,6 +619,48 @@ def assign_pipeline(dataset, segmentation, pipelines):
     def _create_right_side_menu():
         right_side_label = ipywidgets.Label("Assign Pipelines to Segmentations")
 
+        # needed to quickly check if all features have the same keys
+        from itertools import groupby
+
+        def _all_equal(iterable):
+            g = groupby(iterable)
+            return next(g, True) and not next(g, False)
+
+        keys_list = [
+            list(feature["properties"].keys()) for feature in segmentation["features"]
+        ]
+        # only use keys that are present in all features:
+        if _all_equal(keys_list):
+            property_keys = keys_list[0]
+
+        else:
+            # count occurence of key and compare to number of features.
+            from collections import Counter
+
+            property_keys = []
+            flat_list = [item for sublist in keys_list for item in sublist]
+            for key, value in Counter(flat_list).items():
+                if value == len(segmentation["features"]):
+                    property_keys.append(key)
+
+        feature_properties_options = [("no grouping", "")] + [
+            (keys, keys) for keys in property_keys
+        ]
+        feature_dropdown = ipywidgets.Dropdown(
+            options=feature_properties_options,
+            layout=fullwidth,
+        )
+
+        right_side = ipywidgets.VBox(
+            [
+                feature_dropdown,
+                right_side_label,
+            ]
+        )
+        right_side, dropdown_list = _update_segmentation_pipeline_assignment(right_side)
+        return right_side, dropdown_list
+
+    def _update_segmentation_pipeline_assignment(right_side):
         # pipeline author has to be replaced with the storage location
 
         # the no pipeline option ensures, that the user picks one pipeline.
@@ -627,11 +669,6 @@ def assign_pipeline(dataset, segmentation, pipelines):
         ]
         # used for assigning dropdown_values to the segmentation_proxy
         dropdown_list = []
-        right_side = ipywidgets.VBox(
-            [
-                right_side_label,
-            ]
-        )
 
         # for every new feature we ccreate alocation button, a nametag and a dropdown menu with all pipeline options.
         for i, feature in enumerate(segmentation["features"]):
@@ -643,7 +680,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
             map_.load_geojson(feature, label.value)
             last_layer = map_.map.layers[-1]
             button = ipywidgets.Button(
-                icon="fa-location-dot", layout=ipywidgets.Layout(width="20%")
+                icon="map-marker-alt", layout=ipywidgets.Layout(width="20%")
             )
             button.on_click(
                 functools.partial(on_button_clicked, layer_data=last_layer.data)
