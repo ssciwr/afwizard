@@ -66,6 +66,8 @@ class Segmentation(geojson.FeatureCollection):
         if is_iterable(filename):
             segmentations = []
             for file in filename:
+                file = locate_file(file)
+
                 with open(file, "r") as f:
                     segmentations.append(Segmentation(geojson.load(f)))
             return segmentations
