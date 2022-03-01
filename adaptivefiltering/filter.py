@@ -207,7 +207,7 @@ class Filter:
 
         from adaptivefiltering.apps import execute_interactive
 
-        return execute_interactive(dataset)
+        return execute_interactive(dataset, self)
 
     def _serialize(self):
         """Serialize this filter.
