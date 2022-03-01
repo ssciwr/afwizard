@@ -7,10 +7,20 @@ def test_asprs_classification():
     # Test __getitem__ of the asprs object
     assert asprs(42) == (42,)
     assert asprs("ground") == (2,)
-    assert asprs(42, 17) == (17, 42)
-    assert asprs(42, "ground") == (2, 42)
-    assert asprs("low_vegetation", "ground") == (2, 3)
-    assert asprs("low_vegetation  ", " ground ") == (2, 3)
+    assert asprs(
+        (
+            42,
+            17,
+        )
+    ) == (17, 42)
+    assert asprs(
+        (
+            42,
+            "ground",
+        )
+    ) == (2, 42)
+    assert asprs(("low_vegetation", "ground")) == (2, 3)
+    assert asprs(["low_vegetation  ", " ground "]) == (2, 3)
     assert asprs("low_vegetation,ground") == (2, 3)
     assert asprs("  low_vegetation ,  ground") == (2, 3)
     assert asprs(slice(2, 4)) == (2, 3, 4)
