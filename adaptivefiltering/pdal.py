@@ -171,14 +171,12 @@ class PDALInMemoryDataSet(DataSet):
 
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
-            pipeline=pipeline, spatial_reference=spatial_reference, filename=filename
+            pipeline=pipeline, spatial_reference=spatial_reference
         )
 
     def save(self, filename, overwrite=False):
         # Check if we would overwrite an input file
-        filename = check_file_extension(
-            filename, [".las", ".laz"], os.path.splitext(self.filename)[1]
-        )
+        filename = check_file_extension(filename, [".las", ".laz"], ".las")
 
         # Form the correct configuration string for compression based on file ending.
 

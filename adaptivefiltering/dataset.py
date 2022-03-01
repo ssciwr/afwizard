@@ -168,23 +168,26 @@ class DataSet:
         # check if file extension changed.
 
         if os.path.splitext(filename)[1] == os.path.splitext(self.filename)[1]:
-
             # Do the copy operation
             shutil.copy(self.filename, filename)
 
-            # And return a DataSet instance
-            return DataSet(
-                filename=filename,
-                spatial_reference=self.spatial_reference,
+        # if the file extension changed the pdal save function will be called.
+        else:
+            from adaptivefiltering.pdal import execute_pdal_pipeline
+
+            config = [
+                {"type": "readers.las", "filename": self.filename},
+                {"filename": filename, "type": "writers.las", "compression": "laszip"},
+            ]
+            execute_pdal_pipeline(
+                config=config,
             )
 
-        # if the file extension changed the pdal save function will be called.
-
-        else:
-            from adaptivefiltering.pdal import PDALInMemoryDataSet
-
-            ds_pdal = PDALInMemoryDataSet.convert(self)
-            return ds_pdal.save(filename, overwrite)
+        # Return a DataSet instance
+        return DataSet(
+            filename=filename,
+            spatial_reference=self.spatial_reference,
+        )
 
     def restrict(self, segmentation=None):
         """Restrict the data set to a spatial subset
