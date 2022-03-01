@@ -313,9 +313,6 @@ class Map:
         # add draw control
         if self.inlude_draw_controle:
             self.map.add_control(self.draw_control)
-            # layer control
-            self.layer_control = ipyleaflet.LayersControl(position="topright")
-            self.map.add_control(self.layer_control)
 
         # add zoom control
         self.zoom_slider = ipywidgets.IntSlider(
@@ -326,6 +323,10 @@ class Map:
             widget=self.zoom_slider, position="topright"
         )
         self.map.add_control(self.zoom_control1)
+
+        # layer control
+        self.layer_control = ipyleaflet.LayersControl(position="topright")
+        self.map.add_control(self.layer_control)
 
     def load_geojson(self, segmentation, name=""):
         """Imports a segmentation objectas an actual layer.
