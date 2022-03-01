@@ -69,6 +69,8 @@ class DataSet:
         if classification is None:
             classification = asprs(slice(None))
 
+        classification = asprs(classification)
+
         if resolution <= 0:
             raise Warning("Negative Resolutions are not possible for rasterization.")
 
@@ -265,11 +267,15 @@ class DigitalSurfaceModel:
             )
 
         # Create the model by running the pipeline
-        execute_pdal_pipeline(
-            dataset=self.dataset,
-            config=config,
-        )
-
+        try:
+            execute_pdal_pipeline(
+                dataset=self.dataset,
+                config=config,
+            )
+        except RuntimeError:
+            raise AdaptiveFilteringError(
+                "The writers.raster was not able to generate a raster. Did you specify a classification that is not present in the dataset?"
+            )
         self.raster = gdal.Open(self.filename, gdal.GA_ReadOnly)
 
     def show(self, visualization_type="hillshade", **kwargs):

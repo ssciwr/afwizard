@@ -15,7 +15,6 @@ from adaptivefiltering.apps import (
     select_best_pipeline,
     assign_pipeline,
 )
-from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet, remove_classification, reproject_dataset
 from adaptivefiltering.execute import apply_adaptive_pipeline
 from adaptivefiltering.filter import load_filter, save_filter
@@ -55,7 +54,6 @@ __all__ = [
     "set_lastools_directory",
     "set_opals_directory",
     "add_filter_library",
-    "asprs",
     "reset_filter_libraries",
     "print_version",
 ]
