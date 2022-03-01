@@ -274,6 +274,7 @@ class Filter:
             pyrsistent.thaw(self.form_schema()),
             vertically_place_labels=True,
             preconstruct_array_items=1,
+            nobatch_keys=["metadata"],
         )
         form.data = pyrsistent.thaw(self.config)
         return form
