@@ -25,9 +25,12 @@ def test_show(dataset):
 def test_assign_pipeline(dataset, boundary_segmentation):
 
     f = PDALFilter(type="filters.smrf")
-
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
+    with pytest.raises(AdaptiveFilteringError):
+        assign_pipeline(dataset, boundary_segmentation, [pipeline, pipeline])
+    boundary_segmentation["features"][0]["properties"]["class"] = "A"
+
     assign_pipeline(dataset, boundary_segmentation, [pipeline, pipeline])
 
 

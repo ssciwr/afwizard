@@ -181,4 +181,10 @@ def split_segmentation_classes(segmentation):
     for key in keys_to_remove:
         _ = split_dict.pop(key)
 
+    if len(split_dict.keys()) == 0:
+        raise AdaptiveFilteringError(
+            "No suitable property key was found. "
+            + "Please make sure there are classification properties present and that at least one of them has less than 20 categories."
+        )
+
     return split_dict
