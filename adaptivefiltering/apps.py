@@ -35,6 +35,22 @@ fullwidth = ipywidgets.Layout(width="100%")
 
 
 def return_proxy(creator, widgets):
+    """A transparent proxy that can be returned from Jupyter UIs
+
+    The created proxy object solves the general problem of needing to non-blockingly
+    return from functions that display UI controls as a side effect. The returned object
+    is updated whenever the widget state changes so that the return object would change.
+    The proxy uses the :code:`wrapt` library to be as transparent as possible, allowing
+    users to immediately work with the created object.
+
+    :param creator:
+        A callable that accepts no parameters and creates the object
+        that should be returned. This is called whenever the widget
+        state changes.
+    :param widgets:
+        A list of widgets whose changes should trigger a recreation of
+        the proxy object.
+    """
     # Create a new proxy object by calling the creator once
     proxy = wrapt.ObjectProxy(creator())
 

@@ -27,11 +27,18 @@ FilterLibrary = collections.namedtuple(
 
 
 def get_filter_libraries():
+    """Get a list of all filter libraries currently registered"""
+
     # The reversing implements priority ordering from user-defined to built-in
     return tuple(reversed(_filter_libraries))
 
 
 def get_current_filter_library():
+    """Get the user-defined 'current' filter library
+
+    That filter library is used preferrably for saving filters.
+    It can be set with :ref:~adaptivefiltering.set_current_filter_library.
+    """
     return _current_library
 
 

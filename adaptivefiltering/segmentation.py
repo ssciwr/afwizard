@@ -63,10 +63,7 @@ class Segmentation(geojson.FeatureCollection):
             geojson.dump(self, f)
 
     def show(self):
-        """Create a new InteractiveMap with bounds from the segmentation.
-
-        :
-        """
+        """Create a new InteractiveMap with bounds from the segmentation."""
 
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
