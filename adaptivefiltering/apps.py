@@ -233,6 +233,19 @@ def create_variability(batchdata, samples_for_continuous=5, non_persist_only=Tru
     return variants
 
 
+def trivial_tab_titles(tab, template="#{i}"):
+    """Adds trivial titles to a tab
+
+    :param tab:
+        The tab widget to change the titles
+    :type tab: ipywidgets.Tab
+    :param template:
+        A format string to use to generated the title. May use
+        the variable i to reference the tab index.
+    """
+    tab.titles = tuple(template.format(i=str(j)) for j in range(len(tab.children)))
+
+
 # A data structure to store widgets within to quickly navigate back and forth
 # between visualizations in the pipeline_tuning widget.
 PipelineWidgetState = collections.namedtuple(
@@ -308,7 +321,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         nonlocal center
         index = len(center.children)
         center.children = center.children + (image,)
-        center.titles = center.titles + (f"#{index}",)
+        trivial_tab_titles(center)
 
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview", layout=fullwidth)
@@ -322,6 +335,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # The center widget holds the Tab widget to browse history
     center = ipywidgets.Tab(children=[], titles=[])
+    trivial_tab_titles(center)
     center.layout = fullwidth
 
     def _switch_tab(_):
@@ -330,7 +344,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
             pipeline_form.data = item.pipeline
             rasterization_widget_form.data = item.rasterization
             visualization_form_widget.data = item.visualization
-            classification_widget.children = (item.classification,)
+            class_widget.children = (item.classification,)
 
     def _trigger_preview(config=None):
         if config is None:
@@ -359,6 +373,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
             # Select the newly added tab
             center.selected_index = len(center.children) - 1
+            trivial_tab_titles(center)
 
     def _update_preview(button):
         with hourglass_icon(button):
@@ -369,15 +384,21 @@ def pipeline_tuning(datasets=[], pipeline=None):
                 _trigger_preview()
             else:
                 for variant in create_variability(batchdata):
-                    config = pipeline_form.data
+                    config = pyrsistent.freeze(pipeline_form.data)
 
                     # Modify all the necessary bits
                     for mod in variant:
                         config = update_data(config, mod)
 
-                    _trigger_preview(config)
+                    _trigger_preview(pyrsistent.thaw(config))
 
     def _delete_history_item(_):
+        # If we only have zero or one, this is equivalent to delete all
+        if len(center.children) < 2:
+            _delete_all(_)
+            return
+
+        # Otherwise we remove only this one from the history
         i = center.selected_index
         nonlocal history
         history = history[:i] + history[i + 1 :]
@@ -386,6 +407,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
         # This ensures that widgets are updated when this tab is removed
         _switch_tab(None)
+        trivial_tab_titles(center)
 
     def _delete_all(_):
         nonlocal history
@@ -514,9 +536,7 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
     classification = ipywidgets.Box([classification_widget([dataset])])
     classification.layout = fullwidth
 
-    load_raster_button = ipywidgets.Button(
-        description="Load rasterization", layout=fullwidth
-    )
+    load_raster_button = ipywidgets.Button(description="Visualize", layout=fullwidth)
 
     def load_raster_to_map(b):
         with hourglass_icon(b):
@@ -534,9 +554,8 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
                     **rasterization_widget_form.data,
                 )
 
-            title = f"{form.data['visualization_type']}, res: {rasterization_widget_form.data['resolution']}"
             vis = dataset.show(**form.data).children[0]
-            map_.load_overlay(vis, title)
+            map_.load_overlay(vis, "Visualisation")
 
     # case for restrict
     if with_map:
@@ -718,9 +737,16 @@ def apply_restriction(dataset, segmentation=None):
     dataset = as_pdal(dataset)
 
     def apply_restriction(seg):
-        # not yet sure why the swap is necessary
-        seg = swap_coordinates(seg)
+        from pyproj import crs
 
+        # "EPSG:4326 specifically states that the coordinate order should be latitude, longitude.
+        # Many software packages still use longitude, latitude ordering.
+        # This situation has wreaked unimaginable havoc on project deadlines and programmer sanity."
+        # https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
+        epsg_4326 = crs.CRS("EPSG:4326")
+        ds_crs = crs.CRS(dataset.spatial_reference)
+        if epsg_4326 != ds_crs:
+            seg = swap_coordinates(seg)
         # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
         seg = convert_segmentation(seg, dataset.spatial_reference)
 
@@ -972,9 +998,13 @@ def select_pipeline_from_library(multiple=False):
             if len(change["new"]) > len(change["old"]):
                 # If so, we display the metadata of the newly selected one
                 (entry,) = set(change["new"]) - set(change["old"])
-                metadata_form.data = filter_list[entry].config["metadata"]
+                metadata_form.data = pyrsistent.thaw(
+                    filter_list[entry].config["metadata"]
+                )
         else:
-            metadata_form.data = filter_list[change["new"]].config["metadata"]
+            metadata_form.data = pyrsistent.thaw(
+                filter_list[change["new"]].config["metadata"]
+            )
 
     filter_list_widget.observe(metadata_updater, names="index")
 
@@ -1159,9 +1189,8 @@ def select_best_pipeline(dataset=None, pipelines=None):
 
     # Tabs that contain the interactive execution with all given pipelines
     if len(subwidgets) > 1:
-        tabs = ipywidgets.Tab(
-            children=subwidgets, titles=[f"#{i}" for i in range(len(pipelines))]
-        )
+        tabs = ipywidgets.Tab(children=subwidgets)
+        trivial_tab_titles(tabs)
     elif len(subwidgets) == 1:
         tabs = subwidgets[0]
     else:

@@ -54,9 +54,16 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
         def _setter(_d):
             widget.value = _d
 
+        def _resetter():
+            if "default" in schema:
+                widget.value = schema["default"]
+
+        _resetter()
+
         return self.construct_element(
             getter=lambda: widget.value,
             setter=_setter,
+            resetter=_resetter,
             widgets=[ipywidgets.VBox(widgets)],
             register_observer=_register_observer,
         )
@@ -67,6 +74,7 @@ BatchDataWidgetFormElement = collections.namedtuple(
     [
         "getter",
         "setter",
+        "resetter",
         "widgets",
         "subelements",
         "batchdata_getter",
@@ -77,10 +85,16 @@ BatchDataWidgetFormElement = collections.namedtuple(
 
 
 class BatchDataWidgetForm(WidgetFormWithLabels):
+    def __init__(self, *args, nobatch_keys=[], **kwargs):
+        self.nobatch_keys = nobatch_keys
+        self.disable_batching = False
+        super().__init__(*args, **kwargs)
+
     def construct_element(
         self,
         getter=lambda: None,
         setter=lambda _: None,
+        resetter=lambda: None,
         widgets=[],
         subelements=[],
         batchdata_getter=lambda: [],
@@ -90,6 +104,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return BatchDataWidgetFormElement(
             getter=getter,
             setter=setter,
+            resetter=resetter,
             widgets=widgets,
             subelements=subelements,
             batchdata_getter=batchdata_getter,
@@ -111,6 +126,10 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
     def _construct_simple(self, schema, widget, label=None, root=False):
         # Call the original implementation to get the basic widget
         original = super()._construct_simple(schema, widget, label=label, root=root)
+
+        # If we blacklisted this part of the schema, we skip it now
+        if self.disable_batching:
+            return original
 
         # If this is something that for some reason did not produce an input
         # widget, we skip all the variablity part.
@@ -154,12 +173,12 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
             # Make sure that if either button is pressed, we display the input widget
             if b1.value:
-                box.children = (ipywidgets.HBox([ipywidgets.Label("Values:"), var]),)
+                box.children = (ipywidgets.VBox([ipywidgets.Label("Values:"), var]),)
             elif b2.value:
                 box.children = (
-                    ipywidgets.HBox([ipywidgets.Label("Values:"), var]),
-                    ipywidgets.HBox([ipywidgets.Label("Name:"), name]),
-                    ipywidgets.HBox([ipywidgets.Label("Description:"), descr]),
+                    ipywidgets.VBox([ipywidgets.Label("Values:"), var]),
+                    ipywidgets.VBox([ipywidgets.Label("Name:"), name]),
+                    ipywidgets.VBox([ipywidgets.Label("Description:"), descr]),
                 )
             else:
                 box.children = ()
@@ -213,10 +232,17 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             name.observe(h, names=n, type=t)
             descr.observe(h, names=n, type=t)
 
+        def _resetter():
+            original.resetter()
+            b1.value = False
+            b2.value = False
+            var.value = ""
+
         # Wrap the result in our new form element
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=_resetter,
             widgets=original.widgets,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
@@ -224,7 +250,12 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         )
 
     def _construct_object(self, schema, label=None, root=False):
+        if label in self.nobatch_keys:
+            self.disable_batching = True
+
         original = super()._construct_object(schema, label=label, root=root)
+
+        self.disable_batching = False
 
         def _getter():
             ret = []
@@ -247,6 +278,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=original.resetter,
             widgets=original.widgets,
             subelements=original.subelements,
             batchdata_getter=_getter,
@@ -260,7 +292,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         def _getter():
             ret = []
 
-            for i, subel in enumerate(original.subelements):
+            for i, subel in enumerate(original.subelements[: len(original.getter())]):
                 data = subel.batchdata_getter()
                 for d in data:
                     d["path"].append({"index": i})
@@ -277,6 +309,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=original.resetter,
             widgets=original.widgets,
             subelements=original.subelements,
             batchdata_getter=_getter,
@@ -303,6 +336,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=original.resetter,
             widgets=original.widgets,
             subelements=original.subelements,
             batchdata_getter=lambda: original.subelements[

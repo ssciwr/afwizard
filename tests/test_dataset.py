@@ -1,6 +1,6 @@
 from adaptivefiltering.dataset import *
 from adaptivefiltering.paths import get_temporary_filename
-from adaptivefiltering.segmentation import Segment, Segmentation
+from adaptivefiltering.segmentation import Segmentation
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.pdal import PDALFilter
 from adaptivefiltering.apps import assign_pipeline
@@ -51,8 +51,16 @@ def test_restriction(dataset):
         ]
     ]
     # Programmatically restrict with an artificial segment
-    segment = Segment(coordinates1)
-    restricted = dataset.restrict(segment)
+    segmentation = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": {"type": "Polygon", "coordinates": coordinates1},
+            },
+        ]
+    )
+    restricted = dataset.restrict(segmentation)
     restricted.show()
 
     # test for two polygons
@@ -80,7 +88,7 @@ def test_save_dataset(minimal_dataset):
     minimal_dataset.save(minimal_dataset.filename)
 
     # Copy to another file
-    tmpfile = get_temporary_filename()
+    tmpfile = get_temporary_filename("las")
     minimal_dataset.save(tmpfile)
     assert os.stat(tmpfile).st_size == os.stat(minimal_dataset.filename).st_size
 

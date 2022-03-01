@@ -22,12 +22,28 @@ TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/relea
 TEST_DATA_CHECKSUM = "b1af80c173ad475c14972a32bbf86cdbdb8a2197de48ca1e40c4a9859afcabcb"
 
 
-def set_data_directory(directory):
+def set_data_directory(directory, create_dir=False):
     """Set a custom root directory to locate data files
 
-    :param directory: The custom data directory
+    :param directory:
+        The name of the custom data directory.
     :type directory: str
+    :param create_dir:
+        Whether adaptivefiltering should create the directory if it does
+        not already exist.
+    :type created_dir: bool
     """
+
+    # Check existence of the given data directory
+    if not os.path.exists(directory):
+        if create_dir:
+            os.makedirs(directory, exist_ok=True)
+        else:
+            raise FileNotFoundError(
+                f"The given data directory '{directory}' does not exist (Use create_dir=True to automatically create it)!"
+            )
+
+    # Update the module variable
     global _data_dir
     _data_dir = directory
 
@@ -87,6 +103,19 @@ def download_test_file(filename):
             tar.extractall(path=os.path.join(get_temporary_workspace(), "data"))
 
     return full_file
+
+
+def check_file_extension(filename, possible_values, default_value):
+    name, ext = os.path.splitext(filename)
+
+    if ext == "" or ext == ".":
+        ext = default_value
+    possible_extensions = [possible_ext.lower() for possible_ext in possible_values]
+    if ext.lower() not in possible_extensions:
+        raise Exception(
+            f"The file extension {ext} is not supported. Please use the following: {possible_extensions}"
+        )
+    return os.path.join(name + ext)
 
 
 def locate_file(filename):

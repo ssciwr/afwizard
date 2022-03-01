@@ -1,8 +1,12 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter, PipelineMixin
-from adaptivefiltering.paths import get_temporary_filename, load_schema, locate_file
-from adaptivefiltering.segmentation import Segment, Segmentation, swap_coordinates
+from adaptivefiltering.paths import (
+    get_temporary_filename,
+    load_schema,
+    locate_file,
+    check_file_extension,
+)
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     check_spatial_reference,
@@ -49,6 +53,13 @@ def execute_pdal_pipeline(dataset=None, config=None):
     arrays = []
     if dataset is not None:
         arrays.append(dataset.data)
+
+    # Check for arrays of 0 points - they throw hard to read errors in PDAL
+    for array in arrays:
+        if array.shape[0] == 0:
+            raise AdaptiveFilteringError(
+                "PDAL cannot handle point clouds with 0 points"
+            )
 
     # Define and execute the pipeline
     pipeline = pdal.Pipeline(json.dumps(config), arrays=arrays)
@@ -111,7 +122,6 @@ class PDALInMemoryDataSet(DataSet):
         """
         # Store the given pipeline
         self.pipeline = pipeline
-
         super(PDALInMemoryDataSet, self).__init__(
             spatial_reference=spatial_reference,
         )
@@ -138,6 +148,7 @@ class PDALInMemoryDataSet(DataSet):
         # save spatial reference of dataset before it is lost
         spatial_reference = dataset.spatial_reference
         # If dataset is of unknown type, we should first dump it to disk
+
         dataset = dataset.save(get_temporary_filename("las"))
 
         # Load the file from the given filename
@@ -160,19 +171,24 @@ class PDALInMemoryDataSet(DataSet):
 
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
-            pipeline=pipeline,
-            spatial_reference=spatial_reference,
+            pipeline=pipeline, spatial_reference=spatial_reference
         )
 
-    def save(self, filename, compress=False, overwrite=False):
+    def save(self, filename, overwrite=False):
         # Check if we would overwrite an input file
+        filename = check_file_extension(filename, [".las", ".laz"], ".las")
+
+        # Form the correct configuration string for compression based on file ending.
+
+        if os.path.splitext(filename)[1] == ".las":
+            compress = "none"
+        elif os.path.splitext(filename)[1] == ".laz":
+            compress = "laszip"
+
         if not overwrite and os.path.exists(filename):
             raise AdaptiveFilteringError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
-
-        # Form the correct configuration string for compression
-        compress = "laszip" if compress else "none"
 
         # Exectute writer pipeline
         execute_pdal_pipeline(
