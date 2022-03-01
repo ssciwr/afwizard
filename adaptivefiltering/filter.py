@@ -257,6 +257,7 @@ class Filter:
             created instance of this filter.
         :type kwargs: dict
         """
+        kwargs.setdefault("_variability", self._variability)
         return type(self)(**self.config.update(kwargs))
 
     def as_pipeline(self):
