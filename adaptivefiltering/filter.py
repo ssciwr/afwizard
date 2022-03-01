@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, check_file_extension
 from adaptivefiltering.utils import AdaptiveFilteringError, as_number_type
 from adaptivefiltering.versioning import (
     ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION,
@@ -192,6 +192,23 @@ class Filter:
         """
         raise NotImplementedError  # pragma: no cover
 
+    def execute_interactive(self, dataset):
+        """Apply the filter in an interactive setting
+
+        Using this methods allows you to explore the finetuning capabilities
+        of the filter (if it provides any).
+
+        :param dataset:
+            The data set to apply the filter to.
+        :type dataset: adaptivefiltering.DataSet
+        :returns:
+            A filter pipeline copy with the fine tuning configuration baked in.
+        """
+
+        from adaptivefiltering.apps import execute_interactive
+
+        return execute_interactive(dataset, self)
+
     def _serialize(self):
         """Serialize this filter.
 
@@ -257,6 +274,7 @@ class Filter:
             created instance of this filter.
         :type kwargs: dict
         """
+        kwargs.setdefault("_variability", self._variability)
         return type(self)(**self.config.update(kwargs))
 
     def as_pipeline(self):
@@ -273,6 +291,7 @@ class Filter:
             pyrsistent.thaw(self.form_schema()),
             vertically_place_labels=True,
             preconstruct_array_items=1,
+            nobatch_keys=["metadata"],
         )
         form.data = pyrsistent.thaw(self.config)
         return form
@@ -471,6 +490,7 @@ def save_filter(filter_, filename):
         The filename where to write the filter. Relative paths are interpreted
         w.r.t. the current working directory.
     """
+    filename = check_file_extension(filename, [".json"], ".json")
 
     # If the filename is not already absolute, we maybe
     if not os.path.isabs(filename):

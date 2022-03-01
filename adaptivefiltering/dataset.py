@@ -1,5 +1,10 @@
 from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
+from adaptivefiltering.paths import (
+    locate_file,
+    get_temporary_filename,
+    load_schema,
+    check_file_extension,
+)
 from adaptivefiltering.utils import AdaptiveFilteringError
 from adaptivefiltering.visualization import visualization_dispatcher
 
@@ -124,7 +129,7 @@ class DataSet:
 
         return show_interactive(self)
 
-    def save(self, filename, compress=False, overwrite=False):
+    def save(self, filename, overwrite=False):
         """Store the dataset as a new LAS/LAZ file
 
         This method writes the Lidar dataset represented by this data structure
@@ -136,9 +141,7 @@ class DataSet:
             or a relative path. Relative paths are interpreted w.r.t. the current
             working directory.
         :type filename: str
-        :param compress:
-            If true, an LAZ file will be written instead of an LAS file.
-        :type compress: bool
+
         :param overwrite:
             If this parameter is false and the specified filename does already exist,
             an error is thrown. This is done in order to prevent accidental corruption
@@ -148,6 +151,11 @@ class DataSet:
             A dataset object wrapping the written file
         :rtype: adaptivefiltering.DataSet
         """
+        # check for valid file name
+
+        filename = check_file_extension(
+            filename, [".las", ".laz"], os.path.splitext(self.filename)[1]
+        )
         # If the filenames match, this is a no-op operation
         if filename == self.filename:
             return self
@@ -159,10 +167,31 @@ class DataSet:
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
-        # Do the copy operation
-        shutil.copy(self.filename, filename)
+        # Extract the file extensions of the new and old filename
+        old_extension = os.path.splitext(self.filename)[1].lower()
+        new_extension = os.path.splitext(filename)[1].lower()
 
-        # And return a DataSet instance
+        # If the file extension did not change, this is a copy operation
+        if old_extension == new_extension:
+            shutil.copy(self.filename, filename)
+        else:
+            # If it changed, we use PDAL to convert LAS <-> LAZ
+            compress = "laszip" if new_extension == ".laz" else "none"
+
+            from adaptivefiltering.pdal import execute_pdal_pipeline
+
+            execute_pdal_pipeline(
+                config=[
+                    {"type": "readers.las", "filename": self.filename},
+                    {
+                        "filename": filename,
+                        "type": "writers.las",
+                        "compression": compress,
+                    },
+                ],
+            )
+
+        # Return a DataSet instance
         return DataSet(
             filename=filename,
             spatial_reference=self.spatial_reference,
@@ -382,7 +411,6 @@ def remove_classification(dataset):
         dataset=dataset,
         config={"type": "filters.assign", "value": ["Classification = 1"]},
     )
-
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=dataset.spatial_reference,

@@ -85,6 +85,11 @@ BatchDataWidgetFormElement = collections.namedtuple(
 
 
 class BatchDataWidgetForm(WidgetFormWithLabels):
+    def __init__(self, *args, nobatch_keys=[], **kwargs):
+        self.nobatch_keys = nobatch_keys
+        self.disable_batching = False
+        super().__init__(*args, **kwargs)
+
     def construct_element(
         self,
         getter=lambda: None,
@@ -121,6 +126,10 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
     def _construct_simple(self, schema, widget, label=None, root=False):
         # Call the original implementation to get the basic widget
         original = super()._construct_simple(schema, widget, label=label, root=root)
+
+        # If we blacklisted this part of the schema, we skip it now
+        if self.disable_batching:
+            return original
 
         # If this is something that for some reason did not produce an input
         # widget, we skip all the variablity part.
@@ -164,12 +173,12 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
             # Make sure that if either button is pressed, we display the input widget
             if b1.value:
-                box.children = (ipywidgets.HBox([ipywidgets.Label("Values:"), var]),)
+                box.children = (ipywidgets.VBox([ipywidgets.Label("Values:"), var]),)
             elif b2.value:
                 box.children = (
-                    ipywidgets.HBox([ipywidgets.Label("Values:"), var]),
-                    ipywidgets.HBox([ipywidgets.Label("Name:"), name]),
-                    ipywidgets.HBox([ipywidgets.Label("Description:"), descr]),
+                    ipywidgets.VBox([ipywidgets.Label("Values:"), var]),
+                    ipywidgets.VBox([ipywidgets.Label("Name:"), name]),
+                    ipywidgets.VBox([ipywidgets.Label("Description:"), descr]),
                 )
             else:
                 box.children = ()
@@ -241,7 +250,12 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         )
 
     def _construct_object(self, schema, label=None, root=False):
+        if label in self.nobatch_keys:
+            self.disable_batching = True
+
         original = super()._construct_object(schema, label=label, root=root)
+
+        self.disable_batching = False
 
         def _getter():
             ret = []
