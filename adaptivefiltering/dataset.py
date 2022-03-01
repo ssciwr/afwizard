@@ -347,6 +347,8 @@ class DigitalSurfaceModel:
 
                 if selector.value == "LAZ":
                     self.dataset.save(filename.value, compress=True, overwrite=True)
+            else:
+                raise AdaptiveFilteringError("Please choose a filename before saving!")
 
         button.on_click(_save_to_file)
 
