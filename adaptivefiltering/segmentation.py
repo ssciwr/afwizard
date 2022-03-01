@@ -7,7 +7,6 @@ from adaptivefiltering.utils import (
     merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.visualization import gdal_visualization
 
 import base64
 import geojson
@@ -18,31 +17,6 @@ import json
 import numpy as np
 import collections
 import copy
-
-
-class Segment:
-    def __init__(self, polygon, metadata={}):
-        self.polygon = geojson.Polygon(polygon)
-        self.metadata = metadata
-
-    @property
-    def metadata(self):
-        return self._metadata
-
-    @metadata.setter
-    def metadata(self, _metadata):
-        # Validate against our segment metadata schema
-        schema = load_schema("segment_metadata.json")
-        jsonschema.validate(instance=_metadata, schema=schema)
-        self._metadata = _metadata
-
-    @property
-    def __geo_interface__(self):
-        return {
-            "type": "Feature",
-            "geometry": self.polygon,
-            "properties": self.metadata,
-        }
 
 
 class Segmentation(geojson.FeatureCollection):

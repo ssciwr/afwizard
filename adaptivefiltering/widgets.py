@@ -54,9 +54,16 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
         def _setter(_d):
             widget.value = _d
 
+        def _resetter():
+            if "default" in schema:
+                widget.value = schema["default"]
+
+        _resetter()
+
         return self.construct_element(
             getter=lambda: widget.value,
             setter=_setter,
+            resetter=_resetter,
             widgets=[ipywidgets.VBox(widgets)],
             register_observer=_register_observer,
         )
@@ -67,6 +74,7 @@ BatchDataWidgetFormElement = collections.namedtuple(
     [
         "getter",
         "setter",
+        "resetter",
         "widgets",
         "subelements",
         "batchdata_getter",
@@ -81,6 +89,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         self,
         getter=lambda: None,
         setter=lambda _: None,
+        resetter=lambda: None,
         widgets=[],
         subelements=[],
         batchdata_getter=lambda: [],
@@ -90,6 +99,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return BatchDataWidgetFormElement(
             getter=getter,
             setter=setter,
+            resetter=resetter,
             widgets=widgets,
             subelements=subelements,
             batchdata_getter=batchdata_getter,
@@ -213,10 +223,17 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             name.observe(h, names=n, type=t)
             descr.observe(h, names=n, type=t)
 
+        def _resetter():
+            original.resetter()
+            b1.value = False
+            b2.value = False
+            var.value = ""
+
         # Wrap the result in our new form element
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=_resetter,
             widgets=original.widgets,
             batchdata_getter=_getter,
             batchdata_setter=_setter,
@@ -247,6 +264,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=original.resetter,
             widgets=original.widgets,
             subelements=original.subelements,
             batchdata_getter=_getter,
@@ -260,7 +278,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         def _getter():
             ret = []
 
-            for i, subel in enumerate(original.subelements):
+            for i, subel in enumerate(original.subelements[: len(original.getter())]):
                 data = subel.batchdata_getter()
                 for d in data:
                     d["path"].append({"index": i})
@@ -277,6 +295,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=original.resetter,
             widgets=original.widgets,
             subelements=original.subelements,
             batchdata_getter=_getter,
@@ -303,6 +322,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
         return self.construct_element(
             getter=original.getter,
             setter=original.setter,
+            resetter=original.resetter,
             widgets=original.widgets,
             subelements=original.subelements,
             batchdata_getter=lambda: original.subelements[

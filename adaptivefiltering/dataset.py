@@ -1,7 +1,7 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.paths import locate_file, get_temporary_filename, load_schema
 from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.visualization import gdal_visualization
+from adaptivefiltering.visualization import visualization_dispatcher
 
 from osgeo import gdal
 
@@ -68,6 +68,8 @@ class DataSet:
         # If no classification value was given, we use all classes
         if classification is None:
             classification = asprs(slice(None))
+
+        classification = asprs(classification)
 
         if resolution <= 0:
             raise Warning("Negative Resolutions are not possible for rasterization.")
@@ -179,11 +181,10 @@ class DataSet:
             shown in Jupyter.
         :type: adaptivefiltering.segmentation.Segmentation
         """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
 
-        dataset = PDALInMemoryDataSet.convert(self)
+        from adaptivefiltering.apps import apply_restriction
 
-        return dataset.restrict(segmentation)
+        return apply_restriction(self, segmentation)
 
     @classmethod
     def convert(cls, dataset):
@@ -266,11 +267,15 @@ class DigitalSurfaceModel:
             )
 
         # Create the model by running the pipeline
-        execute_pdal_pipeline(
-            dataset=self.dataset,
-            config=config,
-        )
-
+        try:
+            execute_pdal_pipeline(
+                dataset=self.dataset,
+                config=config,
+            )
+        except RuntimeError:
+            raise AdaptiveFilteringError(
+                "The writers.raster was not able to generate a raster. Did you specify a classification that is not present in the dataset?"
+            )
         self.raster = gdal.Open(self.filename, gdal.GA_ReadOnly)
 
     def show(self, visualization_type="hillshade", **kwargs):
@@ -280,7 +285,7 @@ class DigitalSurfaceModel:
         jsonschema.validate(kwargs, schema=schema)
 
         # Call the correct visualization function
-        vis = gdal_visualization(self, **kwargs)
+        vis = visualization_dispatcher(self, **kwargs)
         vis.layout = ipywidgets.Layout(width="70%")
         box_layout = ipywidgets.Layout(
             width="100%", flex_flow="column", align_items="center", display="flex"
@@ -342,6 +347,8 @@ class DigitalSurfaceModel:
 
                 if selector.value == "LAZ":
                     self.dataset.save(filename.value, compress=True, overwrite=True)
+            else:
+                raise AdaptiveFilteringError("Please choose a filename before saving!")
 
         button.on_click(_save_to_file)
 

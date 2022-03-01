@@ -46,3 +46,14 @@ def test_filter_only_add(monkeypatch, tmp_path):
     add_filter_library(os.path.join(os.getcwd(), "lib"))
     assert len(adaptivefiltering.library._filter_libraries) == 3
     assert len(adaptivefiltering.library._filter_libraries[2].filters) == 1
+
+
+def test_nonfilter_json(monkeypatch, tmp_path):
+    # Ensure that a JSON file that is not a filter does not make the
+    # system fall over
+    monkeypatch.chdir(tmp_path)
+
+    with open("something.json", "w") as f:
+        json.dump({"bla": 42}, f)
+
+    reset_filter_libraries()

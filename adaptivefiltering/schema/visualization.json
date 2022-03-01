@@ -60,6 +60,60 @@
       ],
       "title": "Slope Map",
       "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "alg": {
+          "default": "Horn",
+          "description": "The literature suggests Zevenbergen & Thorne to be more suited to smooth landscapes, whereas Horn\u2019s formula to perform better on rougher terrain.",
+          "enum": [
+            "Horn",
+            "ZevenbergenThorne"
+          ],
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "altitude": {
+          "default": 30,
+          "description": "Altitude of the light, in degrees. 90 if the light comes from above the DEM, 0 if it is raking light.",
+          "maximum": 90,
+          "minimum": 0,
+          "title": "Angle Altitude (0 to 90 degrees)",
+          "type": "number"
+        },
+        "azimuth": {
+          "default": 315,
+          "description": "Azimuth of the light, in degrees. 0 if it comes from the top of the raster, 90 from the east, \u2026 The default value, 315, should rarely be changed as it is the value generally used to generate shaded maps.",
+          "maximum": 360,
+          "minimum": 0,
+          "title": "Azimuth angle (0 to 360 degrees)",
+          "type": "number"
+        },
+        "blending_factor": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Blending factor",
+          "type": "number"
+        },
+        "visualization_type": {
+          "const": "blended_hillshade_slope",
+          "type": "string"
+        },
+        "zFactor": {
+          "default": 1.0,
+          "description": "Vertical exaggeration used to pre-multiply the elevations",
+          "minimum": 0.0,
+          "title": "Vertical exaggeration:",
+          "type": "number"
+        }
+      },
+      "required": [
+        "visualization_type"
+      ],
+      "title": "Hillshade Model + Slope Map",
+      "type": "object"
     }
   ]
 }

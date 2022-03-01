@@ -1,4 +1,4 @@
-from adaptivefiltering.utils import AdaptiveFilteringError
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 
 # Mapping from human-readable name to class codes
@@ -44,7 +44,7 @@ def asprs_class_name(code):
         )
 
 
-def asprs(*vals):
+def asprs(vals):
     """Map a number of values to ASPRS classification codes
 
     :param vals:
@@ -55,7 +55,10 @@ def asprs(*vals):
         A sorted tuple of integers with ASPRS codes:
     :rtype: tuple
     """
-    return tuple(sorted(set(sum((_asprs(v) for v in vals), ()))))
+    if is_iterable(vals):
+        return tuple(sorted(set(sum((_asprs(v) for v in vals), ()))))
+    else:
+        return asprs([vals])
 
 
 def _asprs(val):
@@ -63,7 +66,7 @@ def _asprs(val):
         # First, we split at commas and go into recursion
         pieces = val.split(",")
         if len(pieces) > 1:
-            return asprs(*pieces)
+            return asprs(pieces)
 
         # If this is a simple string token it must match a code
         return asprs_class_code(pieces[0].strip())
