@@ -164,12 +164,12 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
             # Make sure that if either button is pressed, we display the input widget
             if b1.value:
-                box.children = (ipywidgets.HBox([ipywidgets.Label("Values:"), var]),)
+                box.children = (ipywidgets.VBox([ipywidgets.Label("Values:"), var]),)
             elif b2.value:
                 box.children = (
-                    ipywidgets.HBox([ipywidgets.Label("Values:"), var]),
-                    ipywidgets.HBox([ipywidgets.Label("Name:"), name]),
-                    ipywidgets.HBox([ipywidgets.Label("Description:"), descr]),
+                    ipywidgets.VBox([ipywidgets.Label("Values:"), var]),
+                    ipywidgets.VBox([ipywidgets.Label("Name:"), name]),
+                    ipywidgets.VBox([ipywidgets.Label("Description:"), descr]),
                 )
             else:
                 box.children = ()
