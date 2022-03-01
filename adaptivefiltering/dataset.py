@@ -165,22 +165,28 @@ class DataSet:
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
-        # check if file extension changed.
+        # Extract the file extensions of the new and old filename
+        old_extension = os.path.splitext(self.filename)[1].lower()
+        new_extension = os.path.splitext(filename)[1].lower()
 
-        if os.path.splitext(filename)[1] == os.path.splitext(self.filename)[1]:
-            # Do the copy operation
+        # If the file extension did not change, this is a copy operation
+        if old_extension == new_extension:
             shutil.copy(self.filename, filename)
-
-        # if the file extension changed the pdal save function will be called.
         else:
+            # If it changed, we use PDAL to convert LAS <-> LAZ
+            compress = "laszip" if new_extension == ".laz" else "none"
+
             from adaptivefiltering.pdal import execute_pdal_pipeline
 
-            config = [
-                {"type": "readers.las", "filename": self.filename},
-                {"filename": filename, "type": "writers.las", "compression": "laszip"},
-            ]
             execute_pdal_pipeline(
-                config=config,
+                config=[
+                    {"type": "readers.las", "filename": self.filename},
+                    {
+                        "filename": filename,
+                        "type": "writers.las",
+                        "compression": compress,
+                    },
+                ],
             )
 
         # Return a DataSet instance
