@@ -192,6 +192,23 @@ class Filter:
         """
         raise NotImplementedError  # pragma: no cover
 
+    def execute_interactive(self, dataset):
+        """Apply the filter in an interactive setting
+
+        Using this methods allows you to explore the finetuning capabilities
+        of the filter (if it provides any).
+
+        :param dataset:
+            The data set to apply the filter to.
+        :type dataset: adaptivefiltering.DataSet
+        :returns:
+            A filter pipeline copy with the fine tuning configuration baked in.
+        """
+
+        from adaptivefiltering.apps import execute_interactive
+
+        return execute_interactive(dataset)
+
     def _serialize(self):
         """Serialize this filter.
 
