@@ -93,7 +93,8 @@ class DataSet:
 
         :param visualization_type:
             Which visualization to use. Current implemented values are :code:`hillshade` for a
-            greyscale 2D map and :code:`slopemap` for a 2D map color-coded by the slope
+            greyscale 2D map, :code:`slopemap` for a 2D map color-coded by the slope and
+            :code:`blended_hillshade_slope` which allows to blend the former two into each other.
         :type visualization_type: str
         :param classification:
             Which classification values to include into the visualization. By default,
@@ -104,10 +105,18 @@ class DataSet:
             The spatial resolution in meters.
         :type resolution: float
         :param azimuth:
-            The angle in the xy plane where the sun is from [0, 360] (:code:`hillshade` only)
+            The angle in the xy plane where the sun is from [0, 360] (:code:`hillshade` and :code:`blended_hillshade_slope` only)
         :type azimuth: float
         :param angle_altitude:
-            The angle altitude of the sun from [0, 90] (:code:`hillshade` only)
+            The angle altitude of the sun from [0, 90] (:code:`hillshade` and :code:`blended_hillshade_slope` only)
+        :param alg:
+            The hillshade algorithm to use. Can be one of :code:`Horn` and :code:`ZevenbergenThorne`.
+            (:code:`hillshade` and :code:`blended_hillshade_slope` only)
+        :type alg: str
+        :param blending_factor:
+            The blending ratio used between hillshade and slope map from [0, 1].
+            (:code:`blended_hillshade_slope` only)
+        :type blending_factor: float
         """
 
         # This is a bit unfortunate, but we need to separate rasterization options
