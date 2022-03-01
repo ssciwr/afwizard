@@ -30,6 +30,7 @@
       },
       "properties": {
         "class": "A",
+        "id": 1,
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -88,6 +89,7 @@
       },
       "properties": {
         "class": "B",
+        "id": 2,
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -146,6 +148,8 @@
       },
       "properties": {
         "class": "D",
+        "id": 3,
+        "structure": "test",
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -204,6 +208,7 @@
       },
       "properties": {
         "class": "A",
+        "id": 4,
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -262,6 +267,7 @@
       },
       "properties": {
         "class": "D",
+        "id": 5,
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -316,6 +322,7 @@
       },
       "properties": {
         "class": "C",
+        "id": 6,
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -374,6 +381,7 @@
       },
       "properties": {
         "class": "B",
+        "id": 7,
         "style": {
           "attribution": "null",
           "bubblingMouseEvents": "true",
@@ -403,31 +411,34 @@
         "coordinates": [
           [
             [
-              171.698094,
-              -41.794927
-            ],
-            [
-              171.699081,
-              -41.794975
-            ],
-            [
-              171.699076,
-              -41.795447
-            ],
-            [
-              171.698405,
-              -41.795387
-            ],
-            [
-              171.698094,
-              -41.794927
+              [
+                171.698094,
+                -41.794927
+              ],
+              [
+                171.699081,
+                -41.794975
+              ],
+              [
+                171.699076,
+                -41.795447
+              ],
+              [
+                171.698405,
+                -41.795387
+              ],
+              [
+                171.698094,
+                -41.794927
+              ]
             ]
           ]
         ],
-        "type": "Polygon"
+        "type": "MultiPolygon"
       },
       "properties": {
         "class": "D",
+        "id": 8,
         "style": {
           "clickable": "true",
           "color": "black",
