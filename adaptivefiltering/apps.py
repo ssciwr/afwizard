@@ -976,7 +976,9 @@ def select_pipeline_from_library(multiple=False):
             if len(change["new"]) > len(change["old"]):
                 # If so, we display the metadata of the newly selected one
                 (entry,) = set(change["new"]) - set(change["old"])
-                metadata_form.data = filter_list[entry].config["metadata"]
+                metadata_form.data = pyrsistent.thaw(
+                    filter_list[entry].config["metadata"]
+                )
         else:
             metadata_form.data = pyrsistent.thaw(
                 filter_list[change["new"]].config["metadata"]
