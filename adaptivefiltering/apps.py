@@ -233,6 +233,19 @@ def create_variability(batchdata, samples_for_continuous=5, non_persist_only=Tru
     return variants
 
 
+def trivial_tab_titles(tab, template="#{i}"):
+    """Adds trivial titles to a tab
+
+    :param tab:
+        The tab widget to change the titles
+    :type tab: ipywidgets.Tab
+    :param template:
+        A format string to use to generated the title. May use
+        the variable i to reference the tab index.
+    """
+    tab.titles = tuple(template.format(i=str(j)) for j in range(len(tab.children)))
+
+
 # A data structure to store widgets within to quickly navigate back and forth
 # between visualizations in the pipeline_tuning widget.
 PipelineWidgetState = collections.namedtuple(
@@ -308,7 +321,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         nonlocal center
         index = len(center.children)
         center.children = center.children + (image,)
-        center.titles = center.titles + (f"#{index}",)
+        trivial_tab_titles(center)
 
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview", layout=fullwidth)
@@ -322,6 +335,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # The center widget holds the Tab widget to browse history
     center = ipywidgets.Tab(children=[], titles=[])
+    trivial_tab_titles(center)
     center.layout = fullwidth
 
     def _switch_tab(_):
@@ -359,6 +373,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
             # Select the newly added tab
             center.selected_index = len(center.children) - 1
+            trivial_tab_titles(center)
 
     def _update_preview(button):
         with hourglass_icon(button):
@@ -386,6 +401,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
         # This ensures that widgets are updated when this tab is removed
         _switch_tab(None)
+        trivial_tab_titles(center)
 
     def _delete_all(_):
         nonlocal history
@@ -1167,9 +1183,8 @@ def select_best_pipeline(dataset=None, pipelines=None):
 
     # Tabs that contain the interactive execution with all given pipelines
     if len(subwidgets) > 1:
-        tabs = ipywidgets.Tab(
-            children=subwidgets, titles=[f"#{i}" for i in range(len(pipelines))]
-        )
+        tabs = ipywidgets.Tab(children=subwidgets)
+        trivial_tab_titles(tabs)
     elif len(subwidgets) == 1:
         tabs = subwidgets[0]
     else:
