@@ -1,6 +1,6 @@
 from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.paths import load_schema, locate_file
+from adaptivefiltering.paths import load_schema, locate_file, check_file_extension
 from adaptivefiltering.utils import (
     is_iterable,
     convert_segmentation,
@@ -57,6 +57,8 @@ class Segmentation(geojson.FeatureCollection):
             w.r.t. the current working directory.
         :type filename: str
         """
+        filename = check_file_extension(filename, [".geojson"], ".geojson")
+
         with open(filename, "w") as f:
             geojson.dump(self, f)
 

@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, check_file_extension
 from adaptivefiltering.utils import AdaptiveFilteringError, as_number_type
 from adaptivefiltering.versioning import (
     ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION,
@@ -471,6 +471,7 @@ def save_filter(filter_, filename):
         The filename where to write the filter. Relative paths are interpreted
         w.r.t. the current working directory.
     """
+    filename = check_file_extension(filename, [".json"], ".json")
 
     # If the filename is not already absolute, we maybe
     if not os.path.isabs(filename):
