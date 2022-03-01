@@ -393,6 +393,12 @@ def pipeline_tuning(datasets=[], pipeline=None):
                     _trigger_preview(pyrsistent.thaw(config))
 
     def _delete_history_item(_):
+        # If we only have zero or one, this is equivalent to delete all
+        if len(center.children) < 2:
+            _delete_all(_)
+            return
+
+        # Otherwise we remove only this one from the history
         i = center.selected_index
         nonlocal history
         history = history[:i] + history[i + 1 :]
