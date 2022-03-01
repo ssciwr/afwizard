@@ -330,7 +330,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
             pipeline_form.data = item.pipeline
             rasterization_widget_form.data = item.rasterization
             visualization_form_widget.data = item.visualization
-            classification_widget.children = (item.classification,)
+            class_widget.children = (item.classification,)
 
     def _trigger_preview(config=None):
         if config is None:
@@ -369,13 +369,13 @@ def pipeline_tuning(datasets=[], pipeline=None):
                 _trigger_preview()
             else:
                 for variant in create_variability(batchdata):
-                    config = pipeline_form.data
+                    config = pyrsistent.freeze(pipeline_form.data)
 
                     # Modify all the necessary bits
                     for mod in variant:
                         config = update_data(config, mod)
 
-                    _trigger_preview(config)
+                    _trigger_preview(pyrsistent.thaw(config))
 
     def _delete_history_item(_):
         i = center.selected_index
