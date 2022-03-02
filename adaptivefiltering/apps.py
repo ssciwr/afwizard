@@ -630,9 +630,28 @@ def assign_pipeline(dataset, segmentation, pipelines):
     def _update_seg_marker(segmentation):
         # initilizes a new marker
         for feature in segmentation["features"]:
-            feature["properties"]["style"]["color"] = "red"
-            feature["properties"]["style"]["fillOpacity"] = "0"
-
+            feature["properties"]["style"] = {
+                "pane": "overlayPane",
+                "attribution": "null",
+                "bubblingMouseEvents": "true",
+                "fill": "true",
+                "smoothFactor": 1,
+                "noClip": "false",
+                "stroke": "true",
+                "color": "red",
+                "weight": 4,
+                "opacity": 0.3,
+                "lineCap": "round",
+                "lineJoin": "round",
+                "dashArray": "null",
+                "dashOffset": "null",
+                "fillColor": "red",
+                "fillOpacity": 0.0,
+                "fillRule": "evenodd",
+                "interactive": "true",
+                "clickable": "true",
+            }
+            print(feature)
         for layer in map_.map.layers:
             if layer.name == "Current Segmentation":
                 map_.map.remove_layer(layer)
@@ -641,7 +660,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
     def _create_right_side_menu():
         right_side_label = ipywidgets.Label("Assign Pipelines to Segmentations")
-        from adaptivefiltering.utils import split_segmentation_classes
+        from adaptivefiltering.segmentation import split_segmentation_classes
 
         # needed to quickly check if all features have the same keys
 
