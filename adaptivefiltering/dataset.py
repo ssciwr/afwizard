@@ -47,6 +47,7 @@ class DataSet:
         # Store the given parameters
         self.filename = filename
         self.spatial_reference = spatial_reference
+
         # Make the path absolute
         if self.filename is not None:
             self.filename = locate_file(self.filename)
