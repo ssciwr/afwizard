@@ -855,7 +855,7 @@ def apply_restriction(dataset, segmentation=None):
     # If this is interactive, construct the widgets
     controls, map_ = setup_overlay_control(dataset, with_map=True)
     finalize = ipywidgets.Button(description="Finalize")
-    segmentation_proxy = return_proxy(lambda: dataset, [])
+    dataset_proxy = return_proxy(lambda: dataset, [])
 
     map_widget = map_.show()
 
@@ -880,11 +880,11 @@ def apply_restriction(dataset, segmentation=None):
 
     def _finalize_simple(_):
         app.layout.display = "none"
-        segmentation_proxy.__wrapped__ = apply_restriction(map_.return_segmentation())
+        dataset_proxy.__wrapped__ = apply_restriction(map_.return_segmentation())
 
     finalize.on_click(_finalize_simple)
 
-    return segmentation_proxy
+    return dataset_proxy
 
 
 def show_interactive(dataset, filtering_callback=None, update_classification=False):
