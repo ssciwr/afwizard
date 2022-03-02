@@ -240,8 +240,7 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
         except jsonschema.ValidationError:
             shutil.copy(dataset.filename, outFile)
             dataset = OPALSDataManagerObject(
-                filename=outFile,
-                spatial_reference=dataset.spatial_reference,
+                filename=outFile, spatial_reference=dataset.spatial_reference
             )
 
         # Apply variabilility without changing filter

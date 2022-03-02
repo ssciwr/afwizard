@@ -166,8 +166,7 @@ class PDALInMemoryDataSet(DataSet):
 
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
-            pipeline=pipeline,
-            spatial_reference=spatial_reference,
+            pipeline=pipeline, spatial_reference=spatial_reference
         )
 
     def save(self, filename, overwrite=False):
