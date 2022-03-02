@@ -518,7 +518,7 @@ def save_filter(filter_, filename):
         json.dump(serialize_filter(filter_), f)
 
 
-def load_filter(filename=None):
+def load_filter(filename):
     """Load a filter from a file
 
     This function restores filters that were previously saved to disk using the
@@ -529,15 +529,10 @@ def load_filter(filename=None):
         w.r.t. the current working directory.
     :type filename: str
     """
-    if filename is None:
-        from adaptivefiltering.widgets import upload_files
+    # Find the file across all libraries
+    from adaptivefiltering.library import locate_filter
 
-        filename = upload_files("./filters_test_upload/")
-    else:
-        # Find the file across all libraries
-        from adaptivefiltering.library import locate_filter
-
-        filename = locate_filter(filename)
+    filename = locate_filter(filename)
 
     with open(filename, "r") as f:
         return deserialize_filter(json.load(f))

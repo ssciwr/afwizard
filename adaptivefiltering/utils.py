@@ -1,7 +1,6 @@
 import collections
 import copy
 import numpy as np
-from geojson.utils import coords
 import re
 import pyproj
 

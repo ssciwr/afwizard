@@ -1,6 +1,5 @@
-from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.paths import load_schema, locate_file, check_file_extension
+from adaptivefiltering.paths import locate_file, check_file_extension
 from adaptivefiltering.utils import (
     is_iterable,
     convert_segmentation,
@@ -10,7 +9,6 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 
 import base64
 import geojson
-import jsonschema
 import ipyleaflet
 import ipywidgets
 import json
