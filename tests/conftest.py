@@ -110,7 +110,8 @@ def multipolygon_segmentation():
                     },
                 },
             ],
-        }
+        },
+        spatial_reference="EPSG:4326",
     )
 
 
