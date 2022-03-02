@@ -1,5 +1,4 @@
 from adaptivefiltering.segmentation import *
-from adaptivefiltering.utils import convert_segmentation
 
 import geojson
 import os
@@ -59,6 +58,20 @@ def test_convert_segmentation(boundary_segmentation):
         boundary_segmentation["features"][0]["geometry"]["coordinates"]
     )
     assert (test3_coord - test_coord).all() < 1e-10
+
+    mp = geojson.utils.generate_random("Polygon")
+
+    segmentation = Segmentation(
+        [
+            {
+                "type": "Feature",
+                "properties": {"style": {}},
+                "geometry": {"type": "Polygon", "coordinates": mp},
+            },
+        ]
+    )
+    with pytest.raises(AdaptiveFilteringError):
+        test4 = convert_segmentation(segmentation, "EPSG:5243")
 
 
 def test_swap_coordinates_segmentation(multipolygon_segmentation):
@@ -257,5 +270,8 @@ def test_save_load_map_polygons(dataset, boundary_segmentation):
     assert test_map_seg.return_segmentation() == test_map.return_segmentation()
 
 
-def test_show_polygon_from_segmentation(boundary_segmentation):
+def test_show_polygon_from_segmentation(
+    boundary_segmentation, multipolygon_segmentation
+):
     boundary_segmentation.show()
+    # multipolygon_segmentation.show()

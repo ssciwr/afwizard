@@ -2,7 +2,6 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.paths import locate_file, check_file_extension
 from adaptivefiltering.utils import (
     is_iterable,
-    convert_segmentation,
     merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
@@ -16,11 +15,16 @@ import numpy as np
 import collections
 import copy
 from itertools import groupby
+from pyproj import Transformer, crs
 
 
 class Segmentation(geojson.FeatureCollection):
+    def __init__(self, *args, spatial_reference=None, **kwargs):
+        self.spatial_reference = spatial_reference
+        super().__init__(*args, **kwargs)
+
     @classmethod
-    def load(cls, filename=None):
+    def load(cls, filename=None, spatial_reference=None):
         """Load segmentation from a filename
 
         :param filename:
@@ -42,13 +46,19 @@ class Segmentation(geojson.FeatureCollection):
                 file = locate_file(file)
 
                 with open(file, "r") as f:
-                    segmentations.append(Segmentation(geojson.load(f)))
+                    segmentations.append(
+                        Segmentation(
+                            geojson.load(f), spatial_reference=spatial_reference
+                        )
+                    )
             return segmentations
 
         elif isinstance(filename, str):
             filename = locate_file(filename)
             with open(filename, "r") as f:
-                return Segmentation(geojson.load(f))
+                return Segmentation(
+                    geojson.load(f), spatial_reference=spatial_reference
+                )
 
     def save(self, filename):
         """Save the segmentation to disk
@@ -75,7 +85,7 @@ class Segmentation(geojson.FeatureCollection):
         Warning, if members of the same class have different metadata it will not be preserved.
         """
 
-        new_segmentation = Segmentation([])
+        new_segmentation = Segmentation([], self.spatial_reference)
         added_classes = {}
         for feature in self["features"]:
             if keyword in feature["properties"]:
@@ -137,6 +147,75 @@ def get_min_max_values(segmentation):
     return min_max_dict
 
 
+def convert_segmentation(segmentation, srs_out, srs_in=None):
+    """
+    This transforms the segmentation into a new spatial reference system.
+        For this program all segmentations should be in EPSG:4326.
+        :param segmentation:
+            The segmentation that should be transformed
+        :type: adaptivefiltering.segmentation.Segmentation
+
+
+        :param srs_in:
+            Current spatial reference system of the segmentation.
+            Must be either EPSG or wkt.
+        :type: str
+
+        :param srs_out:
+            Desired spatial reference system.
+            Must be either EPSG or wkt.
+            Default: None
+        :type: str
+
+
+
+        :return: Transformed segmentation.
+        :rtype: adaptivefiltering.segmentation.Segmentation
+
+    """
+    # logic for determining crs_in
+
+    if srs_in is None:
+        if segmentation.spatial_reference:
+            srs_in = segmentation.spatial_reference
+        else:
+            raise AdaptiveFilteringError(
+                "No srs was given for Segmentation transformation."
+            )
+
+    # check if transformation is neccesary:
+    if crs.CRS(srs_in) == crs.CRS(srs_out):
+        return segmentation
+
+    new_features = copy.deepcopy(segmentation["features"])
+
+    for feature, new_feature in zip(segmentation["features"], new_features):
+
+        if feature["geometry"]["type"] == "Polygon":
+            feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
+        polygon_list = []
+
+        transformer = Transformer.from_crs(srs_in, srs_out, always_xy=True)
+
+        for polygon in feature["geometry"]["coordinates"]:
+
+            polygon_list.append([])
+            for hole in polygon:
+                hole = np.asarray(hole)
+
+                output_x, output_y = transformer.transform(hole[:, 0], hole[:, 1])
+                polygon_list[-1].append(np.stack([output_x, output_y], axis=1).tolist())
+
+        if feature["geometry"]["type"] == "Polygon":
+            polygon_list = polygon_list[0]
+
+        new_feature["geometry"]["coordinates"] = polygon_list
+
+    out_segmentation = Segmentation(new_features, spatial_reference=srs_out)
+
+    return out_segmentation
+
+
 def swap_coordinates(segmentation):
     """
     Takes a segmentation and swaps the lon and lat coordinates.
@@ -161,7 +240,7 @@ def swap_coordinates(segmentation):
             polygon_list = polygon_list[0]
         new_feature["geometry"]["coordinates"] = polygon_list
 
-    return Segmentation(new_features)
+    return Segmentation(new_features, spatial_reference=segmentation.spatial_reference)
 
 
 def split_segmentation_classes(segmentation):
@@ -170,7 +249,6 @@ def split_segmentation_classes(segmentation):
     These will be structed in a nested dictionary.
     Warning, if members of the same class have different metadata it will not be preserved.
     """
-    from adaptivefiltering.segmentation import Segmentation
 
     def _all_equal(iterable):
         g = groupby(iterable)
@@ -201,7 +279,10 @@ def split_segmentation_classes(segmentation):
             # only use hashable objects as keys
             if isinstance(value, collections.Hashable):
                 split_dict.setdefault(key, {}).setdefault(
-                    value, Segmentation([feature])
+                    value,
+                    Segmentation(
+                        [feature], spatial_reference=segmentation.spatial_reference
+                    ),
                 )["features"].append(feature)
 
     # remove columns with too many entries to avoid slowdown
@@ -302,6 +383,9 @@ class Map:
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
+
+        elif segmentation:
+            self.original_srs = segmentation.spatial_reference
         self.inlude_draw_controle = inlude_draw_controle
 
         self.dataset = dataset  # needed for overlay function.
@@ -396,6 +480,9 @@ class Map:
         """
         # check if segmentation has draw style information.
         segmentation = copy.deepcopy(segmentation)
+
+        segmentation = convert_segmentation(segmentation, "EPSG:4326")
+
         for feature in segmentation["features"]:
             if "style" not in feature["properties"].keys():
                 feature["properties"]["style"] = {
@@ -419,7 +506,6 @@ class Map:
                     "interactive": "true",
                     "clickable": "true",
                 }
-            feature["properties"]["merge_str"] = 1
 
             self.map.add_layer(ipyleaflet.GeoJSON(data=feature, name=name))
 
@@ -437,8 +523,7 @@ class Map:
             ]
 
         else:
-            if isinstance(segmentation, str):
-                segmentation = Segmentation.load(segmentation)
+
             # save current polygon data
             current_data = self.draw_control.data
             # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
@@ -509,17 +594,16 @@ class Map:
                     },
                     "geometry": {"type": "Polygon", "coordinates": hexbin_coord},
                 }
-            ]
+            ],
+            spatial_reference=self.original_srs,
         )
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
         if dataset:
             boundary_segmentation = convert_segmentation(
-                boundary_segmentation, "EPSG:4326", self.original_srs
+                boundary_segmentation, "EPSG:4326"
             )
 
-            # lon and latitude must be switched for the map to work
-            boundary_segmentation = swap_coordinates(boundary_segmentation)
         # add boundary marker
         return boundary_segmentation
 
@@ -558,7 +642,9 @@ class Map:
 
 
         """
-        segmentation = Segmentation(self.draw_control.data)
+        segmentation = Segmentation(
+            self.draw_control.data, spatial_reference="EPSG:4326"
+        )
 
         return segmentation
 
@@ -574,4 +660,4 @@ def load_segmentation(filename, spatial_reference=None):
     """
 
     # TODO: Add spatial_reference here
-    return Segmentation.load(filename)
+    return Segmentation.load(filename, spatial_reference=spatial_reference)

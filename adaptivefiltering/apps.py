@@ -7,11 +7,10 @@ from adaptivefiltering.library import (
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import Map, swap_coordinates
+from adaptivefiltering.segmentation import Map, convert_segmentation
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     merge_segmentation_features,
-    convert_segmentation,
 )
 from adaptivefiltering.widgets import WidgetFormWithLabels
 
@@ -624,8 +623,6 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
     :param segmentation:
         This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
-        If the segmentation is not in EPSG:4326 it must be converted first! See utils.convert_segmentation.
-        It might be necessary to swap the lon and lat coordinates. See  segmentation.swap_coordinates
     :type: adaptivefiltering.segmentation.Segmentation
 
     :param pipelines:
@@ -826,16 +823,7 @@ def apply_restriction(dataset, segmentation=None):
     dataset = as_pdal(dataset)
 
     def apply_restriction(seg):
-        from pyproj import crs
 
-        # "EPSG:4326 specifically states that the coordinate order should be latitude, longitude.
-        # Many software packages still use longitude, latitude ordering.
-        # This situation has wreaked unimaginable havoc on project deadlines and programmer sanity."
-        # https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
-        epsg_4326 = crs.CRS("EPSG:4326")
-        ds_crs = crs.CRS(dataset.spatial_reference)
-        if epsg_4326 != ds_crs:
-            seg = swap_coordinates(seg)
         # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
         seg = convert_segmentation(seg, dataset.spatial_reference)
 
@@ -867,7 +855,7 @@ def apply_restriction(dataset, segmentation=None):
     # If this is interactive, construct the widgets
     controls, map_ = setup_overlay_control(dataset, with_map=True)
     finalize = ipywidgets.Button(description="Finalize")
-    segmentation_proxy = return_proxy(lambda: dataset, [])
+    dataset_proxy = return_proxy(lambda: dataset, [])
 
     map_widget = map_.show()
 
@@ -892,11 +880,11 @@ def apply_restriction(dataset, segmentation=None):
 
     def _finalize_simple(_):
         app.layout.display = "none"
-        segmentation_proxy.__wrapped__ = apply_restriction(map_.return_segmentation())
+        dataset_proxy.__wrapped__ = apply_restriction(map_.return_segmentation())
 
     finalize.on_click(_finalize_simple)
 
-    return segmentation_proxy
+    return dataset_proxy
 
 
 def show_interactive(dataset, filtering_callback=None, update_classification=False):

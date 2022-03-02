@@ -39,18 +39,18 @@ def test_restriction(dataset):
     dataset.restrict()
     coordinates1 = [
         [
-            [-117.284782, -55.581395],
-            [-117.285136, -55.581856],
-            [-117.284235, -55.581862],
-            [-117.284782, -55.581395],
+            [171.696546, -41.794334],
+            [171.697361, -41.795342],
+            [171.697319, -41.794206],
+            [171.696546, -41.794334],
         ]
     ]
     coordinates2 = [
         [
-            [-117.285672, -55.581953],
-            [-117.285597, -55.582462],
-            [-117.28461, -55.582287],
-            [-117.285672, -55.581953],
+            [171.696718, -41.79555],
+            [171.698499, -41.79539],
+            [171.69749, -41.795182],
+            [171.696718, -41.79555],
         ]
     ]
     # Programmatically restrict with an artificial segment
@@ -61,7 +61,8 @@ def test_restriction(dataset):
                 "properties": {"style": {}},
                 "geometry": {"type": "Polygon", "coordinates": coordinates1},
             },
-        ]
+        ],
+        spatial_reference="EPSG:4326",
     )
     restricted = dataset.restrict(segmentation)
     restricted.show()
@@ -80,7 +81,8 @@ def test_restriction(dataset):
                 "properties": {"style": {}},
                 "geometry": {"type": "Polygon", "coordinates": coordinates2},
             },
-        ]
+        ],
+        spatial_reference="EPSG:4326",
     )
     restricted = dataset.restrict(segmentation)
     restricted.show()
