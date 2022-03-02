@@ -1,9 +1,10 @@
 from adaptivefiltering.filter import load_filter, save_filter
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, download_test_file
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
 import collections
+import hashlib
 import glob
 import importlib
 import json
@@ -200,8 +201,38 @@ def locate_filter(filename):
         if os.path.exists(os.path.join(lib.path, filename)):
             return os.path.join(lib.path, filename)
 
+    # Maybe this is a filter shipped as part of our testing data
+    if os.path.exists(download_test_file(filename)):
+        return download_test_file(filename)
+
     # If we have not found it by now, we throw an error
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
+
+
+def locate_filter_by_hash(hash):
+    """Locate a filter across the filter libraries given a metadata hash
+
+    :param hash:
+        The hash that we are looking for.
+    :type hash: str
+    """
+
+    # Collect all matches to throw a meaningful error
+    found = []
+
+    for lib in get_filter_libraries():
+        for f in lib.filters:
+            if hash == hashlib.sha1(repr(f.config["metadata"]).encode()).hexdigest():
+                found.append(f)
+
+    if not found:
+        raise FileNotFoundError(
+            "A filter pipeline for your segmentation could not be located!"
+        )
+    if len(found) > 1:
+        raise AdaptiveFilteringError("Ambiguous pipeline metadata detected!")
+    else:
+        return found[0]
 
 
 def reset_filter_libraries():

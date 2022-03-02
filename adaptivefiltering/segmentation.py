@@ -17,6 +17,7 @@ import json
 import numpy as np
 import collections
 import copy
+from itertools import groupby
 
 
 class Segmentation(geojson.FeatureCollection):
@@ -40,6 +41,8 @@ class Segmentation(geojson.FeatureCollection):
         if is_iterable(filename):
             segmentations = []
             for file in filename:
+                file = locate_file(file)
+
                 with open(file, "r") as f:
                     segmentations.append(Segmentation(geojson.load(f)))
             return segmentations
@@ -68,7 +71,7 @@ class Segmentation(geojson.FeatureCollection):
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
 
-    def merge_classes(self):
+    def merge_classes(self, keyword="class"):
         """
         If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
         Warning, if members of the same class have different metadata it will not be preserved.
@@ -77,10 +80,10 @@ class Segmentation(geojson.FeatureCollection):
         new_segmentation = Segmentation([])
         added_classes = {}
         for feature in self["features"]:
-            if "class" in feature["properties"]:
-                if feature["properties"]["class"] not in added_classes.keys():
+            if keyword in feature["properties"]:
+                if feature["properties"][keyword] not in added_classes.keys():
                     # stores the class label and the index of the new segmentation associated with that class
-                    added_classes[feature["properties"]["class"]] = len(
+                    added_classes[feature["properties"][keyword]] = len(
                         new_segmentation["features"]
                     )
                     new_segmentation["features"].append(feature)
@@ -95,7 +98,7 @@ class Segmentation(geojson.FeatureCollection):
                             new_segmentation["features"][-1]["geometry"]["coordinates"]
                         ]
                 else:
-                    class_index = added_classes[feature["properties"]["class"]]
+                    class_index = added_classes[feature["properties"][keyword]]
                     if feature["geometry"]["type"] == "Polygon":
                         new_segmentation["features"][class_index]["geometry"][
                             "coordinates"
@@ -105,7 +108,6 @@ class Segmentation(geojson.FeatureCollection):
                             new_segmentation["features"][class_index]["geometry"][
                                 "coordinates"
                             ].append(coordinates)
-
         return new_segmentation
 
     @property
@@ -162,6 +164,70 @@ def swap_coordinates(segmentation):
         new_feature["geometry"]["coordinates"] = polygon_list
 
     return Segmentation(new_features)
+
+
+def split_segmentation_classes(segmentation):
+    """
+    If multiple polygons share the same class attribute they will be split into different segmentations.
+    These will be structed in a nested dictionary.
+    Warning, if members of the same class have different metadata it will not be preserved.
+    """
+    from adaptivefiltering.segmentation import Segmentation
+
+    def _all_equal(iterable):
+        g = groupby(iterable)
+        return next(g, True) and not next(g, False)
+
+    keys_list = [
+        list(feature["properties"].keys()) for feature in segmentation["features"]
+    ]
+    # only use keys that are present in all features:
+    if _all_equal(keys_list):
+        property_keys = keys_list[0]
+
+    else:
+        # count occurence of key and compare to number of features.
+        from collections import Counter
+
+        property_keys = []
+        flat_list = [item for sublist in keys_list for item in sublist]
+        for key, value in Counter(flat_list).items():
+            if value == len(segmentation["features"]):
+                property_keys.append(key)
+
+    split_dict = {}
+
+    for feature in segmentation["features"]:
+        for key in property_keys:
+            value = feature["properties"][key]
+            # only use hashable objects as keys
+            if isinstance(value, collections.Hashable):
+                split_dict.setdefault(key, {}).setdefault(
+                    value, Segmentation([feature])
+                )["features"].append(feature)
+
+    # remove columns with too many entries to avoid slowdown
+
+    keys_to_remove = []
+    for key in split_dict.keys():
+        if len(split_dict[key]) > 20:
+            keys_to_remove.append(key)
+
+    for key in keys_to_remove:
+        _ = split_dict.pop(key)
+
+    if len(split_dict.keys()) == 0:
+        raise AdaptiveFilteringError(
+            "No suitable property key was found. "
+            + "Please make sure there are classification properties present and that at least one of them has less than 20 categories."
+        )
+
+    # sort the values to also sort the dropdown menus later.
+    for key in split_dict.keys():
+
+        split_dict[key] = dict(sorted(split_dict[key].items()))
+
+    return split_dict
 
 
 class Map:
@@ -330,33 +396,34 @@ class Map:
             A segmentation object which is to be loaded.
         :type segmentation: Segmentation
         """
-
         # check if segmentation has draw style information.
+        segmentation = copy.deepcopy(segmentation)
+        for feature in segmentation["features"]:
+            if "style" not in feature["properties"].keys():
+                feature["properties"]["style"] = {
+                    "pane": "overlayPane",
+                    "attribution": "null",
+                    "bubblingMouseEvents": "true",
+                    "fill": "true",
+                    "smoothFactor": 1,
+                    "noClip": "false",
+                    "stroke": "true",
+                    "color": "black",
+                    "weight": 4,
+                    "opacity": 0.5,
+                    "lineCap": "round",
+                    "lineJoin": "round",
+                    "dashArray": "null",
+                    "dashOffset": "null",
+                    "fillColor": "black",
+                    "fillOpacity": 0.1,
+                    "fillRule": "evenodd",
+                    "interactive": "true",
+                    "clickable": "true",
+                }
+            feature["properties"]["merge_str"] = 1
 
-        if "style" not in segmentation["properties"].keys():
-            segmentation["properties"]["style"] = {
-                "pane": "overlayPane",
-                "attribution": "null",
-                "bubblingMouseEvents": "true",
-                "fill": "true",
-                "smoothFactor": 1,
-                "noClip": "false",
-                "stroke": "true",
-                "color": "black",
-                "weight": 4,
-                "opacity": 0.5,
-                "lineCap": "round",
-                "lineJoin": "round",
-                "dashArray": "null",
-                "dashOffset": "null",
-                "fillColor": "black",
-                "fillOpacity": 0.1,
-                "fillRule": "evenodd",
-                "interactive": "true",
-                "clickable": "true",
-            }
-
-        self.map.add_layer(ipyleaflet.GeoJSON(data=segmentation, name=name))
+            self.map.add_layer(ipyleaflet.GeoJSON(data=feature, name=name))
 
     def load_segmentation(self, segmentation, override=False):
         """Imports a segmentation object into the draw control data
@@ -496,3 +563,17 @@ class Map:
         segmentation = Segmentation(self.draw_control.data)
 
         return segmentation
+
+
+def load_segmentation(filename, spatial_reference=None):
+    """Load a GeoJSON segmentation from a file
+
+    :param filename:
+        The filename to load the GeoJSON file from.
+    :type filename: str
+    :param spatial_reference:
+        The WKT or EPSG code of the segmentation file.
+    """
+
+    # TODO: Add spatial_reference here
+    return Segmentation.load(filename)
