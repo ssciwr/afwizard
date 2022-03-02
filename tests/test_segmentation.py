@@ -274,4 +274,4 @@ def test_show_polygon_from_segmentation(
     boundary_segmentation, multipolygon_segmentation
 ):
     boundary_segmentation.show()
-    multipolygon_segmentation.show()
+    # multipolygon_segmentation.show()
