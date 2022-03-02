@@ -126,3 +126,65 @@ def as_number_type(type_, value):
         return float(value)
     else:
         raise NotImplementedError(f"as_number_type does not support type {type_}")
+
+
+def split_segmentation_classes(segmentation):
+    """
+    If multiple polygons share the same class attribute they will be split into different segmentations.
+    These will be structed in a nested dictionary.
+    Warning, if members of the same class have different metadata it will not be preserved.
+    """
+    from adaptivefiltering.segmentation import Segmentation
+
+    from itertools import groupby
+    import collections
+
+    def _all_equal(iterable):
+        g = groupby(iterable)
+        return next(g, True) and not next(g, False)
+
+    keys_list = [
+        list(feature["properties"].keys()) for feature in segmentation["features"]
+    ]
+    # only use keys that are present in all features:
+    if _all_equal(keys_list):
+        property_keys = keys_list[0]
+
+    else:
+        # count occurence of key and compare to number of features.
+        from collections import Counter
+
+        property_keys = []
+        flat_list = [item for sublist in keys_list for item in sublist]
+        for key, value in Counter(flat_list).items():
+            if value == len(segmentation["features"]):
+                property_keys.append(key)
+
+    split_dict = {}
+
+    for feature in segmentation["features"]:
+        for key in property_keys:
+            value = feature["properties"][key]
+            # only use hashable objects as keys
+            if isinstance(value, collections.Hashable):
+                split_dict.setdefault(key, {}).setdefault(
+                    value, Segmentation([feature])
+                )["features"].append(feature)
+
+    # remove columns with too many entries to avoid slowdown
+
+    keys_to_remove = []
+    for key in split_dict.keys():
+        if len(split_dict[key]) > 20:
+            keys_to_remove.append(key)
+
+    for key in keys_to_remove:
+        _ = split_dict.pop(key)
+
+    if len(split_dict.keys()) == 0:
+        raise AdaptiveFilteringError(
+            "No suitable property key was found. "
+            + "Please make sure there are classification properties present and that at least one of them has less than 20 categories."
+        )
+
+    return split_dict

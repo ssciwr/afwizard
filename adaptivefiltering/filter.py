@@ -192,6 +192,23 @@ class Filter:
         """
         raise NotImplementedError  # pragma: no cover
 
+    def execute_interactive(self, dataset):
+        """Apply the filter in an interactive setting
+
+        Using this methods allows you to explore the finetuning capabilities
+        of the filter (if it provides any).
+
+        :param dataset:
+            The data set to apply the filter to.
+        :type dataset: adaptivefiltering.DataSet
+        :returns:
+            A filter pipeline copy with the fine tuning configuration baked in.
+        """
+
+        from adaptivefiltering.apps import execute_interactive
+
+        return execute_interactive(dataset, self)
+
     def _serialize(self):
         """Serialize this filter.
 
@@ -274,6 +291,7 @@ class Filter:
             pyrsistent.thaw(self.form_schema()),
             vertically_place_labels=True,
             preconstruct_array_items=1,
+            nobatch_keys=["metadata"],
         )
         form.data = pyrsistent.thaw(self.config)
         return form

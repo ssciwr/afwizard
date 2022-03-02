@@ -233,6 +233,19 @@ def create_variability(batchdata, samples_for_continuous=5, non_persist_only=Tru
     return variants
 
 
+def trivial_tab_titles(tab, template="#{i}"):
+    """Adds trivial titles to a tab
+
+    :param tab:
+        The tab widget to change the titles
+    :type tab: ipywidgets.Tab
+    :param template:
+        A format string to use to generated the title. May use
+        the variable i to reference the tab index.
+    """
+    tab.titles = tuple(template.format(i=str(j)) for j in range(len(tab.children)))
+
+
 # A data structure to store widgets within to quickly navigate back and forth
 # between visualizations in the pipeline_tuning widget.
 PipelineWidgetState = collections.namedtuple(
@@ -308,7 +321,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
         nonlocal center
         index = len(center.children)
         center.children = center.children + (image,)
-        center.titles = center.titles + (f"#{index}",)
+        trivial_tab_titles(center)
 
     # Configure control buttons
     preview = ipywidgets.Button(description="Preview", layout=fullwidth)
@@ -322,6 +335,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # The center widget holds the Tab widget to browse history
     center = ipywidgets.Tab(children=[], titles=[])
+    trivial_tab_titles(center)
     center.layout = fullwidth
 
     def _switch_tab(_):
@@ -359,6 +373,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
             # Select the newly added tab
             center.selected_index = len(center.children) - 1
+            trivial_tab_titles(center)
 
     def _update_preview(button):
         with hourglass_icon(button):
@@ -378,6 +393,12 @@ def pipeline_tuning(datasets=[], pipeline=None):
                     _trigger_preview(pyrsistent.thaw(config))
 
     def _delete_history_item(_):
+        # If we only have zero or one, this is equivalent to delete all
+        if len(center.children) < 2:
+            _delete_all(_)
+            return
+
+        # Otherwise we remove only this one from the history
         i = center.selected_index
         nonlocal history
         history = history[:i] + history[i + 1 :]
@@ -386,6 +407,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
         # This ensures that widgets are updated when this tab is removed
         _switch_tab(None)
+        trivial_tab_titles(center)
 
     def _delete_all(_):
         nonlocal history
@@ -601,80 +623,120 @@ def assign_pipeline(dataset, segmentation, pipelines):
     """
 
     # passes the segment to the _update_seg_pin function
-    def on_button_clicked(b, layer_data=None):
-        return _update_seg_marker(layer_data)
+    def on_button_clicked(b, segmentation=None):
+        return _update_seg_marker(segmentation)
 
     # holds a segmentation and calculates
-    def _update_seg_marker(layer_data):
+    def _update_seg_marker(segmentation):
         # initilizes a new marker
-        layer_data.properties["style"]["color"] = "red"
-        layer_data.properties["style"]["fillOpacity"] = "0"
+        for feature in segmentation["features"]:
+            feature["properties"]["style"]["color"] = "red"
+            feature["properties"]["style"]["fillOpacity"] = "0"
 
         for layer in map_.map.layers:
             if layer.name == "Current Segmentation":
                 map_.map.remove_layer(layer)
 
-        map_.load_geojson(layer_data, "Current Segmentation")
+        map_.load_geojson(segmentation, "Current Segmentation")
 
     def _create_right_side_menu():
         right_side_label = ipywidgets.Label("Assign Pipelines to Segmentations")
+        from adaptivefiltering.utils import split_segmentation_classes
 
+        # needed to quickly check if all features have the same keys
+
+        split_segmentation = split_segmentation_classes(segmentation)
+
+        feature_properties_options = [
+            (keys, keys) for keys in split_segmentation.keys()
+        ]
+        feature_dropdown = ipywidgets.Dropdown(
+            options=feature_properties_options,
+            layout=fullwidth,
+        )
+
+        right_side = ipywidgets.VBox(
+            [
+                feature_dropdown,
+                right_side_label,
+            ]
+        )
+        box_dict = _create_segmentation_pipeline_assignments(split_segmentation)
+
+        return right_side, box_dict, feature_dropdown
+
+    def _create_segmentation_pipeline_assignments(split_segmentation):
         # pipeline author has to be replaced with the storage location
-
         # the no pipeline option ensures, that the user picks one pipeline.
         dropdown_options = [("no Pipeline", "")] + [
             (pipeline.title, pipeline.author) for pipeline in pipelines
         ]
-        # used for assigning dropdown_values to the segmentation_proxy
-        dropdown_list = []
-        right_side = ipywidgets.VBox(
-            [
-                right_side_label,
-            ]
-        )
+        # This dict saves the different VBoxes as well as the corresponding dropdown values
+        box_dict = {}
 
-        # for every new feature we ccreate alocation button, a nametag and a dropdown menu with all pipeline options.
-        for i, feature in enumerate(segmentation["features"]):
+        # iterate over all different properties:
+        for key in split_segmentation.keys():
+            box_dict.setdefault("VBox", {}).setdefault(key, ipywidgets.VBox())
+            box_dict.setdefault("DropDown", {}).setdefault(key, {})
 
-            label = ipywidgets.Label(
-                f"Segmentation {i}",
-                layout=ipywidgets.Layout(width="80%"),
-            )
-            map_.load_geojson(feature, label.value)
-            last_layer = map_.map.layers[-1]
-            button = ipywidgets.Button(
-                icon="fa-location-dot", layout=ipywidgets.Layout(width="20%")
-            )
-            button.on_click(
-                functools.partial(on_button_clicked, layer_data=last_layer.data)
-            )
+            # for every new feature we ccreate alocation button, a nametag and a dropdown menu with all pipeline options.
+            for i, (value, segment) in enumerate(split_segmentation[key].items()):
 
-            new_dropdown = ipywidgets.Dropdown(
-                options=dropdown_options,
-                layout=fullwidth,
-            )
-            dropdown_list.append(new_dropdown)
-            box = ipywidgets.VBox(
-                children=[ipywidgets.HBox(children=[label, button]), new_dropdown]
-            )
+                label = ipywidgets.Label(
+                    f"{key}: {value}",
+                    layout=ipywidgets.Layout(width="80%"),
+                )
+                # used to hightlight the selected segmentation
+                button = ipywidgets.Button(
+                    icon="map-marker-alt", layout=ipywidgets.Layout(width="20%")
+                )
+                button.on_click(
+                    functools.partial(on_button_clicked, segmentation=segment)
+                )
 
-            right_side.children = right_side.children + (box,)
-        return right_side, dropdown_list
+                # used to assign a pipeline to a segmentation
+                new_dropdown = ipywidgets.Dropdown(
+                    options=dropdown_options,
+                    layout=fullwidth,
+                )
+                box_dict["DropDown"][key][value] = new_dropdown
+
+                box = ipywidgets.VBox(
+                    children=[ipywidgets.HBox(children=[label, button]), new_dropdown]
+                )
+
+                box_dict["VBox"][key].children = box_dict["VBox"][key].children + (box,)
+
+        return box_dict
 
     def _assign_pipelines():
-        assigned_segmentation = copy.deepcopy(segmentation)
 
-        for i, (feature, dropdown_widget) in enumerate(
-            zip(assigned_segmentation["features"], dropdown_list)
-        ):
-            feature["properties"]["pipeline"] = dropdown_widget.value
+        # searches through the segmentation for the currently assigned property and adds all selcted pipeline values.
+        assigned_segmentation = copy.deepcopy(segmentation)
+        for feature in assigned_segmentation["features"]:
+            for value, dropdown_widget in box_dict["DropDown"][
+                feature_dropdown.value
+            ].items():
+
+                if value == feature["properties"][feature_dropdown.value]:
+                    feature["properties"]["pipeline"] = dropdown_widget.value
         return assigned_segmentation
+
+    def _update_assignment_widget(c):
+        # switch between different properties
+        if len(right_side.children) >= 3:
+            right_side.children = right_side.children[:2]
+        right_side.children = right_side.children + (
+            box_dict["VBox"][feature_dropdown.value],
+        )
 
     dataset = PDALInMemoryDataSet.convert(dataset)
 
     controls, map_ = setup_overlay_control(
         dataset, with_map=True, inlude_draw_controle=False
     )
+    map_.load_geojson(segmentation, "Segmentation")
+
     map_widget = map_.show()
     map_widget.layout = fullwidth
 
@@ -682,7 +744,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
     finalize.layout = fullwidth
 
     # Create the overall app layout
-    right_side, dropdown_list = _create_right_side_menu()
+    right_side, box_dict, feature_dropdown = _create_right_side_menu()
 
     # Add finalize to the controls widgets
     controls.children = (finalize,) + controls.children
@@ -695,7 +757,18 @@ def assign_pipeline(dataset, segmentation, pipelines):
         footer=None,
         pane_widths=[1, 3, 1],
     )
-    segmentation_proxy = return_proxy(lambda: _assign_pipelines(), dropdown_list)
+
+    feature_dropdown.observe(_update_assignment_widget)
+    _update_assignment_widget(0)
+
+    # get all dropdown_menus into a list
+    all_dropdowns = [
+        list(dropdown_list.values()) for dropdown_list in box_dict["DropDown"].values()
+    ]
+    all_dropdowns = [item for sublist in all_dropdowns for item in sublist]
+    segmentation_proxy = return_proxy(
+        lambda: _assign_pipelines(), [feature_dropdown] + all_dropdowns
+    )
     IPython.display.display(app)
 
     def _finalize_simple(_):
@@ -1167,9 +1240,8 @@ def select_best_pipeline(dataset=None, pipelines=None):
 
     # Tabs that contain the interactive execution with all given pipelines
     if len(subwidgets) > 1:
-        tabs = ipywidgets.Tab(
-            children=subwidgets, titles=[f"#{i}" for i in range(len(pipelines))]
-        )
+        tabs = ipywidgets.Tab(children=subwidgets)
+        trivial_tab_titles(tabs)
     elif len(subwidgets) == 1:
         tabs = subwidgets[0]
     else:

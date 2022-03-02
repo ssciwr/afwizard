@@ -73,7 +73,7 @@ class Segmentation(geojson.FeatureCollection):
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
 
-    def merge_classes(self):
+    def merge_classes(self, keyword="class"):
         """
         If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
         Warning, if members of the same class have different metadata it will not be preserved.
@@ -82,10 +82,11 @@ class Segmentation(geojson.FeatureCollection):
         new_segmentation = Segmentation([])
         added_classes = {}
         for feature in self["features"]:
-            if "class" in feature["properties"]:
-                if feature["properties"]["class"] not in added_classes.keys():
+            print(feature)
+            if keyword in feature["properties"]:
+                if feature["properties"][keyword] not in added_classes.keys():
                     # stores the class label and the index of the new segmentation associated with that class
-                    added_classes[feature["properties"]["class"]] = len(
+                    added_classes[feature["properties"][keyword]] = len(
                         new_segmentation["features"]
                     )
                     new_segmentation["features"].append(feature)
@@ -100,7 +101,7 @@ class Segmentation(geojson.FeatureCollection):
                             new_segmentation["features"][-1]["geometry"]["coordinates"]
                         ]
                 else:
-                    class_index = added_classes[feature["properties"]["class"]]
+                    class_index = added_classes[feature["properties"][keyword]]
                     if feature["geometry"]["type"] == "Polygon":
                         new_segmentation["features"][class_index]["geometry"][
                             "coordinates"
@@ -110,7 +111,6 @@ class Segmentation(geojson.FeatureCollection):
                             new_segmentation["features"][class_index]["geometry"][
                                 "coordinates"
                             ].append(coordinates)
-
         return new_segmentation
 
     @property
@@ -335,33 +335,34 @@ class Map:
             A segmentation object which is to be loaded.
         :type segmentation: Segmentation
         """
-
         # check if segmentation has draw style information.
+        segmentation = copy.deepcopy(segmentation)
+        for feature in segmentation["features"]:
+            if "style" not in feature["properties"].keys():
+                segmentation["properties"]["style"] = {
+                    "pane": "overlayPane",
+                    "attribution": "null",
+                    "bubblingMouseEvents": "true",
+                    "fill": "true",
+                    "smoothFactor": 1,
+                    "noClip": "false",
+                    "stroke": "true",
+                    "color": "black",
+                    "weight": 4,
+                    "opacity": 0.5,
+                    "lineCap": "round",
+                    "lineJoin": "round",
+                    "dashArray": "null",
+                    "dashOffset": "null",
+                    "fillColor": "black",
+                    "fillOpacity": 0.1,
+                    "fillRule": "evenodd",
+                    "interactive": "true",
+                    "clickable": "true",
+                }
+            feature["properties"]["merge_str"] = 1
 
-        if "style" not in segmentation["properties"].keys():
-            segmentation["properties"]["style"] = {
-                "pane": "overlayPane",
-                "attribution": "null",
-                "bubblingMouseEvents": "true",
-                "fill": "true",
-                "smoothFactor": 1,
-                "noClip": "false",
-                "stroke": "true",
-                "color": "black",
-                "weight": 4,
-                "opacity": 0.5,
-                "lineCap": "round",
-                "lineJoin": "round",
-                "dashArray": "null",
-                "dashOffset": "null",
-                "fillColor": "black",
-                "fillOpacity": 0.1,
-                "fillRule": "evenodd",
-                "interactive": "true",
-                "clickable": "true",
-            }
-
-        self.map.add_layer(ipyleaflet.GeoJSON(data=segmentation, name=name))
+            self.map.add_layer(ipyleaflet.GeoJSON(data=feature, name=name))
 
     def load_segmentation(self, segmentation, override=False):
         """Imports a segmentation object into the draw control data

@@ -107,6 +107,9 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
         package_path, _ = os.path.split(mod.__file__)
         return add_filter_library(path=package_path, recursive=recursive, name=name)
 
+    # Always make the library path absolute
+    path = os.path.abspath(path)
+
     # Look for a library metadata file
     metadata = {}
     if os.path.exists(os.path.join(path, "library.json")):
@@ -187,13 +190,8 @@ def locate_filter(filename):
 
     # Find the file across all libraries
     for lib in get_filter_libraries():
-        for fn in glob.glob(os.path.join(lib.path, "*.json"), recursive=lib.recursive):
-            # If this is the library meta file, skip it
-            if os.path.split(fn)[1] == "library.json":
-                continue
-
-            if os.path.exists(fn):
-                return fn
+        if os.path.exists(os.path.join(lib.path, filename)):
+            return os.path.join(lib.path, filename)
 
     # If we have not found it by now, we throw an error
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
