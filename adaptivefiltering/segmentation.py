@@ -15,7 +15,7 @@ import numpy as np
 import collections
 import copy
 from itertools import groupby
-from pyproj import Transformer
+from pyproj import Transformer, crs
 
 
 class Segmentation(geojson.FeatureCollection):
@@ -173,7 +173,6 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         :rtype: adaptivefiltering.segmentation.Segmentation
 
     """
-
     # logic for determining crs_in
 
     if srs_in is None:
@@ -184,11 +183,9 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
                 "No srs was given for Segmentation transformation."
             )
 
-    # check if coordinates need to be swapped:
-    # "EPSG:4326 specifically states that the coordinate order should be latitude, longitude.
-    # Many software packages still use longitude, latitude ordering.
-    # This situation has wreaked unimaginable havoc on project deadlines and programmer sanity."
-    # https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
+    # check if transformation is neccesary:
+    if crs.CRS(srs_in) == crs.CRS(srs_out):
+        return segmentation
 
     new_features = copy.deepcopy(segmentation["features"])
 
@@ -197,8 +194,6 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         if feature["geometry"]["type"] == "Polygon":
             feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
         polygon_list = []
-        print(srs_out)
-        print(srs_in)
 
         transformer = Transformer.from_crs(srs_in, srs_out, always_xy=True)
 
@@ -285,7 +280,10 @@ def split_segmentation_classes(segmentation):
             # only use hashable objects as keys
             if isinstance(value, collections.Hashable):
                 split_dict.setdefault(key, {}).setdefault(
-                    value, Segmentation([feature])
+                    value,
+                    Segmentation(
+                        [feature], spatial_reference=segmentation.spatial_reference
+                    ),
                 )["features"].append(feature)
 
     # remove columns with too many entries to avoid slowdown
@@ -480,6 +478,9 @@ class Map:
         """
         # check if segmentation has draw style information.
         segmentation = copy.deepcopy(segmentation)
+
+        segmentation = convert_segmentation(segmentation, "EPSG:4326")
+
         for feature in segmentation["features"]:
             if "style" not in feature["properties"].keys():
                 feature["properties"]["style"] = {
@@ -503,7 +504,6 @@ class Map:
                     "interactive": "true",
                     "clickable": "true",
                 }
-            feature["properties"]["merge_str"] = 1
 
             self.map.add_layer(ipyleaflet.GeoJSON(data=feature, name=name))
 
