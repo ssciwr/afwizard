@@ -85,7 +85,7 @@ class Segmentation(geojson.FeatureCollection):
         Warning, if members of the same class have different metadata it will not be preserved.
         """
 
-        new_segmentation = Segmentation([])
+        new_segmentation = Segmentation([], self.spatial_reference)
         added_classes = {}
         for feature in self["features"]:
             if keyword in feature["properties"]:
@@ -240,7 +240,7 @@ def swap_coordinates(segmentation):
             polygon_list = polygon_list[0]
         new_feature["geometry"]["coordinates"] = polygon_list
 
-    return Segmentation(new_features)
+    return Segmentation(new_features, spatial_reference=segmentation.spatial_reference)
 
 
 def split_segmentation_classes(segmentation):
@@ -249,7 +249,6 @@ def split_segmentation_classes(segmentation):
     These will be structed in a nested dictionary.
     Warning, if members of the same class have different metadata it will not be preserved.
     """
-    from adaptivefiltering.segmentation import Segmentation
 
     def _all_equal(iterable):
         g = groupby(iterable)
@@ -521,8 +520,7 @@ class Map:
             ]
 
         else:
-            if isinstance(segmentation, str):
-                segmentation = Segmentation.load(segmentation)
+
             # save current polygon data
             current_data = self.draw_control.data
             # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
@@ -659,4 +657,4 @@ def load_segmentation(filename, spatial_reference=None):
     """
 
     # TODO: Add spatial_reference here
-    return Segmentation.load(filename)
+    return Segmentation.load(filename, spatial_reference=spatial_reference)
