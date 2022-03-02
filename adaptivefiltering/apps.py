@@ -20,6 +20,7 @@ from osgeo import ogr
 import collections
 import contextlib
 import copy
+import hashlib
 import ipywidgets
 import ipywidgets_jsonschema
 import IPython
@@ -684,7 +685,11 @@ def assign_pipeline(dataset, segmentation, pipelines):
         # pipeline author has to be replaced with the storage location
         # the no pipeline option ensures, that the user picks one pipeline.
         dropdown_options = [("no Pipeline", "")] + [
-            (pipeline.title, pipeline.author) for pipeline in pipelines
+            (
+                pipeline.title,
+                hashlib.sha1(repr(pipeline.config["metadata"]).encode()).hexdigest(),
+            )
+            for pipeline in pipelines
         ]
         # This dict saves the different VBoxes as well as the corresponding dropdown values
         box_dict = {}

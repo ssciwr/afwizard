@@ -4,6 +4,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
 import collections
+import hashlib
 import glob
 import importlib
 import json
@@ -199,6 +200,23 @@ def locate_filter(filename):
 
     # If we have not found it by now, we throw an error
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
+
+
+def locate_filter_by_hash(hash):
+    """Locate a filter across the filter libraries given a metadata hash
+
+    :param hash:
+        The hash that we are looking for.
+    :type hash: str
+    """
+    for lib in get_filter_libraries():
+        for f in lib.filters:
+            if hash == hashlib.sha1(repr(f.config["metadata"]).encode()).hexdigest():
+                return f
+
+    raise FileNotFoundError(
+        "A filter pipeline for your segmentation could not be located!"
+    )
 
 
 def reset_filter_libraries():
