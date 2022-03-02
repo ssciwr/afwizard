@@ -383,6 +383,9 @@ class Map:
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
+
+        elif segmentation:
+            self.original_srs = segmentation.spatial_reference
         self.inlude_draw_controle = inlude_draw_controle
 
         self.dataset = dataset  # needed for overlay function.
