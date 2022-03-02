@@ -209,14 +209,23 @@ def locate_filter_by_hash(hash):
         The hash that we are looking for.
     :type hash: str
     """
+
+    # Collect all matches to throw a meaningful error
+    found = []
+
     for lib in get_filter_libraries():
         for f in lib.filters:
             if hash == hashlib.sha1(repr(f.config["metadata"]).encode()).hexdigest():
-                return f
+                found.append(f)
 
-    raise FileNotFoundError(
-        "A filter pipeline for your segmentation could not be located!"
-    )
+    if not found:
+        raise FileNotFoundError(
+            "A filter pipeline for your segmentation could not be located!"
+        )
+    if len(found) > 1:
+        raise AdaptiveFilteringError("Ambiguous pipeline metadata detected!")
+    else:
+        return found[0]
 
 
 def reset_filter_libraries():

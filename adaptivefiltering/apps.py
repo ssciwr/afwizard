@@ -687,7 +687,9 @@ def assign_pipeline(dataset, segmentation, pipelines):
         dropdown_options = [("no Pipeline", "")] + [
             (
                 pipeline.title,
-                hashlib.sha1(repr(pipeline.config["metadata"]).encode()).hexdigest(),
+                hashlib.sha1(
+                    repr(pipeline.config.get("metadata", {})).encode()
+                ).hexdigest(),
             )
             for pipeline in pipelines
         ]
