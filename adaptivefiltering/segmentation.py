@@ -566,3 +566,17 @@ class Map:
         segmentation = Segmentation(self.draw_control.data)
 
         return segmentation
+
+
+def load_segmentation(filename, spatial_reference=None):
+    """Load a GeoJSON segmentation from a file
+
+    :param filename:
+        The filename to load the GeoJSON file from.
+    :type filename: str
+    :param spatial_reference:
+        The WKT or EPSG code of the segmentation file.
+    """
+
+    # TODO: Add spatial_reference here
+    return Segmentation.load(filename)
