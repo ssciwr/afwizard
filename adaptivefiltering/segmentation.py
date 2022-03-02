@@ -325,17 +325,6 @@ def split_segmentation_classes(segmentation):
 
         split_dict[key] = dict(sorted(split_dict[key].items()))
 
-    for key in split_dict.keys():
-        for value in split_dict[key].keys():
-            print(
-                key,
-                value,
-                [
-                    feature["properties"]
-                    for feature in split_dict[key][value]["features"]
-                ],
-            )
-
     return split_dict
 
 
