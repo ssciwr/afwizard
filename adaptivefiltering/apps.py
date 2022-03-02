@@ -7,7 +7,7 @@ from adaptivefiltering.library import (
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import Map, Segmentation, swap_coordinates
+from adaptivefiltering.segmentation import Map, swap_coordinates
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     merge_segmentation_features,
@@ -897,41 +897,6 @@ def apply_restriction(dataset, segmentation=None):
     finalize.on_click(_finalize_simple)
 
     return segmentation_proxy
-
-
-def create_upload(filetype, finalization_hook=lambda x: x):
-    """Create a Jupyter UI snippet that allows a user to upload a file
-
-    :param filetype:
-        The file extension to expect for the upload.
-    :type filetype: str
-    """
-
-    confirm_button = ipywidgets.Button(
-        description="Confirm upload",
-        disabled=False,
-        button_style="",  # 'success', 'info', 'warning', 'danger' or ''
-        tooltip="Confirm upload",
-        icon="check",  # (FontAwesome names without the `fa-` prefix)
-    )
-    upload = ipywidgets.FileUpload(
-        accept=filetype,  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
-        multiple=True,  # True to accept multiple files upload else False
-    )
-
-    layout = ipywidgets.Layout(width="100%")
-    confirm_button.layout = layout
-    upload.layout = layout
-    app = ipywidgets.VBox([upload, confirm_button])
-    IPython.display.display(app)
-    upload_proxy = return_proxy(lambda: upload, [upload])
-
-    def _finalize(_):
-        app.layout.display = "none"
-        upload_proxy.__wrapped__ = finalization_hook(upload_proxy.__wrapped__)
-
-    confirm_button.on_click(_finalize)
-    return upload_proxy
 
 
 def show_interactive(dataset, filtering_callback=None, update_classification=False):
