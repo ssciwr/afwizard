@@ -239,7 +239,9 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
         except jsonschema.ValidationError:
             shutil.copy(dataset.filename, outFile)
             dataset = OPALSDataManagerObject(
-                filename=outFile, spatial_reference=dataset.spatial_reference
+                filename=outFile,
+                spatial_reference=dataset.spatial_reference,
+                inverse_coordinate=dataset.inverse_coordinate,
             )
 
         # Apply variabilility without changing filter
@@ -251,6 +253,7 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
         return OPALSDataManagerObject(
             filename=outFile,
             spatial_reference=dataset.spatial_reference,
+            inverse_coordinate=dataset.inverse_coordinate,
         )
 
     @classmethod
@@ -314,6 +317,7 @@ class OPALSDataManagerObject(DataSet):
         return OPALSDataManagerObject(
             filename=dm_filename,
             spatial_reference=dataset.spatial_reference,
+            inverse_coordinate=dataset.inverse_coordinate,
         )
 
     def save(self, filename, compress=False, overwrite=False):
@@ -350,4 +354,5 @@ class OPALSDataManagerObject(DataSet):
         return DataSet(
             filename=filename,
             spatial_reference=self.spatial_reference,
+            inverse_coordinate=self.inverse_coordinate,
         )

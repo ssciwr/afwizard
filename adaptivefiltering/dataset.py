@@ -21,7 +21,7 @@ import shutil
 
 
 class DataSet:
-    def __init__(self, filename=None, spatial_reference=None):
+    def __init__(self, filename=None, spatial_reference=None, inverse_coordinate=False):
         """The main class that represents a Lidar data set.
 
         The DataSet class performs lazy loading - instantiating an object of this type
@@ -47,7 +47,7 @@ class DataSet:
         # Store the given parameters
         self.filename = filename
         self.spatial_reference = spatial_reference
-
+        self.inverse_coordinate = inverse_coordinate
         # Make the path absolute
         if self.filename is not None:
             self.filename = locate_file(self.filename)
@@ -195,6 +195,7 @@ class DataSet:
         return DataSet(
             filename=filename,
             spatial_reference=self.spatial_reference,
+            inverse_coordinate=self.inverse_coordinate,
         )
 
     def restrict(self, segmentation=None):
@@ -414,6 +415,7 @@ def remove_classification(dataset):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=dataset.spatial_reference,
+        inverse_coordinate=dataset.inverse_cordinate,
     )
 
 
@@ -450,4 +452,5 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     return PDALInMemoryDataSet(
         pipeline=pipeline,
         spatial_reference=spatial_reference,
+        inverse_coordinate=dataset.inverse_coordinate,
     )

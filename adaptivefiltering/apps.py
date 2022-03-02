@@ -835,6 +835,7 @@ def apply_restriction(dataset, segmentation=None):
         return PDALInMemoryDataSet(
             pipeline=newdata,
             spatial_reference=dataset.spatial_reference,
+            inverse_coordinate=dataset.inverse_coordinate,
         )
 
     # Maybe this is not meant to be interactive

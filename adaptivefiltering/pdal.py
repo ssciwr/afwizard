@@ -112,7 +112,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, spatial_reference=None):
+    def __init__(self, pipeline=None, spatial_reference=None, inverse_coordinate=False):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -124,6 +124,7 @@ class PDALInMemoryDataSet(DataSet):
         self.pipeline = pipeline
         super(PDALInMemoryDataSet, self).__init__(
             spatial_reference=spatial_reference,
+            inverse_coordinate=inverse_coordinate,
         )
 
     @property
@@ -171,7 +172,9 @@ class PDALInMemoryDataSet(DataSet):
 
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
-            pipeline=pipeline, spatial_reference=spatial_reference
+            pipeline=pipeline,
+            spatial_reference=spatial_reference,
+            inverse_coordinate=dataset.inverse_coordinate,
         )
 
     def save(self, filename, overwrite=False):
@@ -205,4 +208,5 @@ class PDALInMemoryDataSet(DataSet):
         return DataSet(
             filename=filename,
             spatial_reference=self.spatial_reference,
+            inverse_coordinate=self.inverse_coordinate,
         )
