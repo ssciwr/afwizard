@@ -178,7 +178,6 @@ def test_save_load_map_polygons(dataset, boundary_segmentation):
     # initiate dataset and map
     test_map = Map(dataset)
     test_map_seg = Map(segmentation=boundary_segmentation)
-
     # create two example polygons
     polygon_1 = [
         {
@@ -274,4 +273,4 @@ def test_show_polygon_from_segmentation(
     boundary_segmentation, multipolygon_segmentation
 ):
     boundary_segmentation.show()
-    # multipolygon_segmentation.show()
+    multipolygon_segmentation.show()

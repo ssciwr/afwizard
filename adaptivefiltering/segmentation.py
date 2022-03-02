@@ -2,7 +2,6 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.paths import locate_file, check_file_extension
 from adaptivefiltering.utils import (
     is_iterable,
-    merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
 
@@ -79,45 +78,6 @@ class Segmentation(geojson.FeatureCollection):
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
 
-    def merge_classes(self, keyword="class"):
-        """
-        If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
-        Warning, if members of the same class have different metadata it will not be preserved.
-        """
-
-        new_segmentation = Segmentation([], self.spatial_reference)
-        added_classes = {}
-        for feature in self["features"]:
-            if keyword in feature["properties"]:
-                if feature["properties"][keyword] not in added_classes.keys():
-                    # stores the class label and the index of the new segmentation associated with that class
-                    added_classes[feature["properties"][keyword]] = len(
-                        new_segmentation["features"]
-                    )
-                    new_segmentation["features"].append(feature)
-                    if (
-                        new_segmentation["features"][-1]["geometry"]["type"]
-                        == "Polygon"
-                    ):
-                        new_segmentation["features"][-1]["geometry"][
-                            "type"
-                        ] = "MultiPolygon"
-                        new_segmentation["features"][-1]["geometry"]["coordinates"] = [
-                            new_segmentation["features"][-1]["geometry"]["coordinates"]
-                        ]
-                else:
-                    class_index = added_classes[feature["properties"][keyword]]
-                    if feature["geometry"]["type"] == "Polygon":
-                        new_segmentation["features"][class_index]["geometry"][
-                            "coordinates"
-                        ].append(feature["geometry"]["coordinates"])
-                    elif feature["geometry"]["type"] == "MultiPolygon":
-                        for coordinates in feature["geometry"]["coordinates"]:
-                            new_segmentation["features"][class_index]["geometry"][
-                                "coordinates"
-                            ].append(coordinates)
-        return new_segmentation
-
     @property
     def __geo_interface__(self):
         return {
@@ -126,24 +86,85 @@ class Segmentation(geojson.FeatureCollection):
         }
 
 
+def merge_classes(segmentation, keyword=None):
+    """
+    If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
+    Warning, if members of the same class have different metadata it will not be preserved.
+    """
+
+    new_segmentation = Segmentation(
+        [], spatial_reference=segmentation.spatial_reference
+    )
+    added_classes = {}
+
+    if keyword == None:
+
+        for feature in segmentation["features"]:
+
+            feature["properties"].setdefault("merge", 1)
+        keyword = "merge"
+
+    for feature in segmentation["features"]:
+        if keyword in feature["properties"]:
+            if feature["properties"][keyword] not in added_classes.keys():
+                # stores the class label and the index of the new segmentation associated with that class
+                added_classes[feature["properties"][keyword]] = len(
+                    new_segmentation["features"]
+                )
+                new_segmentation["features"].append(feature)
+                if new_segmentation["features"][-1]["geometry"]["type"] == "Polygon":
+                    new_segmentation["features"][-1]["geometry"][
+                        "type"
+                    ] = "MultiPolygon"
+                    new_segmentation["features"][-1]["geometry"]["coordinates"] = [
+                        new_segmentation["features"][-1]["geometry"]["coordinates"]
+                    ]
+            else:
+                class_index = added_classes[feature["properties"][keyword]]
+                if feature["geometry"]["type"] == "Polygon":
+                    new_segmentation["features"][class_index]["geometry"][
+                        "coordinates"
+                    ].append(feature["geometry"]["coordinates"])
+                elif feature["geometry"]["type"] == "MultiPolygon":
+                    for coordinates in feature["geometry"]["coordinates"]:
+                        new_segmentation["features"][class_index]["geometry"][
+                            "coordinates"
+                        ].append(coordinates)
+
+    for feature in segmentation["features"]:
+
+        if "merge" in feature["properties"].keys():
+            _ = feature["properties"].pop("merge")
+
+    return new_segmentation
+
+
 def get_min_max_values(segmentation):
     # goes over all features in the segmentation and return the min and max coordinates in a dict.
     min_max_dict = {"minX": [], "maxX": [], "minY": [], "maxY": []}
 
     for feature in segmentation["features"]:
-        for coord_array in feature["geometry"]["coordinates"]:
-            coord_array = np.asarray(coord_array)
+        if feature["geometry"]["type"] == "Polygon":
+            feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
+        for polygon in feature["geometry"]["coordinates"]:
+            for coord_array in polygon:
 
-            min_max_dict["minX"].append(np.min(coord_array, axis=0)[0])
-            min_max_dict["minY"].append(np.min(coord_array, axis=0)[1])
-            min_max_dict["maxX"].append(np.max(coord_array, axis=0)[0])
-            min_max_dict["maxY"].append(np.max(coord_array, axis=0)[1])
+                coord_array = np.asarray(coord_array)
+                min_max_dict["minX"].append(np.min(coord_array, axis=0)[0])
+                min_max_dict["minY"].append(np.min(coord_array, axis=0)[1])
+                min_max_dict["maxX"].append(np.max(coord_array, axis=0)[0])
+                min_max_dict["maxY"].append(np.max(coord_array, axis=0)[1])
 
     for key, value in min_max_dict.items():
         if "min" in key:
             min_max_dict[key] = min(value)
         elif "max" in key:
             min_max_dict[key] = max(value)
+
+    # revert special case for Polygon
+    for feature in segmentation["features"]:
+        if feature["geometry"]["type"] == "Polygon":
+            feature["geometry"]["coordinates"] = feature["geometry"]["coordinates"][0]
     return min_max_dict
 
 
@@ -280,9 +301,7 @@ def split_segmentation_classes(segmentation):
             if isinstance(value, collections.Hashable):
                 split_dict.setdefault(key, {}).setdefault(
                     value,
-                    Segmentation(
-                        [feature], spatial_reference=segmentation.spatial_reference
-                    ),
+                    Segmentation([], spatial_reference=segmentation.spatial_reference),
                 )["features"].append(feature)
 
     # remove columns with too many entries to avoid slowdown
@@ -483,6 +502,7 @@ class Map:
 
         segmentation = convert_segmentation(segmentation, "EPSG:4326")
 
+        segmentation = merge_classes(segmentation)
         for feature in segmentation["features"]:
             if "style" not in feature["properties"].keys():
                 feature["properties"]["style"] = {
@@ -507,7 +527,7 @@ class Map:
                     "clickable": "true",
                 }
 
-            self.map.add_layer(ipyleaflet.GeoJSON(data=feature, name=name))
+        self.map.add_layer(ipyleaflet.GeoJSON(data=segmentation, name=name))
 
     def load_segmentation(self, segmentation, override=False):
         """Imports a segmentation object into the draw control data
@@ -568,16 +588,14 @@ class Map:
             # get the coordinates from the metadata:
             # this gives us lat, lon but for geojson we need lon, lat
 
-            hexbin_coord = [
-                json.loads(hexbin_pipeline.metadata)["metadata"]["filters.hexbin"][
-                    "boundary_json"
-                ]["coordinates"][0]
-            ]
+            hexbin_geometry = json.loads(hexbin_pipeline.metadata)["metadata"][
+                "filters.hexbin"
+            ]["boundary_json"]
+
         elif segmentation:
 
-            segmentation = merge_segmentation_features(segmentation)
-            hexbin_coord = segmentation["features"][0]["geometry"]["coordinates"]
-
+            segmentation = merge_classes(segmentation)
+            hexbin_geometry = segmentation["features"][0]["geometry"]
         boundary_segmentation = Segmentation(
             [
                 {
@@ -592,19 +610,14 @@ class Map:
                             "clickable": False,
                         }
                     },
-                    "geometry": {"type": "Polygon", "coordinates": hexbin_coord},
+                    "geometry": hexbin_geometry,
                 }
             ],
             spatial_reference=self.original_srs,
         )
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
-        if dataset:
-            boundary_segmentation = convert_segmentation(
-                boundary_segmentation, "EPSG:4326"
-            )
-
-        # add boundary marker
+        boundary_segmentation = convert_segmentation(boundary_segmentation, "EPSG:4326")
         return boundary_segmentation
 
     def setup_map(self, boundary_segmentation):
@@ -619,7 +632,6 @@ class Map:
             (self.boundary_edges["maxX"] + self.boundary_edges["minX"]) / 2,
             (self.boundary_edges["maxY"] + self.boundary_edges["minY"]) / 2,
         ]
-
         self.map = ipyleaflet.Map(
             basemap=ipyleaflet.basemaps.Esri.WorldImagery,
             center=(coordinates_mean[1], coordinates_mean[0]),
