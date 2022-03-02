@@ -7,10 +7,9 @@ from adaptivefiltering.library import (
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import Map, convert_segmentation
+from adaptivefiltering.segmentation import Map, convert_segmentation, merge_classes
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
-    merge_segmentation_features,
 )
 from adaptivefiltering.widgets import WidgetFormWithLabels
 
@@ -654,7 +653,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
                 "stroke": "true",
                 "color": "red",
                 "weight": 4,
-                "opacity": 0.3,
+                "opacity": 0.6,
                 "lineCap": "round",
                 "lineJoin": "round",
                 "dashArray": "null",
@@ -829,7 +828,7 @@ def apply_restriction(dataset, segmentation=None):
 
         # if multiple polygons have been selected they will be merged in one multipolygon
         # this guarentees, that len(seg[features]) is always 1.
-        seg = merge_segmentation_features(seg)
+        seg = merge_classes(seg)
 
         # Construct a WKT Polygon for the clipping
         # this will be either a single polygon or a multipolygon
