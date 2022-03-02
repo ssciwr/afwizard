@@ -1,10 +1,34 @@
 adaptivefiltering package
 =========================
 
+adaptivefiltering.apps module
+-----------------------------
+
+.. automodule:: adaptivefiltering.apps
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.asprs module
+--------------------------------
+
+.. automodule:: adaptivefiltering.asprs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 adaptivefiltering.dataset module
 --------------------------------
 
 .. automodule:: adaptivefiltering.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.execute module
+--------------------------------
+
+.. automodule:: adaptivefiltering.execute
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,10 +41,18 @@ adaptivefiltering.filter module
    :undoc-members:
    :show-inheritance:
 
-adaptivefiltering.pdal module
------------------------------
+adaptivefiltering.lastools module
+---------------------------------
 
-.. automodule:: adaptivefiltering.pdal
+.. automodule:: adaptivefiltering.lastools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.library module
+--------------------------------
+
+.. automodule:: adaptivefiltering.library
    :members:
    :undoc-members:
    :show-inheritance:
@@ -33,6 +65,23 @@ adaptivefiltering.opals module
    :undoc-members:
    :show-inheritance:
 
+adaptivefiltering.paths module
+------------------------------
+
+.. automodule:: adaptivefiltering.paths
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.pdal module
+-----------------------------
+
+.. automodule:: adaptivefiltering.pdal
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 adaptivefiltering.segmentation module
 -------------------------------------
 
@@ -41,10 +90,18 @@ adaptivefiltering.segmentation module
    :undoc-members:
    :show-inheritance:
 
-adaptivefiltering.paths module
+adaptivefiltering.utils module
 ------------------------------
 
-.. automodule:: adaptivefiltering.paths
+.. automodule:: adaptivefiltering.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+adaptivefiltering.versioning module
+-----------------------------------
+
+.. automodule:: adaptivefiltering.versioning
    :members:
    :undoc-members:
    :show-inheritance:
@@ -65,10 +122,3 @@ adaptivefiltering.widgets module
    :undoc-members:
    :show-inheritance:
 
-adaptivefiltering.utils module
-------------------------------
-
-.. automodule:: adaptivefiltering.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:

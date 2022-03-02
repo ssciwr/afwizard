@@ -65,6 +65,10 @@ class Filter:
 
     @config.setter
     def config(self, _config):
+        """Change the filter configuration
+
+        Performs automatic validation against the filter's schema.
+        """
         # Assert that the given backend matches our backend class.
         if "_backend" in _config:
             assert _config["_backend"] == self._identifier
@@ -80,10 +84,12 @@ class Filter:
 
     @property
     def variability(self):
+        """Access the filter's end user configuration variability"""
         return self._variability
 
     @variability.setter
     def variability(self, _variability):
+        """Change the filter's end user configuration variability"""
         # Validate the variability input
         _variability = pyrsistent.thaw(_variability)
         schema = load_schema("variability.json")
@@ -311,9 +317,15 @@ class Filter:
 
     @classmethod
     def enabled(cls):
+        """Whether the backend is currently usable
+
+        This allows disabling e.g. proprietary backends whenever
+        the necessary proprietary code is not available.
+        """
         return True
 
     def used_backends(self):
+        """Return the identifiers of the backends used in this filter"""
         return (self._identifier,)
 
     def _modify_filter_config(self, variability_data):
@@ -506,7 +518,7 @@ def save_filter(filter_, filename):
         json.dump(serialize_filter(filter_), f)
 
 
-def load_filter(filename=None):
+def load_filter(filename):
     """Load a filter from a file
 
     This function restores filters that were previously saved to disk using the
@@ -517,15 +529,10 @@ def load_filter(filename=None):
         w.r.t. the current working directory.
     :type filename: str
     """
-    if filename is None:
-        from adaptivefiltering.widgets import upload_files
+    # Find the file across all libraries
+    from adaptivefiltering.library import locate_filter
 
-        filename = upload_files("./filters_test_upload/")
-    else:
-        # Find the file across all libraries
-        from adaptivefiltering.library import locate_filter
-
-        filename = locate_filter(filename)
+    filename = locate_filter(filename)
 
     with open(filename, "r") as f:
         return deserialize_filter(json.load(f))
@@ -556,6 +563,7 @@ def update_data(data, modifier):
 
 
 def modify_filter_config(config, moddata, variation):
+    """Modify a filter configuration according to variability data"""
     for var in variation:
         var["values"] = moddata[var["name"].lower()]
         config = update_data(config, var)

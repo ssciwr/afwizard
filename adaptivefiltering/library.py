@@ -4,6 +4,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
 import collections
+import hashlib
 import glob
 import importlib
 import json
@@ -27,11 +28,18 @@ FilterLibrary = collections.namedtuple(
 
 
 def get_filter_libraries():
+    """Get a list of all filter libraries currently registered"""
+
     # The reversing implements priority ordering from user-defined to built-in
     return tuple(reversed(_filter_libraries))
 
 
 def get_current_filter_library():
+    """Get the user-defined 'current' filter library
+
+    That filter library is used preferrably for saving filters.
+    It can be set with :ref:~adaptivefiltering.set_current_filter_library.
+    """
     return _current_library
 
 
@@ -199,6 +207,32 @@ def locate_filter(filename):
 
     # If we have not found it by now, we throw an error
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
+
+
+def locate_filter_by_hash(hash):
+    """Locate a filter across the filter libraries given a metadata hash
+
+    :param hash:
+        The hash that we are looking for.
+    :type hash: str
+    """
+
+    # Collect all matches to throw a meaningful error
+    found = []
+
+    for lib in get_filter_libraries():
+        for f in lib.filters:
+            if hash == hashlib.sha1(repr(f.config["metadata"]).encode()).hexdigest():
+                found.append(f)
+
+    if not found:
+        raise FileNotFoundError(
+            "A filter pipeline for your segmentation could not be located!"
+        )
+    if len(found) > 1:
+        raise AdaptiveFilteringError("Ambiguous pipeline metadata detected!")
+    else:
+        return found[0]
 
 
 def reset_filter_libraries():

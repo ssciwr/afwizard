@@ -4,13 +4,16 @@ import collections
 import ipywidgets
 import ipywidgets_jsonschema
 import jsonschema
-import os
-import pyrsistent
 import re
 
 
 class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
-    """A subclass of WidgetForm that creates a label selection widget for arrays of strings"""
+    def __init__(self, *args, **kwargs):
+        """A widget form that creates a label selection widget for arrays of strings
+
+        All other functionality is inherited from :code:`ipywidgets_jsonschema.Form`.
+        """
+        super().__init__(*args, **kwargs)
 
     def _construct_array(self, schema, label=None, root=False):
         if "items" not in schema:
@@ -86,6 +89,10 @@ BatchDataWidgetFormElement = collections.namedtuple(
 
 class BatchDataWidgetForm(WidgetFormWithLabels):
     def __init__(self, *args, nobatch_keys=[], **kwargs):
+        """A widget form that wraps additional batch controls around widgets
+
+        The additional controls affect all scalar fields (strings, integers, numbers).
+        """
         self.nobatch_keys = nobatch_keys
         self.disable_batching = False
         super().__init__(*args, **kwargs)
@@ -345,42 +352,3 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
             batchdata_setter=_setter,
             register_observer=original.register_observer,
         )
-
-
-def upload_button(directory=None, filetype=""):
-    """
-    Create a widget to upload and store files over the jupyter interface.
-    This function will be called by the different load functions.
-
-    :param directory:
-        The directory on the server where the files will be saved.
-        This will be set by the function calling upload_files and be representive of the different upload types.
-        eg. Pipelines will be saved in a differend directory than datasets or segmentations.
-    :type directory: string
-    :param filetype:
-        Set the filetype filter for the upload widget
-    :type filetype: string
-
-    :return: The name(s) of the uploaded file(s)
-
-    """
-    # this needs to be loaded here to avoid circular imports
-    from adaptivefiltering.apps import create_upload
-
-    def _save_data(uploaded_files):
-        filenames = []
-        for filename, uploaded_file in uploaded_files.value.items():
-            filenames.append(filename)
-            print(filename)
-            with open(os.path.join(directory, filename), "wb") as fp:
-                fp.write(uploaded_file["content"])
-        return [os.path.join(directory, filename) for name in filenames]
-
-    if directory is None:
-        print("Uploaded files will be saved in the current working directory.")
-        directory = os.getcwd()
-    elif not os.path.isdir(directory):
-        print("The directory: " + directory + "does not exist and will be created.")
-        os.mkdir(directory)
-
-    return create_upload(filetype, finalization_hook=_save_data)

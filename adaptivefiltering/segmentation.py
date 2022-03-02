@@ -1,6 +1,5 @@
-from adaptivefiltering.asprs import asprs
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.paths import load_schema, locate_file, check_file_extension
+from adaptivefiltering.paths import locate_file, check_file_extension
 from adaptivefiltering.utils import (
     is_iterable,
     merge_segmentation_features,
@@ -9,7 +8,6 @@ from adaptivefiltering.utils import AdaptiveFilteringError
 
 import base64
 import geojson
-import jsonschema
 import ipyleaflet
 import ipywidgets
 import json
@@ -17,7 +15,7 @@ import numpy as np
 import collections
 import copy
 from itertools import groupby
-from pyproj import Transformer, crs
+from pyproj import Transformer
 
 
 class Segmentation(geojson.FeatureCollection):
@@ -76,10 +74,7 @@ class Segmentation(geojson.FeatureCollection):
             geojson.dump(self, f)
 
     def show(self):
-        """Create a new InteractiveMap with bounds from the segmentation.
-
-        :
-        """
+        """Create a new InteractiveMap with bounds from the segmentation."""
 
         segmentation_map = Map(segmentation=self)
         return segmentation_map.show()
@@ -651,3 +646,17 @@ class Map:
         )
 
         return segmentation
+
+
+def load_segmentation(filename, spatial_reference=None):
+    """Load a GeoJSON segmentation from a file
+
+    :param filename:
+        The filename to load the GeoJSON file from.
+    :type filename: str
+    :param spatial_reference:
+        The WKT or EPSG code of the segmentation file.
+    """
+
+    # TODO: Add spatial_reference here
+    return Segmentation.load(filename)

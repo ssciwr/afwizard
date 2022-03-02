@@ -1,5 +1,5 @@
 # This is the single source of truth
-__version__ = "1.0.0a0"
+__version__ = "1.0.0a1"
 
 # Make sure to import modules that register filter backends
 import adaptivefiltering.lastools
@@ -26,6 +26,7 @@ from adaptivefiltering.library import (
 )
 from adaptivefiltering.opals import set_opals_directory
 from adaptivefiltering.paths import set_data_directory
+from adaptivefiltering.segmentation import load_segmentation
 
 
 def print_version():
@@ -47,6 +48,7 @@ __all__ = [
     "execute_interactive",
     "remove_classification",
     "reproject_dataset",
+    "load_segmentation",
     "load_filter",
     "save_filter",
     "set_current_filter_library",

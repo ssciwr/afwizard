@@ -1,7 +1,6 @@
 import collections
 import copy
 import numpy as np
-from geojson.utils import coords
 import re
 import pyproj
 
@@ -24,6 +23,11 @@ def stringify_value(value):
 
 
 def check_spatial_reference(crs):
+    """Validate and normalize a given CRS string
+
+    We accept either WKT or an EPSG code string of the form
+    :code:`EPSG:xxxx{x}`.
+    """
     if pyproj.crs.is_wkt(crs):
         return crs
 
@@ -66,6 +70,7 @@ def merge_segmentation_features(seg):
 
 
 def as_number_type(type_, value):
+    """Transform a string to a number according to given type information"""
     if type_ == "integer":
         return int(value)
     elif type_ == "number":
