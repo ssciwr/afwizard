@@ -18,8 +18,8 @@ _tmp_dir = None
 _data_dir = None
 
 # The current data archive URL
-TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/releases/download/2021-12-14/data.tar.gz"
-TEST_DATA_CHECKSUM = "b1af80c173ad475c14972a32bbf86cdbdb8a2197de48ca1e40c4a9859afcabcb"
+TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/releases/download/2022-03-02/data.tar.gz"
+TEST_DATA_CHECKSUM = "26f61c7f6681d6e558b3765689f110f09eaf34543ea5d8716ff5e55ab0557980"
 
 
 def set_data_directory(directory, create_dir=False):
@@ -87,9 +87,12 @@ def get_temporary_filename(extension=""):
 
 def download_test_file(filename):
     """Ensure the existence of a dataset file by downloading it"""
-    full_file = os.path.join(get_temporary_workspace(), "data", filename)
 
-    if not os.path.exists(full_file):
+    # We download test data to the temporary workspce
+    testdata_dir = os.path.join(get_temporary_workspace(), "data")
+
+    # If we have not done that already, we do so now
+    if not os.path.exists(testdata_dir):
         archive = requests.get(TEST_DATA_ARCHIVE).content
         checksum = hashlib.sha256(archive).hexdigest()
         if checksum != TEST_DATA_CHECKSUM:
@@ -100,9 +103,11 @@ def download_test_file(filename):
             tar.write(archive)
 
         with tarfile.open(archive_file, "r:gz") as tar:
-            tar.extractall(path=os.path.join(get_temporary_workspace(), "data"))
+            tar.extractall(path=testdata_dir)
 
-    return full_file
+    # Return the filename - it is only a candidate. If the given filename
+    # is not in the test data, the file will not exist.
+    return os.path.join(testdata_dir, filename)
 
 
 def check_file_extension(filename, possible_values, default_value):

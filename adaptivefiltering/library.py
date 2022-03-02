@@ -1,5 +1,5 @@
 from adaptivefiltering.filter import load_filter, save_filter
-from adaptivefiltering.paths import load_schema
+from adaptivefiltering.paths import load_schema, download_test_file
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
@@ -192,6 +192,10 @@ def locate_filter(filename):
     for lib in get_filter_libraries():
         if os.path.exists(os.path.join(lib.path, filename)):
             return os.path.join(lib.path, filename)
+
+    # Maybe this is a filter shipped as part of our testing data
+    if os.path.exists(download_test_file(filename)):
+        return download_test_file(filename)
 
     # If we have not found it by now, we throw an error
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
