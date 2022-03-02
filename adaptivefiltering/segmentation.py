@@ -3,7 +3,6 @@ from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.paths import load_schema, locate_file, check_file_extension
 from adaptivefiltering.utils import (
     is_iterable,
-    convert_segmentation,
     merge_segmentation_features,
 )
 from adaptivefiltering.utils import AdaptiveFilteringError
@@ -18,11 +17,16 @@ import numpy as np
 import collections
 import copy
 from itertools import groupby
+from pyproj import Transformer, crs
 
 
 class Segmentation(geojson.FeatureCollection):
+    def __init__(self, *args, spatial_reference=None, **kwargs):
+        self.spatial_reference = spatial_reference
+        super().__init__(*args, **kwargs)
+
     @classmethod
-    def load(cls, filename=None):
+    def load(cls, filename=None, spatial_reference=None):
         """Load segmentation from a filename
 
         :param filename:
@@ -44,13 +48,19 @@ class Segmentation(geojson.FeatureCollection):
                 file = locate_file(file)
 
                 with open(file, "r") as f:
-                    segmentations.append(Segmentation(geojson.load(f)))
+                    segmentations.append(
+                        Segmentation(
+                            geojson.load(f), spatial_reference=spatial_reference
+                        )
+                    )
             return segmentations
 
         elif isinstance(filename, str):
             filename = locate_file(filename)
             with open(filename, "r") as f:
-                return Segmentation(geojson.load(f))
+                return Segmentation(
+                    geojson.load(f), spatial_reference=spatial_reference
+                )
 
     def save(self, filename):
         """Save the segmentation to disk
@@ -140,6 +150,80 @@ def get_min_max_values(segmentation):
         elif "max" in key:
             min_max_dict[key] = max(value)
     return min_max_dict
+
+
+def convert_segmentation(segmentation, srs_out, srs_in=None):
+    """
+    This transforms the segmentation into a new spatial reference system.
+        For this program all segmentations should be in EPSG:4326.
+        :param segmentation:
+            The segmentation that should be transformed
+        :type: adaptivefiltering.segmentation.Segmentation
+
+
+        :param srs_in:
+            Current spatial reference system of the segmentation.
+            Must be either EPSG or wkt.
+        :type: str
+
+        :param srs_out:
+            Desired spatial reference system.
+            Must be either EPSG or wkt.
+            Default: None
+        :type: str
+
+
+
+        :return: Transformed segmentation.
+        :rtype: adaptivefiltering.segmentation.Segmentation
+
+    """
+
+    # logic for determining crs_in
+
+    if srs_in is None:
+        if segmentation.spatial_reference:
+            srs_in = segmentation.spatial_reference
+        else:
+            raise AdaptiveFilteringError(
+                "No srs was given for Segmentation transformation."
+            )
+
+    # check if coordinates need to be swapped:
+    # "EPSG:4326 specifically states that the coordinate order should be latitude, longitude.
+    # Many software packages still use longitude, latitude ordering.
+    # This situation has wreaked unimaginable havoc on project deadlines and programmer sanity."
+    # https://gis.stackexchange.com/questions/3334/difference-between-wgs84-and-epsg4326
+
+    new_features = copy.deepcopy(segmentation["features"])
+
+    for feature, new_feature in zip(segmentation["features"], new_features):
+
+        if feature["geometry"]["type"] == "Polygon":
+            feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
+        polygon_list = []
+        print(srs_out)
+        print(srs_in)
+
+        transformer = Transformer.from_crs(srs_in, srs_out, always_xy=True)
+
+        for polygon in feature["geometry"]["coordinates"]:
+
+            polygon_list.append([])
+            for hole in polygon:
+                hole = np.asarray(hole)
+
+                output_x, output_y = transformer.transform(hole[:, 0], hole[:, 1])
+                polygon_list[-1].append(np.stack([output_x, output_y], axis=1).tolist())
+
+        if feature["geometry"]["type"] == "Polygon":
+            polygon_list = polygon_list[0]
+
+        new_feature["geometry"]["coordinates"] = polygon_list
+
+    out_segmentation = Segmentation(new_features, spatial_reference=srs_out)
+
+    return out_segmentation
 
 
 def swap_coordinates(segmentation):
@@ -514,17 +598,16 @@ class Map:
                     },
                     "geometry": {"type": "Polygon", "coordinates": hexbin_coord},
                 }
-            ]
+            ],
+            spatial_reference=self.original_srs,
         )
 
         # the segmentation should already be in the correct format so no additaional conversion is requiered
         if dataset:
             boundary_segmentation = convert_segmentation(
-                boundary_segmentation, "EPSG:4326", self.original_srs
+                boundary_segmentation, "EPSG:4326"
             )
 
-            # lon and latitude must be switched for the map to work
-            boundary_segmentation = swap_coordinates(boundary_segmentation)
         # add boundary marker
         return boundary_segmentation
 
@@ -563,6 +646,8 @@ class Map:
 
 
         """
-        segmentation = Segmentation(self.draw_control.data)
+        segmentation = Segmentation(
+            self.draw_control.data, spatial_reference="EPSG:4326"
+        )
 
         return segmentation
