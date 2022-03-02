@@ -83,7 +83,6 @@ class Segmentation(geojson.FeatureCollection):
         new_segmentation = Segmentation([])
         added_classes = {}
         for feature in self["features"]:
-            print(feature)
             if keyword in feature["properties"]:
                 if feature["properties"][keyword] not in added_classes.keys():
                     # stores the class label and the index of the new segmentation associated with that class

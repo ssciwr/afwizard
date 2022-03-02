@@ -651,7 +651,6 @@ def assign_pipeline(dataset, segmentation, pipelines):
                 "interactive": "true",
                 "clickable": "true",
             }
-            print(feature)
         for layer in map_.map.layers:
             if layer.name == "Current Segmentation":
                 map_.map.remove_layer(layer)
@@ -666,11 +665,8 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
         split_segmentation = split_segmentation_classes(segmentation)
 
-        feature_properties_options = [
-            (keys, keys) for keys in split_segmentation.keys()
-        ]
         feature_dropdown = ipywidgets.Dropdown(
-            options=feature_properties_options,
+            options=split_segmentation.keys(),
             layout=fullwidth,
         )
 
