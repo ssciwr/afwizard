@@ -11,7 +11,6 @@ from adaptivefiltering.utils import (
     AdaptiveFilteringError,
     check_spatial_reference,
     merge_segmentation_features,
-    convert_segmentation,
 )
 
 from osgeo import ogr
@@ -112,7 +111,7 @@ class PDALPipeline(
 
 
 class PDALInMemoryDataSet(DataSet):
-    def __init__(self, pipeline=None, spatial_reference=None, inverse_coordinate=False):
+    def __init__(self, pipeline=None, spatial_reference=None):
         """An in-memory implementation of a Lidar data set that can used with PDAL
 
         :param pipeline:
@@ -124,7 +123,6 @@ class PDALInMemoryDataSet(DataSet):
         self.pipeline = pipeline
         super(PDALInMemoryDataSet, self).__init__(
             spatial_reference=spatial_reference,
-            inverse_coordinate=inverse_coordinate,
         )
 
     @property
@@ -174,7 +172,6 @@ class PDALInMemoryDataSet(DataSet):
         return PDALInMemoryDataSet(
             pipeline=pipeline,
             spatial_reference=spatial_reference,
-            inverse_coordinate=dataset.inverse_coordinate,
         )
 
     def save(self, filename, overwrite=False):
@@ -208,5 +205,4 @@ class PDALInMemoryDataSet(DataSet):
         return DataSet(
             filename=filename,
             spatial_reference=self.spatial_reference,
-            inverse_coordinate=self.inverse_coordinate,
         )
