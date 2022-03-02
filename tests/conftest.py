@@ -75,7 +75,8 @@ def boundary_segmentation():
                 }
             ],
             "type": "FeatureCollection",
-        }
+        },
+        spatial_reference="EPSG:4326",
     )
 
 
