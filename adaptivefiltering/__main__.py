@@ -50,7 +50,7 @@ def validate_suffix(ctx, param, suffix):
 
 def validate_spatial_reference(ctx, param, crs):
     try:
-        return validate_spatial_reference(crs)
+        return check_spatial_reference(crs)
     except:
         raise click.BadParameter(
             f"Cannot validate spatial reference system '{crs}'. Use either WKT or 'EPSG:xxxx'"
