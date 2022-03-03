@@ -5,6 +5,7 @@ from adaptivefiltering.paths import (
     load_schema,
     locate_file,
     check_file_extension,
+    within_temporary_workspace,
 )
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
@@ -58,6 +59,8 @@ def execute_pdal_pipeline(dataset=None, config=None):
 
     # Define and execute the pipeline
     pipeline = pdal.Pipeline(json.dumps(config), arrays=arrays)
+
+    # Execute the filter and suppress spurious file output
     _ = pipeline.execute()
 
     # We are currently only handling situations with one output array
@@ -77,8 +80,13 @@ class PDALFilter(Filter, identifier="pdal"):
         dataset = PDALInMemoryDataSet.convert(dataset)
         config = pyrsistent.thaw(config)
         config.pop("_backend", None)
+
+        # Do the actual work in a temporary directory
+        with within_temporary_workspace():
+            pipeline = execute_pdal_pipeline(dataset=dataset, config=config)
+
         return PDALInMemoryDataSet(
-            pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
+            pipeline=pipeline,
             spatial_reference=dataset.spatial_reference,
         )
 
