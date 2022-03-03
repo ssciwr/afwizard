@@ -209,6 +209,11 @@ def locate_filter(filename):
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
 
 
+def metadata_hash(pipeline):
+    """Calculate a hash value for the filter pipeline metadata"""
+    return hashlib.sha1(repr(pipeline.config.get("metadata", {})).encode()).hexdigest()
+
+
 def locate_filter_by_hash(hash):
     """Locate a filter across the filter libraries given a metadata hash
 
@@ -219,10 +224,9 @@ def locate_filter_by_hash(hash):
 
     # Collect all matches to throw a meaningful error
     found = []
-
     for lib in get_filter_libraries():
         for f in lib.filters:
-            if hash == hashlib.sha1(repr(f.config["metadata"]).encode()).hexdigest():
+            if hash == metadata_hash(f):
                 found.append(f)
 
     if not found:

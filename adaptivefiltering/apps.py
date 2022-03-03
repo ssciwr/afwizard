@@ -4,6 +4,7 @@ from adaptivefiltering.filter import Pipeline, Filter, update_data
 from adaptivefiltering.library import (
     get_filter_libraries,
     library_keywords,
+    metadata_hash,
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
@@ -18,7 +19,6 @@ from osgeo import ogr
 import collections
 import contextlib
 import copy
-import hashlib
 import ipywidgets
 import ipywidgets_jsonschema
 import IPython
@@ -699,9 +699,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
         dropdown_options = [("no Pipeline", "")] + [
             (
                 pipeline.title,
-                hashlib.sha1(
-                    repr(pipeline.config.get("metadata", {})).encode()
-                ).hexdigest(),
+                metadata_hash(pipeline),
             )
             for pipeline in pipelines
         ]
