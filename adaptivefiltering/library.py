@@ -118,6 +118,12 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
     # Always make the library path absolute
     path = os.path.abspath(path)
 
+    # If the path already exists across registered filter libraries,
+    # there is nothing to do.
+    for lib in get_filter_libraries():
+        if lib.path == path:
+            return
+
     # Look for a library metadata file
     metadata = {}
     if os.path.exists(os.path.join(path, "library.json")):
