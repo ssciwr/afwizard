@@ -229,6 +229,7 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
 
         if feature["geometry"]["type"] == "Polygon":
             polygon_list = polygon_list[0]
+            feature["geometry"]["coordinates"] = feature["geometry"]["coordinates"][0]
 
         new_feature["geometry"]["coordinates"] = polygon_list
 

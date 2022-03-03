@@ -1,7 +1,9 @@
+from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.execute import *
 from adaptivefiltering.filter import load_filter
 from adaptivefiltering.library import add_filter_library, metadata_hash
 from adaptivefiltering.paths import get_temporary_workspace
+from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 import os
@@ -34,9 +36,17 @@ def test_apply_adaptive_pipeline(dataset, dataset_seg, monkeypatch, tmp_path):
     apply_adaptive_pipeline(dataset=dataset, segmentation=dataset_seg)
 
     # Assert existence of output files
-    assert os.path.exists(
+    lasoutput = os.path.join(
         os.path.join(tmp_path, "output", "500k_NZ20_Westport_filtered.las")
     )
-    assert os.path.exists(
+    tiffoutput = os.path.join(
         os.path.join(tmp_path, "output", "500k_NZ20_Westport_filtered.tiff")
     )
+
+    assert os.path.exists(lasoutput) is True
+    assert os.path.exists(tiffoutput) is True
+
+    # Assert that the generated dataset is readable
+    ds = DataSet(lasoutput)
+    ds = PDALInMemoryDataSet.convert(ds)
+    assert ds.data.shape[0] > 0

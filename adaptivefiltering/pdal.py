@@ -79,6 +79,7 @@ class PDALFilter(Filter, identifier="pdal"):
         config.pop("_backend", None)
         return PDALInMemoryDataSet(
             pipeline=execute_pdal_pipeline(dataset=dataset, config=config),
+            spatial_reference=dataset.spatial_reference,
         )
 
     @classmethod

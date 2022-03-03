@@ -55,6 +55,9 @@ def apply_adaptive_pipeline(
             "Segmentations are expected to be of type adaptivefiltering.segmentation.Segmentation"
         )
 
+    # Ensure existence of output directory
+    os.makedirs(output_dir, exist_ok=True)
+
     # Determine the extension of LAS/LAZ files
     extension = "laz" if compress else "las"
 
@@ -71,10 +74,9 @@ def apply_adaptive_pipeline(
 
     # Merge segmentation by classes
     merged = merge_classes(segmentation, keyword="pipeline")
-    print(merged.spatial_reference)
     hash_to_segmentation = {
         m["properties"]["pipeline"]: Segmentation(
-            m, spatial_reference=merged.spatial_reference
+            [m], spatial_reference=merged.spatial_reference
         )
         for m in merged["features"]
     }
@@ -97,8 +99,6 @@ def apply_adaptive_pipeline(
         del filtered
         del restricted
 
-    # TODO from here
-
     # Join the segments in this dataset file. We use subprocess for this
     # because our PDAL execution code from Python is not really fit for
     # multiple input files.
@@ -106,7 +106,7 @@ def apply_adaptive_pipeline(
     filename, _ = os.path.splitext(filename)
     las_output = os.path.join(output_dir, f"{filename}_{suffix}.{extension}")
     subprocess.run(
-        f"pdal merge {' '.join(ds.filename for ds in filtered_datasets)} {las_output}"
+        f"pdal merge {' '.join(ds.filename for ds in filtered_datasets)} {las_output}".split()
     )
 
     # Provide GeoTiff output for this dataset
