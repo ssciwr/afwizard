@@ -4,6 +4,7 @@ from adaptivefiltering.lastools import set_lastools_directory
 from adaptivefiltering.library import add_filter_library
 from adaptivefiltering.opals import set_opals_directory
 from adaptivefiltering.segmentation import Segmentation
+from adaptivefiltering.utils import check_spatial_reference
 
 import click
 import os
@@ -16,7 +17,7 @@ def locate_lidar_dataset(ctx, param, path):
     # Validate that the file has the las or laz extension
     _, ext = os.path.splitext(path)
     if ext.lower() in (".las", ".laz"):
-        return os.path.abspath(path)
+        return DataSet(os.path.abspath(path))
     else:
         raise click.BadParameter(f"Lidar datasets must be .las or .laz (not: {path})")
 
@@ -47,13 +48,29 @@ def validate_suffix(ctx, param, suffix):
     return suffix
 
 
+def validate_spatial_reference(ctx, param, crs):
+    try:
+        return check_spatial_reference(crs)
+    except:
+        raise click.BadParameter(
+            f"Cannot validate spatial reference system '{crs}'. Use either WKT or 'EPSG:xxxx'"
+        )
+
+
 @click.command()
 @click.option(
-    "--data",
+    "--dataset",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
     callback=locate_lidar_dataset,
     help="The LAS/LAZ data file to work on.",
+)
+@click.option(
+    "--dataset-crs",
+    type=str,
+    required=True,
+    callback=validate_spatial_reference,
+    help="The CRS of the data",
 )
 @click.option(
     "--segmentation",
@@ -61,6 +78,13 @@ def validate_suffix(ctx, param, suffix):
     required=True,
     callback=validate_segmentation,
     help="The GeoJSON file that describes the segmentation of the dataset. This is expected to be generated either by the Jupyter UI or otherwise provide the necessary information about what filter pipelines to apply.",
+)
+@click.option(
+    "--segmentation-crs",
+    type=str,
+    required=True,
+    callback=validate_spatial_reference,
+    help="The CRS used in the segmentation",
 )
 @click.option(
     "--library",
@@ -124,8 +148,12 @@ def main(**args):
     set_opals_directory(args.pop("opals_dir"))
     set_lastools_directory(args.pop("lastools_dir"))
 
+    # Add CRS to data and segmentation
+    args["dataset"].spatial_reference = args.pop("dataset_crs")
+    args["segmentation"].spatial_reference = args.pop("segmentation_crs")
+
     # Call Python API
-    apply_adaptive_pipeline(dataset=DataSet(args.pop("data")), **args)
+    apply_adaptive_pipeline(**args)
 
 
 if __name__ == "__main__":
