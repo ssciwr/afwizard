@@ -9,14 +9,17 @@
         },
         "offset": {
           "default": 0.0,
+          "minimum": 0.0,
           "type": "number"
         },
         "spike": {
           "default": 0.5,
+          "minimum": 0.0,
           "type": "number"
         },
         "step": {
           "default": 1.0,
+          "minimum": 0.0,
           "type": "number"
         }
       },
