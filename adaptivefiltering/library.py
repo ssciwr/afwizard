@@ -221,7 +221,9 @@ def locate_filter(filename):
 
 def metadata_hash(pipeline):
     """Calculate a hash value for the filter pipeline metadata"""
-    return hashlib.sha1(repr(pipeline.config.get("metadata", {})).encode()).hexdigest()
+    metadata = pyrsistent.thaw(pipeline.config.get("metadata", {}))
+    mrepr = repr({k: metadata[k] for k in sorted(metadata.keys())})
+    return hashlib.sha1(mrepr.encode()).hexdigest()
 
 
 def locate_filter_by_hash(hash):
