@@ -359,6 +359,7 @@ class DigitalSurfaceModel:
         def _update_pattern(_):
             # Set the new pattern
             filename.filter_pattern = patterns[selector.value]
+            filename.default_filename = patterns[selector.value]
 
             # If the current value does not match the pattern remove it
             if filename.value and not fnmatch.fnmatch(
