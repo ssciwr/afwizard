@@ -58,17 +58,25 @@ def apply_adaptive_pipeline(
     # Determine the extension of LAS/LAZ files
     extension = "laz" if compress else "las"
 
+    # Ensure that the segmentation contains pipeline information
+    for s in segmentation["features"]:
+        if "pipeline" not in s.get("properties", {}):
+            raise AdaptiveFilteringError(
+                "All features in segmentation are required to define the 'pipeline' property"
+            )
+
     # Extract all filters needed
-    filter_hashes = [s["properties"]["pipeline"] for s in segmentation]
+    filter_hashes = [s["properties"]["pipeline"] for s in segmentation["features"]]
     filters = {h: locate_filter_by_hash(h) for h in filter_hashes}
 
     # Merge segmentation by classes
     merged = merge_classes(segmentation, keyword="pipeline")
+    print(merged.spatial_reference)
     hash_to_segmentation = {
         m["properties"]["pipeline"]: Segmentation(
             m, spatial_reference=merged.spatial_reference
         )
-        for m in merged
+        for m in merged["features"]
     }
 
     # Filter the dataset once per filter
