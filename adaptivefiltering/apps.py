@@ -1108,6 +1108,8 @@ def select_pipeline_from_library(multiple=False):
     ):
         box.observe(update_filter_list, names="value")
 
+    keyword_widget.observe(update_filter_list, names="value")
+
     # Piece all of the above selcetionwidgets together into an accordion
     acc = ipywidgets.Accordion(
         children=[

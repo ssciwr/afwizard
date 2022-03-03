@@ -169,12 +169,16 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
         )
 
 
-def library_keywords(libs=get_filter_libraries()):
+def library_keywords(libs=None):
     """Return a list of keywords used across one or more libraries
 
     :param libs:
         One or more filter libraries
     """
+
+    # If no libraries are given, we use all of them
+    if libs is None:
+        libs = get_filter_libraries()
 
     # Make libs parameter a list if not already
     if not is_iterable(libs):
