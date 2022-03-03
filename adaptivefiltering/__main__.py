@@ -23,7 +23,7 @@ def locate_lidar_dataset(ctx, param, path):
 
 def validate_segmentation(ctx, param, filename):
     # Check that the file has the correct extension
-    _, ext = filename
+    _, ext = os.path.splitext(filename)
     if ext.lower() != ".geojson":
         raise click.BadParameter(
             f"Segmentation files must be .geojson (not: {filename})"
