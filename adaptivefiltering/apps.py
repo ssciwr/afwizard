@@ -1033,13 +1033,14 @@ def select_pipeline_from_library(multiple=False):
         # The details of how to access this from the change object differs
         # for Select and SelectMultiple
         if multiple:
-            # Check if the change selected a new entry
-            if len(change["new"]) > len(change["old"]):
-                # If so, we display the metadata of the newly selected one
-                (entry,) = set(change["new"]) - set(change["old"])
+            # Pick one entry to show metadata
+            new_entries = set(change["new"]) - set(change["old"])
+            if new_entries:
                 metadata_form.data = pyrsistent.thaw(
-                    filter_list[entry].config["metadata"]
+                    filter_list[new_entries.pop()].config["metadata"]
                 )
+            else:
+                metadata_form.data = {}
         else:
             metadata_form.data = pyrsistent.thaw(
                 filter_list[change["new"]].config["metadata"]
