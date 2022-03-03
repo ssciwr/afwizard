@@ -17,7 +17,7 @@ def locate_lidar_dataset(ctx, param, path):
     # Validate that the file has the las or laz extension
     _, ext = os.path.splitext(path)
     if ext.lower() in (".las", ".laz"):
-        return os.path.abspath(path)
+        return DataSet(os.path.abspath(path))
     else:
         raise click.BadParameter(f"Lidar datasets must be .las or .laz (not: {path})")
 
@@ -59,14 +59,14 @@ def validate_spatial_reference(ctx, param, crs):
 
 @click.command()
 @click.option(
-    "--data",
+    "--dataset",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
     callback=locate_lidar_dataset,
     help="The LAS/LAZ data file to work on.",
 )
 @click.option(
-    "--data-crs",
+    "--dataset-crs",
     type=str,
     required=True,
     callback=validate_spatial_reference,
@@ -149,11 +149,11 @@ def main(**args):
     set_lastools_directory(args.pop("lastools_dir"))
 
     # Add CRS to data and segmentation
-    args["data"].spatial_reference = args.pop("data_crs")
+    args["dataset"].spatial_reference = args.pop("dataset_crs")
     args["segmentation"].spatial_reference = args.pop("segmentation_crs")
 
     # Call Python API
-    apply_adaptive_pipeline(dataset=DataSet(args.pop("data")), **args)
+    apply_adaptive_pipeline(**args)
 
 
 if __name__ == "__main__":
