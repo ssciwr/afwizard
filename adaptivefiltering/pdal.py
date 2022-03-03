@@ -5,6 +5,7 @@ from adaptivefiltering.paths import (
     load_schema,
     locate_file,
     check_file_extension,
+    within_temporary_workspace,
 )
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
@@ -58,7 +59,10 @@ def execute_pdal_pipeline(dataset=None, config=None):
 
     # Define and execute the pipeline
     pipeline = pdal.Pipeline(json.dumps(config), arrays=arrays)
-    _ = pipeline.execute()
+
+    # Execute the filter and suppress spurious file output
+    with within_temporary_workspace():
+        _ = pipeline.execute()
 
     # We are currently only handling situations with one output array
     assert len(pipeline.arrays) == 1

@@ -1,6 +1,10 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.filter import Filter
-from adaptivefiltering.paths import get_temporary_filename, load_schema
+from adaptivefiltering.paths import (
+    get_temporary_filename,
+    load_schema,
+    within_temporary_workspace,
+)
 from adaptivefiltering.utils import stringify_value
 
 import os
@@ -84,7 +88,8 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
         args.extend(["-i", dataset.filename, "-o", outfile])
 
         # Call the executable
-        subprocess.run(executable + args)
+        with within_temporary_workspace():
+            subprocess.run(executable + args)
 
         return DataSet(
             filename=outfile,
