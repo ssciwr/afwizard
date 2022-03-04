@@ -282,6 +282,17 @@ def split_segmentation_classes(segmentation):
     keys_list = [
         list(feature["properties"].keys()) for feature in segmentation["features"]
     ]
+    # remove "pipeline" and "pipeline_key" from list
+    for keys in keys_list:
+        try:
+            keys.remove("pipeline")
+        except:
+            pass
+        try:
+            keys.remove("pipeline_key")
+        except:
+            pass
+
     # only use keys that are present in all features:
     if _all_equal(keys_list):
         property_keys = keys_list[0]
