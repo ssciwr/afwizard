@@ -8,7 +8,12 @@ from adaptivefiltering.library import (
 )
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import Map, convert_segmentation, merge_classes
+from adaptivefiltering.segmentation import (
+    Map,
+    convert_segmentation,
+    merge_classes,
+    Segmentation,
+)
 from adaptivefiltering.utils import (
     AdaptiveFilteringError,
 )
@@ -731,7 +736,13 @@ def assign_pipeline(dataset, segmentation, pipelines):
                     icon="map-marker-alt", layout=ipywidgets.Layout(width="20%")
                 )
                 button.on_click(
-                    functools.partial(on_button_clicked, segmentation=segment)
+                    functools.partial(
+                        on_button_clicked,
+                        segmentation=Segmentation(
+                            segment["features"],
+                            spatial_reference=segmentation.spatial_reference,
+                        ),
+                    )
                 )
 
                 # used to assign a pipeline to a segmentation
@@ -739,6 +750,15 @@ def assign_pipeline(dataset, segmentation, pipelines):
                     options=dropdown_options,
                     layout=fullwidth,
                 )
+
+                # if pipeline is already assigned, set the dropdown menu to the filter
+                # if the filter can't be found, show "no Pipeline"
+                # for feature in segment["features"]:
+                if key == segment["features"][0]["properties"].get("pipeline_key", 0):
+                    new_dropdown.value = segment["features"][0]["properties"][
+                        "pipeline"
+                    ]
+
                 box_dict["DropDown"][key][value] = new_dropdown
 
                 box = ipywidgets.VBox(
@@ -753,12 +773,14 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
         # searches through the segmentation for the currently assigned property and adds all selcted pipeline values.
         assigned_segmentation = copy.deepcopy(segmentation)
+        assigned_segmentation["pipeline_property"] = feature_dropdown.value
         for feature in assigned_segmentation["features"]:
             for value, dropdown_widget in box_dict["DropDown"][
                 feature_dropdown.value
             ].items():
 
                 if value == feature["properties"][feature_dropdown.value]:
+                    feature["properties"]["pipeline_key"] = feature_dropdown.value
                     feature["properties"]["pipeline"] = dropdown_widget.value
         return assigned_segmentation
 

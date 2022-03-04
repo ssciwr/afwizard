@@ -69,6 +69,9 @@ class Segmentation(geojson.FeatureCollection):
         """
         filename = check_file_extension(filename, [".geojson"], ".geojson")
 
+        for feature in self["features"]:
+            _ = feature["properties"].pop("style", None)
+
         with open(filename, "w") as f:
             geojson.dump(self, f)
 
@@ -277,8 +280,14 @@ def split_segmentation_classes(segmentation):
         return next(g, True) and not next(g, False)
 
     keys_list = [
-        list(feature["properties"].keys()) for feature in segmentation["features"]
+        [
+            k
+            for k in list(feature["properties"].keys())
+            if k not in ("pipeline", "pipeline_key")
+        ]
+        for feature in segmentation["features"]
     ]
+
     # only use keys that are present in all features:
     if _all_equal(keys_list):
         property_keys = keys_list[0]
