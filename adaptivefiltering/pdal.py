@@ -54,7 +54,7 @@ def execute_pdal_pipeline(dataset=None, config=None):
     for array in arrays:
         if array.shape[0] == 0:
             raise AdaptiveFilteringError(
-                "PDAL cannot handle point clouds with 0 points"
+                "PDAL cannot handle point clouds with 0 points, this can in some cases be caused by an out of bound segmentation or a wrong crs of the dataset."
             )
 
     # Define and execute the pipeline
