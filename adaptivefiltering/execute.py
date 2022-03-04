@@ -1,8 +1,7 @@
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import load_filter
-from adaptivefiltering.library import locate_filter
+from adaptivefiltering.library import locate_filter_by_hash
 from adaptivefiltering.paths import get_temporary_filename
-from adaptivefiltering.segmentation import Segmentation
+from adaptivefiltering.segmentation import Segmentation, merge_classes
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 import os
@@ -11,7 +10,7 @@ import subprocess
 
 
 def apply_adaptive_pipeline(
-    datasets=None,
+    dataset=None,
     segmentation=None,
     output_dir="output",
     resolution=0.5,
@@ -46,58 +45,72 @@ def apply_adaptive_pipeline(
     :type suffix: str
     """
 
-    if isinstance(datasets, DataSet):
-        datasets = [datasets]
-
-    for dataset in datasets:
-        if not isinstance(dataset, DataSet):
-            raise AdaptiveFilteringError(
-                "Dataset are expected to be of type adaptivefiltering.DataSet"
-            )
+    if not isinstance(dataset, DataSet):
+        raise AdaptiveFilteringError(
+            "Dataset are expected to be of type adaptivefiltering.DataSet"
+        )
 
     if not isinstance(segmentation, Segmentation):
         raise AdaptiveFilteringError(
             "Segmentations are expected to be of type adaptivefiltering.segmentation.Segmentation"
         )
 
+    # Ensure existence of output directory
+    os.makedirs(output_dir, exist_ok=True)
+
     # Determine the extension of LAS/LAZ files
     extension = "laz" if compress else "las"
 
-    # We treat each given dataset file individually.
-    for ds in datasets:
-        # A data structure to store all the filtered bits in
-        filtered_segments = []
+    # Ensure that the segmentation contains pipeline information
+    for s in segmentation["features"]:
+        if "pipeline" not in s.get("properties", {}):
+            raise AdaptiveFilteringError(
+                "All features in segmentation are required to define the 'pipeline' property"
+            )
 
-        # We apply each segment individually
-        for segment in segmentation:
-            # Restrict the dataset to the subset
-            rds = ds.restrict(Segmentation(segment))
+    # Extract all filters needed
+    filter_hashes = [s["properties"]["pipeline"] for s in segmentation["features"]]
+    filters = {h: locate_filter_by_hash(h) for h in filter_hashes}
 
-            # Get the pipeline object for this filtering
-            pipeline = load_filter(locate_filter(segment["properties"]["pipeline"]))
+    # Merge segmentation by classes
+    merged = merge_classes(segmentation, keyword="pipeline")
+    hash_to_segmentation = {
+        m["properties"]["pipeline"]: Segmentation(
+            [m], spatial_reference=merged.spatial_reference
+        )
+        for m in merged["features"]
+    }
 
-            # Apply!
-            filtered = pipeline.execute(rds)
+    # Filter the dataset once per filter
+    filtered_datasets = []
+    for hash, filter in filters.items():
+        # Apply the filter
+        filtered = filter.execute(dataset)
 
-            # Save this to a file in order to be able to free memory
-            filename = get_temporary_filename(extension=extension)
-            saved = filtered.save(filename, compress=compress)
-            del filtered
+        # Restrict the dataset
+        restricted = filtered.restrict(segmentation=hash_to_segmentation[hash])
 
-            filtered_segments.append(saved)
-
-        # Join the segments in this dataset file. We use subprocess for this
-        # because our PDAL execution code from Python is not really fit for
-        # multiple input files.
-        _, filename = os.path.split(ds.filename)
-        filename, _ = os.path.splitext(filename)
-        las_output = os.path.join(output_dir, f"{filename}_{suffix}.{extension}")
-        subprocess.run(
-            f"pdal merge {' '.join(ds.filename for ds in filtered_segments)} {las_output}"
+        # And write it to a temporary file
+        filtered_datasets.append(
+            restricted.save(get_temporary_filename(extension=extension))
         )
 
-        # Provide GeoTiff output for this dataset
-        gtiff_output = os.path.join(output_dir, f"{filename}_{suffix}.tiff")
-        merged = DataSet(las_output)
-        rastered = merged.rasterize(resolution=resolution)
-        shutil.move(rastered.filename, gtiff_output)
+        # Remove temporary datasets to free memory
+        del filtered
+        del restricted
+
+    # Join the segments in this dataset file. We use subprocess for this
+    # because our PDAL execution code from Python is not really fit for
+    # multiple input files.
+    _, filename = os.path.split(dataset.filename)
+    filename, _ = os.path.splitext(filename)
+    las_output = os.path.join(output_dir, f"{filename}_{suffix}.{extension}")
+    subprocess.run(
+        f"pdal merge {' '.join(ds.filename for ds in filtered_datasets)} {las_output}".split()
+    )
+
+    # Provide GeoTiff output for this dataset
+    gtiff_output = os.path.join(output_dir, f"{filename}_{suffix}.tiff")
+    merged = DataSet(las_output)
+    rastered = merged.rasterize(resolution=resolution)
+    shutil.move(rastered.filename, gtiff_output)

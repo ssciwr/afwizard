@@ -5,7 +5,6 @@ from adaptivefiltering.asprs import asprs
 from adaptivefiltering.pdal import PDALFilter
 from adaptivefiltering.apps import assign_pipeline
 
-import io
 import numpy as np
 import os
 import pytest

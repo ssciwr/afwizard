@@ -60,6 +60,8 @@ class WidgetFormWithLabels(ipywidgets_jsonschema.Form):
         def _resetter():
             if "default" in schema:
                 widget.value = schema["default"]
+            else:
+                widget.value = widget.trait_defaults()["value"]
 
         _resetter()
 

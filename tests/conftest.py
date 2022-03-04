@@ -1,5 +1,4 @@
 import adaptivefiltering
-import os
 import pytest
 
 
@@ -11,9 +10,22 @@ def _dataset_fixture(filename, spatial_reference=None):
     return _fixture
 
 
+def _segmentation_fixture(filename, spatial_reference=None):
+    @pytest.fixture
+    def _fixture():
+        return adaptivefiltering.load_segmentation(
+            filename, spatial_reference=spatial_reference
+        )
+
+    return _fixture
+
+
 # Fixtures for the provided datasets
 dataset = _dataset_fixture("500k_NZ20_Westport.laz")
 minimal_dataset = _dataset_fixture("minimal.las", spatial_reference="EPSG:4326")
+dataset_seg = _segmentation_fixture(
+    "westportSegmentation.geojson", spatial_reference="EPSG:4326"
+)
 
 
 @pytest.fixture

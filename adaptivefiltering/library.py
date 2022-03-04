@@ -118,6 +118,12 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
     # Always make the library path absolute
     path = os.path.abspath(path)
 
+    # If the path already exists across registered filter libraries,
+    # there is nothing to do.
+    for lib in get_filter_libraries():
+        if lib.path == path:
+            return
+
     # Look for a library metadata file
     metadata = {}
     if os.path.exists(os.path.join(path, "library.json")):
@@ -163,12 +169,16 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
         )
 
 
-def library_keywords(libs=get_filter_libraries()):
+def library_keywords(libs=None):
     """Return a list of keywords used across one or more libraries
 
     :param libs:
         One or more filter libraries
     """
+
+    # If no libraries are given, we use all of them
+    if libs is None:
+        libs = get_filter_libraries()
 
     # Make libs parameter a list if not already
     if not is_iterable(libs):
@@ -209,6 +219,13 @@ def locate_filter(filename):
     raise FileNotFoundError(f"Filter file {filename} cannot be found!")
 
 
+def metadata_hash(pipeline):
+    """Calculate a hash value for the filter pipeline metadata"""
+    metadata = pyrsistent.thaw(pipeline.config.get("metadata", {}))
+    mrepr = repr({k: metadata[k] for k in sorted(metadata.keys())})
+    return hashlib.sha1(mrepr.encode()).hexdigest()
+
+
 def locate_filter_by_hash(hash):
     """Locate a filter across the filter libraries given a metadata hash
 
@@ -219,10 +236,9 @@ def locate_filter_by_hash(hash):
 
     # Collect all matches to throw a meaningful error
     found = []
-
     for lib in get_filter_libraries():
         for f in lib.filters:
-            if hash == hashlib.sha1(repr(f.config["metadata"]).encode()).hexdigest():
+            if hash == metadata_hash(f):
                 found.append(f)
 
     if not found:
