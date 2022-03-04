@@ -4,12 +4,12 @@ import hashlib
 import json
 import os
 import platform
-from sqlite3 import adapt
 import requests
 import tarfile
 import tempfile
 import uuid
 import xdg
+
 from adaptivefiltering.utils import AdaptiveFilteringError
 
 # Storage for the temporary workspace directory
