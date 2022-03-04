@@ -504,7 +504,8 @@ def save_filter(filter_, filename):
     """
     filename = check_file_extension(filename, [".json"], ".json")
 
-    # If the filename is not already absolute, we maybe
+    # If the filename is not already absolute, we maybe preprend the path
+    # of the current filter library
     if not os.path.isabs(filename):
         from adaptivefiltering.library import get_current_filter_library
 
@@ -513,6 +514,13 @@ def save_filter(filter_, filename):
             filename = os.path.abspath(filename)
         else:
             filename = os.path.join(lib, filename)
+
+    # If the filter has insufficient metadata we give a warning
+    if isinstance(filter_, PipelineMixin):
+        if filter_.title == "" or filter_.author == "" or len(filter_.keywords) == 0:
+            print(
+                "WARNING: This filter has insufficient metadata. Please consider adding in af.pipeline_tuning!"
+            )
 
     with open(filename, "w") as f:
         json.dump(serialize_filter(filter_), f)
