@@ -860,7 +860,13 @@ def apply_restriction(dataset, segmentation=None):
 
         # Construct a WKT Polygon for the clipping
         # this will be either a single polygon or a multipolygon
-        polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
+        try:
+            polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
+
+        except ValueError:
+            raise AdaptiveFilteringError(
+                "Oops something very bad happend to your geometry. This can be caused by giving wrong crs to a segmentation."
+            )
         polygons_wkt = polygons.ExportToWkt()
 
         from adaptivefiltering.pdal import execute_pdal_pipeline

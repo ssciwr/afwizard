@@ -10,6 +10,7 @@ import tempfile
 import uuid
 import xdg
 
+from adaptivefiltering.utils import AdaptiveFilteringError
 
 # Storage for the temporary workspace directory
 _tmp_dir = None
@@ -117,7 +118,7 @@ def check_file_extension(filename, possible_values, default_value):
         ext = default_value
     possible_extensions = [possible_ext.lower() for possible_ext in possible_values]
     if ext.lower() not in possible_extensions:
-        raise Exception(
+        raise AdaptiveFilteringError(
             f"The file extension {ext} is not supported. Please use the following: {possible_extensions}"
         )
     return os.path.join(name + ext)
