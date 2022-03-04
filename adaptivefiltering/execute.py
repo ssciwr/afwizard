@@ -73,7 +73,8 @@ def apply_adaptive_pipeline(
     filters = {h: locate_filter_by_hash(h) for h in filter_hashes}
 
     # Add a no-op filter
-    filters[""] = None
+    if "" in filter_hashes:
+        filters[""] = None
 
     # Merge segmentation by classes
     merged = merge_classes(segmentation, keyword="pipeline")
