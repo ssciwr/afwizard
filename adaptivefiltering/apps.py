@@ -33,6 +33,14 @@ import functools
 fullwidth = ipywidgets.Layout(width="100%")
 
 
+class ObjectProxy(wrapt.ObjectProxy):
+    def __copy__(self):
+        return ObjectProxy(copy.copy(self.__wrapped__))
+
+    def __deepcopy__(self, memo):
+        return ObjectProxy(copy.deepcopy(self.__wrapped__, memo))
+
+
 def return_proxy(creator, widgets):
     """A transparent proxy that can be returned from Jupyter UIs
 
@@ -51,7 +59,7 @@ def return_proxy(creator, widgets):
         the proxy object.
     """
     # Create a new proxy object by calling the creator once
-    proxy = wrapt.ObjectProxy(creator())
+    proxy = ObjectProxy(creator())
 
     # Define a handler that updates the proxy
     def _update_proxy(_):
