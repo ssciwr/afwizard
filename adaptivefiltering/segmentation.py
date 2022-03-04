@@ -69,6 +69,9 @@ class Segmentation(geojson.FeatureCollection):
         """
         filename = check_file_extension(filename, [".geojson"], ".geojson")
 
+        for feature in self["features"]:
+            _ = feature["properties"].pop("style", None)
+
         with open(filename, "w") as f:
             geojson.dump(self, f)
 
