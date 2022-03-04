@@ -12,6 +12,7 @@ from adaptivefiltering.filter import Pipeline
 import os
 import shutil
 import subprocess
+import logging
 
 
 def apply_adaptive_pipeline(
@@ -50,7 +51,7 @@ def apply_adaptive_pipeline(
         A suffix to use for files after applying filtering
     :type suffix: str
     """
-
+    logging.basicConfig(level=logging.INFO)
     if not isinstance(dataset, DataSet):
         raise AdaptiveFilteringError(
             "Dataset are expected to be of type adaptivefiltering.DataSet"
@@ -75,6 +76,8 @@ def apply_adaptive_pipeline(
             )
 
     # if pipelines were given, add them to the filter library
+    logging.info(f"Collecting filters.")
+
     if pipelines is not None:
         if is_iterable(pipelines):
             for pipeline in pipelines:
@@ -90,6 +93,7 @@ def apply_adaptive_pipeline(
     if "" in filter_hashes:
         filters[""] = None
 
+    logging.info(f"Split dataset into different parts to apply the pipelines.")
     # Merge segmentation by classes
     merged = merge_classes(segmentation, keyword="pipeline")
     hash_to_segmentation = {
@@ -101,12 +105,19 @@ def apply_adaptive_pipeline(
 
     # Filter the dataset once per filter
     filtered_datasets = []
-    for hash, filter in filters.items():
+    for i, (hash, filter) in enumerate(filters.items()):
         # If this is no-op, we simply use the dataset
+
+        if filter is not None:
+            logging.info(f"Running filter {filter.title} ({i+1}/{len(filters)})")
+        else:
+            logging.info(f"Running empty filter ({i+1}/{len(filters)})")
+
         if filter is None:
             filtered = dataset
         else:
             # Apply the filter
+
             filtered = filter.execute(dataset)
 
         # Restrict the dataset
@@ -125,6 +136,8 @@ def apply_adaptive_pipeline(
     # Join the segments in this dataset file. We use subprocess for this
     # because our PDAL execution code from Python is not really fit for
     # multiple input files.
+    logging.info(f"Merging the dataset back together.")
+
     _, filename = os.path.split(dataset.filename)
     filename, _ = os.path.splitext(filename)
     las_output = os.path.join(output_dir, f"{filename}_{suffix}.{extension}")
