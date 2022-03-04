@@ -1,9 +1,14 @@
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.library import locate_filter_by_hash
-from adaptivefiltering.paths import get_temporary_filename
+from adaptivefiltering.library import (
+    get_filter_libraries,
+    locate_filter_by_hash,
+    add_filter_library,
+    save_filter,
+)
+from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
 from adaptivefiltering.segmentation import Segmentation, merge_classes
-from adaptivefiltering.utils import AdaptiveFilteringError
-
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from adaptivefiltering.filter import Pipeline
 import os
 import shutil
 import subprocess
@@ -12,6 +17,7 @@ import subprocess
 def apply_adaptive_pipeline(
     dataset=None,
     segmentation=None,
+    pipelines=None,
     output_dir="output",
     resolution=0.5,
     compress=False,
@@ -68,10 +74,18 @@ def apply_adaptive_pipeline(
                 "All features in segmentation are required to define the 'pipeline' property"
             )
 
+    # if pipelines were given, add them to the filter library
+    if pipelines is not None:
+        if is_iterable(pipelines):
+            for pipeline in pipelines:
+                save_filter(pipeline, get_temporary_filename(extension=".json"))
+        elif isinstance(pipelines, Pipeline):
+            save_filter(pipelines, get_temporary_filename(extension=".json"))
+        add_filter_library(get_temporary_workspace())
+
     # Extract all filters needed
     filter_hashes = [s["properties"]["pipeline"] for s in segmentation["features"]]
-    filters = {h: locate_filter_by_hash(h) for h in filter_hashes}
-
+    filters = {h: locate_filter_by_hash(h) for h in filter_hashes if h != ""}
     # Add a no-op filter
     if "" in filter_hashes:
         filters[""] = None
