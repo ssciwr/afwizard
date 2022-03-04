@@ -1092,8 +1092,8 @@ def select_pipeline_from_library(multiple=False):
                     continue
 
                 # If the filter does not have at least one selected keyword -> skip
-                # Exception: No keywords are specified at all in the library (early dev)
-                if library_keywords():
+                # Exception: The filter defines no keywords (otherwise it is not discoverable)
+                if filter_.keywords:
                     if not set(keyword_widget.value).intersection(
                         set(filter_.keywords)
                     ):
