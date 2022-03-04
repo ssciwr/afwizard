@@ -73,16 +73,7 @@ def boundary_segmentation():
                         ],
                         "type": "Polygon",
                     },
-                    "properties": {
-                        "style": {
-                            "clickable": "false",
-                            "color": "#add8e6",
-                            "fill": "true",
-                            "opacity": 0.5,
-                            "stroke": "true",
-                            "weight": 4,
-                        }
-                    },
+                    "properties": {},
                     "type": "Feature",
                 }
             ],
