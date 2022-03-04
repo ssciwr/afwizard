@@ -753,9 +753,11 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
                 # if pipeline is already assigned, set the dropdown menu to the filter
                 # if the filter can't be found, show "no Pipeline"
-                for feature in segment["features"]:
-                    if key == feature["properties"].get("pipeline_key", 0):
-                        new_dropdown.value = feature["properties"]["pipeline"]
+                # for feature in segment["features"]:
+                if key == segment["features"][0]["properties"].get("pipeline_key", 0):
+                    new_dropdown.value = segment["features"][0]["properties"][
+                        "pipeline"
+                    ]
 
                 box_dict["DropDown"][key][value] = new_dropdown
 
