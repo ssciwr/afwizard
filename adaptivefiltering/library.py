@@ -3,7 +3,6 @@ from adaptivefiltering.paths import load_schema, download_test_file
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
 
 import click
-import collections
 import hashlib
 import glob
 import importlib
@@ -20,11 +19,41 @@ _filter_libraries = []
 _current_library = None
 
 
-FilterLibrary = collections.namedtuple(
-    "FilterLibrary",
-    ["filters", "name", "path", "recursive"],
-    defaults=[[], None, "", False],
-)
+class FilterLibrary:
+    def __init__(self, name=None, path="", recursive=False):
+        self.name = name
+        self.path = path
+        self.recursive = recursive
+
+    @property
+    def filters(self):
+        result = []
+
+        # Iterate over the JSON documents in the directory and load them
+        for filename in glob.glob(
+            os.path.join(self.path, "*.json"), recursive=self.recursive
+        ):
+            # If this is the library meta file, skip it
+            if os.path.split(filename)[1] == "library.json":
+                continue
+
+            # If the title field has not been specified, use the filename
+            try:
+                filter_ = load_filter(filename)
+                if filter_.title == "":
+                    md = filter_.config.get("metadata", pyrsistent.pmap())
+                    md = md.update({"title": filename})
+                    filter_ = filter_.copy(metadata=md)
+
+                # Add it to our list of filters
+                result.append(filter_)
+            except (KeyError, jsonschema.ValidationError):
+                # We ignore the filter if it cannot be validated against our schema.
+                # That is necessary to distinguish filter pipeline JSON data from
+                # other JSON data e.g. segmentations.
+                pass
+
+        return result
 
 
 def get_filter_libraries():
@@ -135,38 +164,12 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
         schema = load_schema("library.json")
         jsonschema.validate(metadata, schema)
 
-    # Iterate over the JSON documents in the directory and load them
-    filters = []
-    for filename in glob.glob(os.path.join(path, "*.json"), recursive=recursive):
-        # If this is the library meta file, skip it
-        if os.path.split(filename)[1] == "library.json":
-            continue
-
-        # If the title field has not been specified, use the filename
-        try:
-            filter_ = load_filter(filename)
-            if filter_.title == "":
-                md = filter_.config.get("metadata", pyrsistent.pmap())
-                md = md.update({"title": filename})
-                filter_ = filter_.copy(metadata=md)
-
-            # Add it to our list of filters
-            filters.append(filter_)
-        except (KeyError, jsonschema.ValidationError):
-            # We ignore the filter if it cannot be validated against our schema.
-            # That is necessary to distinguish filter pipeline JSON data from
-            # other JSON data e.g. segmentations.
-            pass
-
     # Maybe override the name field in metadata
     if name is not None:
         metadata["name"] = name
 
-    # Register the library object if it is existent
-    if metadata or filters:
-        _filter_libraries.append(
-            FilterLibrary(filters=filters, path=path, recursive=recursive, **metadata)
-        )
+    # Register the library
+    _filter_libraries.append(FilterLibrary(path=path, recursive=recursive, **metadata))
 
 
 def library_keywords(libs=None):
