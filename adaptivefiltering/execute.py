@@ -72,6 +72,9 @@ def apply_adaptive_pipeline(
     filter_hashes = [s["properties"]["pipeline"] for s in segmentation["features"]]
     filters = {h: locate_filter_by_hash(h) for h in filter_hashes}
 
+    # Add a no-op filter
+    filters[""] = None
+
     # Merge segmentation by classes
     merged = merge_classes(segmentation, keyword="pipeline")
     hash_to_segmentation = {
@@ -84,8 +87,12 @@ def apply_adaptive_pipeline(
     # Filter the dataset once per filter
     filtered_datasets = []
     for hash, filter in filters.items():
-        # Apply the filter
-        filtered = filter.execute(dataset)
+        # If this is no-op, we simply use the dataset
+        if filter is None:
+            filtered = dataset
+        else:
+            # Apply the filter
+            filtered = filter.execute(dataset)
 
         # Restrict the dataset
         restricted = filtered.restrict(segmentation=hash_to_segmentation[hash])
@@ -96,7 +103,8 @@ def apply_adaptive_pipeline(
         )
 
         # Remove temporary datasets to free memory
-        del filtered
+        if filter is not None:
+            del filtered
         del restricted
 
     # Join the segments in this dataset file. We use subprocess for this
