@@ -1,17 +1,24 @@
 from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.library import locate_filter_by_hash
-from adaptivefiltering.paths import get_temporary_filename
+from adaptivefiltering.library import (
+    get_filter_libraries,
+    locate_filter_by_hash,
+    add_filter_library,
+    save_filter,
+)
+from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
 from adaptivefiltering.segmentation import Segmentation, merge_classes
-from adaptivefiltering.utils import AdaptiveFilteringError
-
+from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from adaptivefiltering.filter import Pipeline
 import os
 import shutil
 import subprocess
+import logging
 
 
 def apply_adaptive_pipeline(
     dataset=None,
     segmentation=None,
+    pipelines=None,
     output_dir="output",
     resolution=0.5,
     compress=False,
@@ -44,7 +51,7 @@ def apply_adaptive_pipeline(
         A suffix to use for files after applying filtering
     :type suffix: str
     """
-
+    logging.basicConfig(level=logging.INFO)
     if not isinstance(dataset, DataSet):
         raise AdaptiveFilteringError(
             "Dataset are expected to be of type adaptivefiltering.DataSet"
@@ -56,6 +63,7 @@ def apply_adaptive_pipeline(
         )
 
     # Ensure existence of output directory
+    logging.info(f"Creating output directory {os.path.abspath(output_dir)}")
     os.makedirs(output_dir, exist_ok=True)
 
     # Determine the extension of LAS/LAZ files
@@ -68,14 +76,26 @@ def apply_adaptive_pipeline(
                 "All features in segmentation are required to define the 'pipeline' property"
             )
 
+    # if pipelines were given, add them to the filter library
+    logging.info("Collecting filters.")
+
+    if pipelines is not None:
+        if not is_iterable(pipelines):
+            pipelines = [pipelines]
+
+        for pipeline in pipelines:
+            save_filter(pipeline, get_temporary_filename(extension=".json"))
+
+        add_filter_library(get_temporary_workspace())
+
     # Extract all filters needed
     filter_hashes = [s["properties"]["pipeline"] for s in segmentation["features"]]
-    filters = {h: locate_filter_by_hash(h) for h in filter_hashes}
-
+    filters = {h: locate_filter_by_hash(h) for h in filter_hashes if h != ""}
     # Add a no-op filter
     if "" in filter_hashes:
         filters[""] = None
 
+    logging.info("Split dataset into different parts to apply the pipelines.")
     # Merge segmentation by classes
     merged = merge_classes(segmentation, keyword="pipeline")
     hash_to_segmentation = {
@@ -87,7 +107,12 @@ def apply_adaptive_pipeline(
 
     # Filter the dataset once per filter
     filtered_datasets = []
-    for hash, filter in filters.items():
+    for i, (hash, filter) in enumerate(filters.items()):
+
+        logging.info(
+            f"Running filter {filter.title if filter.title else ''} ({i+1}/{len(filters)})"
+        )
+
         # If this is no-op, we simply use the dataset
         if filter is None:
             filtered = dataset
@@ -111,6 +136,8 @@ def apply_adaptive_pipeline(
     # Join the segments in this dataset file. We use subprocess for this
     # because our PDAL execution code from Python is not really fit for
     # multiple input files.
+    logging.info("Merging the dataset back together.")
+
     _, filename = os.path.split(dataset.filename)
     filename, _ = os.path.splitext(filename)
     las_output = os.path.join(output_dir, f"{filename}_{suffix}.{extension}")
@@ -119,6 +146,10 @@ def apply_adaptive_pipeline(
     )
 
     # Provide GeoTiff output for this dataset
+    logging.info(
+        f"Write GeoTiff rasterization of the dataset with resolution={resolution}"
+    )
+
     gtiff_output = os.path.join(output_dir, f"{filename}_{suffix}.tiff")
     merged = DataSet(las_output)
     rastered = merged.rasterize(resolution=resolution)
