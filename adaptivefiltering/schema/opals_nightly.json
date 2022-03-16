@@ -1,0 +1,22 @@
+{
+  "anyOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "_backend": {
+          "const": "opals_nightly",
+          "type": "string"
+        },
+        "type": {
+          "const": "TerrainFilter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "TerrainFilter (OPALS nightly)",
+      "type": "object"
+    }
+  ]
+}

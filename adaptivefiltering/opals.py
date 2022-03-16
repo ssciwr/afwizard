@@ -275,6 +275,17 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
         return opals_is_present()
 
 
+class OPALSNightlyFilter(Filter, identifier="opals_nightly", backend=True):
+    @classmethod
+    def schema(cls):
+        return load_schema("opals_nightly.json")
+
+    @classmethod
+    def enabled(cls):
+        # TODO: Replace false with condition that asserts OPALS version
+        return opals_is_present() and False
+
+
 class OPALSDataManagerObject(DataSet):
     @classmethod
     def convert(cls, dataset):
