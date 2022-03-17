@@ -282,8 +282,14 @@ class OPALSNightlyFilter(Filter, identifier="opals_nightly", backend=True):
 
     @classmethod
     def enabled(cls):
-        # TODO: Replace false with condition that asserts OPALS version
-        return opals_is_present() and False
+        # We identify the OPALS nightly installation by the existence
+        # of the TerrainFilter module. My OPALS tarball contains an outdated
+        # version file, so that cannot be used as a version source
+        try:
+            get_opals_module_executable("TerrainFilter")
+            return True
+        except AdaptiveFilteringError:
+            return False
 
 
 class OPALSDataManagerObject(DataSet):
