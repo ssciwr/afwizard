@@ -53,7 +53,7 @@
           "title": "Number of data pyramid levels",
           "type": "integer"
         },
-        "robustWFAdaption": {
+        "robustWFAdpation": {
           "default": "adapting",
           "title": "Adaption of the robust weight function",
           "type": "string"
