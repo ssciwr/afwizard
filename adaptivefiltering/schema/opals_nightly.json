@@ -3,9 +3,61 @@
     {
       "additionalProperties": false,
       "properties": {
-        "_backend": {
-          "const": "opals_nightly",
+        "inFile": {
+          "description": "The path to the opals datamanager whose point data are being classified",
+          "title": "input ODM file",
           "type": "string"
+        },
+        "lowerThresholdScale": {
+          "default": -1.5,
+          "title": "Scale for the lower threshold",
+          "type": "number"
+        },
+        "maxSigma": {
+          "default": 0.5,
+          "title": "Maximum allowed sigma of interpolation",
+          "type": "number"
+        },
+        "maxiter": {
+          "default": 10,
+          "title": "Maximum number of iterations",
+          "type": "integer"
+        },
+        "method": {
+          "default": "robustInterpolation",
+          "enum": [
+            "robustInterpolation"
+          ],
+          "type": "string"
+        },
+        "outFile": {
+          "description": "Path of output grid file in GDAL supported format. Estimation rule: The current directory and the name (body) of the input file are used as file name basis. Additionally, the default extension of the output format is appended.",
+          "items": {
+            "type": "string"
+          },
+          "title": "output gridfile name(s)",
+          "type": "array"
+        },
+        "penetration": {
+          "default": 20,
+          "title": "Estimated penetration rate [%]",
+          "type": "integer"
+        },
+        "pyramidLevels": {
+          "default": 4,
+          "minimum": 1,
+          "title": "Number of data pyramid levels",
+          "type": "integer"
+        },
+        "robustWFAdaption": {
+          "default": "adapting",
+          "title": "Adaption of the robust weight function",
+          "type": "string"
+        },
+        "tileSize": {
+          "default": 128,
+          "title": "Tile (block) size",
+          "type": "integer"
         },
         "type": {
           "const": "TerrainFilter",
