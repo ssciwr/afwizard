@@ -48,6 +48,7 @@ logic of your backend:
                             "myparameter": {
                                 "type": "number",
                                 "default": 0.5,
+                                "title": "My tuning parameter",
                             }
                         },
                     }
