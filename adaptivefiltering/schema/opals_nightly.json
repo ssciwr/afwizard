@@ -3,6 +3,10 @@
     {
       "additionalProperties": false,
       "properties": {
+        "_backend": {
+          "const": "opals_nightly",
+          "type": "string"
+        },
         "inFile": {
           "description": "The path to the opals datamanager whose point data are being classified",
           "title": "input ODM file",
