@@ -11,5 +11,6 @@
    segmentation
    execution
    python
+   extending
    user_API
    developer_API
