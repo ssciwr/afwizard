@@ -275,7 +275,7 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
         return opals_is_present()
 
 
-class OPALSNightlyFilter(Filter, identifier="opals_nightly", backend=True):
+class OPALSNightlyFilter(OPALSFilter, identifier="opals_nightly", backend=True):
     @classmethod
     def schema(cls):
         return load_schema("opals_nightly.json")
