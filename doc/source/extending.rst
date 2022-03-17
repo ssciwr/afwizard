@@ -4,7 +4,7 @@ Extending adaptivefiltering with custom backends
 In this section, we will describe how the :code:`adaptivefiltering` data model
 can be extended with custom backends. Such extensions can be done from your project
 that depends on :code:`adaptivefiltering` - you do not necessarily need to contribute
-your custom backend to `adaptivefiltering` for it to integrate with the rest of
+your custom backend to :code:`adaptivefiltering` for it to integrate with the rest of
 :code:`adaptivefiltering`.
 
 In this documentation we will treat the following use case: You do have an
@@ -45,6 +45,10 @@ logic of your backend:
                         "type": "object",
                         "title": "My Filtering Backend",
                         "properties": {
+                            "_backend": {
+                                "type": "string",
+                                "const": "mybackend",
+                            },
                             "myparameter": {
                                 "type": "number",
                                 "default": 0.5,
@@ -81,7 +85,9 @@ JSONSchema specification. If you do not know JSONSchema, you might want to read 
 introduction guide: `Understanding JSONSchema`_. We require the schema for your filter
 to be wrapped into an :code:`anyOf` rule that allows schema composition between backends.
 This :code:`anyOf` rule does also allow you to expose multiple filters per backend class
-(e.g. because they share the same execution logic).
+(e.g. because they share the same execution logic). Each of the schemas contained in
+the :code:`anyOf` rule must be of type :code:`object` and define at least the :code:`_backend`
+property as shown in the code example.
 
 The :code:`execute` method implements the core functionality of your filter. It is passed
 a dataset and returns a filtered dataset. We first assert that we are dealing with a dataset
