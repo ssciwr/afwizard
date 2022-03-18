@@ -5,7 +5,7 @@ from adaptivefiltering.paths import (
     get_temporary_workspace,
     load_schema,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, stringify_value
+from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
 
 import click
 import json
@@ -200,10 +200,9 @@ def execute_opals_module(dataset=None, config=None):
     # Build the argument list
     args = []
     for k, v in config.items():
-        strv = stringify_value(v)
-        if strv != "":
+        if v != "":
             args.append(f"--{k}")
-            args.append(strv)
+            args.extend(stringify_parameters(v))
 
     # Execute the module
     result = subprocess.run(
