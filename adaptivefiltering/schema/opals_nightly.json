@@ -7,6 +7,31 @@
           "const": "opals_nightly",
           "type": "string"
         },
+        "feature": {
+          "default": "",
+          "description": "For each pyramid level a different statistical feature used for selecting a representative point within a grid cell can be specified. In general, the lowest points within grid cells(min) represent good starting points for deriving the terrain surface with robust interpolation. If long range outliers are present in the dataset, a more robust feature (e.g. quantile:0.05 (=default) or nmin) may be advantageous. Specify 'null' to suppress thinning for a specific level (recommended for first (i.e. full resolution ) level only.",
+          "title": "Feature for point selection in pyramid levels",
+          "type": "string"
+        },
+        "filter": {
+          "default": "",
+          "description": "Text string describing a (tree of) filter(s) using the WKT filter syntax.",
+          "title": "Modify the input using a (tree of) filter(s)",
+          "type": "string"
+        },
+        "filterThresholds": {
+          "default": [
+            0.2,
+            0.5,
+            1,
+            3
+          ],
+          "items": {
+            "type": "number"
+          },
+          "title": "Filter thresholds for pyramid levels",
+          "type": "array"
+        },
         "inFile": {
           "description": "The path to the opals datamanager whose point data are being classified",
           "title": "input ODM file",
