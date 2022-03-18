@@ -17,7 +17,7 @@ def is_iterable(object):
 def stringify_value(value):
     """Stringify a value, making sequence space delimited"""
     if is_iterable(value):
-        return " ".join(value)
+        return " ".join([stringify_value(v) for v in value])
 
     return str(value)
 
