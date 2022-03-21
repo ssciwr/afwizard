@@ -5,7 +5,7 @@ from adaptivefiltering.paths import (
     get_temporary_workspace,
     load_schema,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, stringify_value
+from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
 
 import click
 import json
@@ -200,10 +200,9 @@ def execute_opals_module(dataset=None, config=None):
     # Build the argument list
     args = []
     for k, v in config.items():
-        strv = stringify_value(v)
-        if strv != "":
+        if v != "":
             args.append(f"--{k}")
-            args.append(strv)
+            args.extend(stringify_parameters(v))
 
     # Execute the module
     result = subprocess.run(
@@ -273,6 +272,23 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
     @classmethod
     def enabled(cls):
         return opals_is_present()
+
+
+class OPALSNightlyFilter(OPALSFilter, identifier="opals_nightly", backend=True):
+    @classmethod
+    def schema(cls):
+        return load_schema("opals_nightly.json")
+
+    @classmethod
+    def enabled(cls):
+        # We identify the OPALS nightly installation by the existence
+        # of the TerrainFilter module. My OPALS tarball contains an outdated
+        # version file, so that cannot be used as a version source
+        try:
+            get_opals_module_executable("TerrainFilter")
+            return True
+        except AdaptiveFilteringError:
+            return False
 
 
 class OPALSDataManagerObject(DataSet):

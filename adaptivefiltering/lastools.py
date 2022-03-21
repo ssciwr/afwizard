@@ -5,7 +5,7 @@ from adaptivefiltering.paths import (
     load_schema,
     within_temporary_workspace,
 )
-from adaptivefiltering.utils import stringify_value
+from adaptivefiltering.utils import stringify_parameters
 
 import os
 import platform
@@ -76,10 +76,9 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
         # Build the argument list
         args = []
         for k, v in config.items():
-            strv = stringify_value(v)
-            if strv != "":
+            if v != "":
                 args.append(f"-{k}")
-                args.append(strv)
+                args.extend(stringify_parameters(v))
 
         # Create a filename for lasground output
         outfile = get_temporary_filename(extension="las")

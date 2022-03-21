@@ -14,12 +14,12 @@ def is_iterable(object):
     return isinstance(object, collections.abc.Iterable) and not isinstance(object, str)
 
 
-def stringify_value(value):
+def stringify_parameters(value):
     """Stringify a value, making sequence space delimited"""
     if is_iterable(value):
-        return " ".join(value)
+        return sum((stringify_parameters(v) for v in value), [])
 
-    return str(value)
+    return [str(value)]
 
 
 def check_spatial_reference(crs):
