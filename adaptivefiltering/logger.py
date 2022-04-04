@@ -10,6 +10,6 @@ _handler.setFormatter(_formatter)
 
 
 def attach_file_logger(filename):
-    handler = logging.FileHandler(filename)
+    handler = logging.FileHandler(filename, mode="w")
     handler.setFormatter(_handler)
     logger.addHandler(handler)
