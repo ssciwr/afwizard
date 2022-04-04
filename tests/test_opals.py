@@ -11,7 +11,6 @@ import pytest
 # The list of implemented modules
 _availableOpalsModules = [
     "RobFilter",
-    "TerrainFilter",
 ]
 
 
