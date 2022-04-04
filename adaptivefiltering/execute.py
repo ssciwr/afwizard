@@ -54,10 +54,6 @@ def apply_adaptive_pipeline(
     :type suffix: str
     """
 
-    # We decrease the logging level and add a file handler
-    logger.setLevel(logging.INFO)
-    attach_file_logger(os.path.join(output_dir, "output.log"))
-
     if not isinstance(dataset, DataSet):
         raise AdaptiveFilteringError(
             "Dataset are expected to be of type adaptivefiltering.DataSet"
@@ -68,9 +64,15 @@ def apply_adaptive_pipeline(
             "Segmentations are expected to be of type adaptivefiltering.segmentation.Segmentation"
         )
 
+    # We decrease the logging level
+    logger.setLevel(logging.INFO)
+
     # Ensure existence of output directory
     logger.info(f"Creating output directory {os.path.abspath(output_dir)}")
     os.makedirs(output_dir, exist_ok=True)
+
+    # We add a file logging handler
+    attach_file_logger(os.path.join(output_dir, "output.log"))
 
     # Determine the extension of LAS/LAZ files
     extension = "laz" if compress else "las"
