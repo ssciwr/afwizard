@@ -6,6 +6,33 @@
           "const": "pdal",
           "type": "string"
         },
+        "type": {
+          "const": "filters.assign",
+          "type": "string"
+        },
+        "value": {
+          "const": [
+            "Classification = 2"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "title": "No-Op All Ground Filter",
+      "type": "object"
+    },
+    {
+      "properties": {
+        "_backend": {
+          "const": "pdal",
+          "type": "string"
+        },
         "cell": {
           "default": 10.0,
           "title": "Cell size",
