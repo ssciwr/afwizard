@@ -94,6 +94,16 @@ class PDALFilter(Filter, identifier="pdal"):
     def schema(cls):
         return load_schema("pdal.json")
 
+    @classmethod
+    def form_schema(cls):
+        schema = cls.schema()
+
+        return {
+            "anyOf": [
+                s for s in schema["anyOf"] if s["title"] != "No-Op All Ground Filter"
+            ]
+        }
+
     def as_pipeline(self):
         return PDALPipeline(filters=[self])
 
