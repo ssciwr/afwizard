@@ -1,14 +1,12 @@
 from adaptivefiltering.dataset import DataSet
 from adaptivefiltering.library import (
-    get_filter_libraries,
     locate_filter_by_hash,
     add_filter_library,
-    save_filter,
 )
 from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
 from adaptivefiltering.segmentation import Segmentation, merge_classes
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
-from adaptivefiltering.filter import Pipeline
+from adaptivefiltering.filter import save_filter
 import os
 import shutil
 import subprocess
@@ -112,6 +110,10 @@ def apply_adaptive_pipeline(
         logging.info(
             f"Running filter {filter.title if filter.title else ''} ({i+1}/{len(filters)})"
         )
+
+        # Write the filter into the output directory
+        # TODO: Change this filename from hash to the saved filename once it is implemented
+        save_filter(filter, os.path.join(output_dir, "{hash}.json"))
 
         # If this is no-op, we simply use the dataset
         if filter is None:
