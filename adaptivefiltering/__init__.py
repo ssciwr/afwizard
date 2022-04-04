@@ -1,6 +1,9 @@
 # This is the single source of truth
 __version__ = "1.0.0b0"
 
+# Ensure inclusion of the logging configuration
+import adaptivefiltering.logger
+
 # Make sure to import modules that register filter backends
 import adaptivefiltering.lastools
 import adaptivefiltering.opals

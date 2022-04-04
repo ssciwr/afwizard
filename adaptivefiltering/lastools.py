@@ -7,11 +7,13 @@ from adaptivefiltering.paths import (
 )
 from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
 
+import logging
 import os
 import platform
 import shutil
 import subprocess
 
+logger = logging.getLogger("adaptivefiltering")
 
 # The module wide storage for the lasground prefix
 _lastools_directory = None
@@ -88,6 +90,9 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
 
         # Call the executable
         with within_temporary_workspace():
+            logger.info(
+                f"Executing LASTools command line '{' '.join(executable + args)}'"
+            )
             result = subprocess.run(
                 executable + args,
                 stdout=subprocess.PIPE,

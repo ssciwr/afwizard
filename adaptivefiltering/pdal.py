@@ -13,9 +13,12 @@ from adaptivefiltering.utils import (
 )
 
 import json
+import logging
 import os
 import pdal
 import pyrsistent
+
+logger = logging.getLogger("adaptivefiltering")
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
@@ -58,7 +61,9 @@ def execute_pdal_pipeline(dataset=None, config=None):
             )
 
     # Define and execute the pipeline
-    pipeline = pdal.Pipeline(json.dumps(config), arrays=arrays)
+    config_str = json.dumps(config)
+    logger.info(f"Executing PDAL pipeline with configuration '{config_str}'")
+    pipeline = pdal.Pipeline(config_str, arrays=arrays)
 
     # Execute the filter and suppress spurious file output
     _ = pipeline.execute()

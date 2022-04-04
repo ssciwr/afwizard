@@ -1,6 +1,4 @@
 import collections
-import copy
-import numpy as np
 import re
 import pyproj
 

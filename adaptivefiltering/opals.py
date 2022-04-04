@@ -10,6 +10,7 @@ from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
 import click
 import json
 import jsonschema
+import logging
 import os
 import platform
 import pyrsistent
@@ -18,6 +19,7 @@ import shutil
 import subprocess
 import xmltodict
 
+logger = logging.getLogger("adaptivefiltering")
 
 _opals_directory = None
 
@@ -205,6 +207,9 @@ def execute_opals_module(dataset=None, config=None):
             args.extend(stringify_parameters(v))
 
     # Execute the module
+    logger.info(
+        f"Executing OPALS command line '{' '.join([executable] + fileargs + args)}'"
+    )
     result = subprocess.run(
         [executable] + fileargs + args,
         stdout=subprocess.PIPE,
