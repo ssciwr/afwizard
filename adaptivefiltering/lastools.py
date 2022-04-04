@@ -5,7 +5,7 @@ from adaptivefiltering.paths import (
     load_schema,
     within_temporary_workspace,
 )
-from adaptivefiltering.utils import stringify_parameters
+from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
 
 import os
 import platform
@@ -88,7 +88,14 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
 
         # Call the executable
         with within_temporary_workspace():
-            subprocess.run(executable + args)
+            result = subprocess.run(
+                executable + args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
+        if result.returncode != 0:
+            raise AdaptiveFilteringError(f"LASTools error: {result.stdout.decode()}")
 
         return DataSet(
             filename=outfile,
