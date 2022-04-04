@@ -6,6 +6,7 @@ from adaptivefiltering.library import (
     library_keywords,
     metadata_hash,
 )
+from adaptivefiltering.logger import create_foldable_log_widget
 from adaptivefiltering.paths import load_schema, within_temporary_workspace
 from adaptivefiltering.pdal import PDALInMemoryDataSet
 from adaptivefiltering.segmentation import (
@@ -507,6 +508,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
                 class_widget,
             ]
         ),
+        footer=create_foldable_log_widget(),
     )
 
     # Initially trigger preview generation
