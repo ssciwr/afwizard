@@ -524,7 +524,14 @@ def pipeline_tuning(datasets=[], pipeline=None):
     )
 
     def _finalize(_):
-        app.layout.display = "none"
+        if (
+            pipeline_form.data["metadata"]["author"] == ""
+            or len(pipeline_form.data["metadata"]["keywords"]) == 0
+            or pipeline_form.data["metadata"]["title"] == ""
+        ):
+            finalize.description = "Finalize (Metadata required)"
+        else:
+            app.layout.display = "none"
 
     finalize.on_click(_finalize)
 
