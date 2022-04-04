@@ -10,9 +10,8 @@ import pytest
 
 # The list of implemented modules
 _availableOpalsModules = [
-    "Cell",
-    "Grid",
     "RobFilter",
+    "TerrainFilter",
 ]
 
 
