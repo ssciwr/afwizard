@@ -3,6 +3,7 @@ from adaptivefiltering.library import (
     locate_filter_by_hash,
     add_filter_library,
 )
+from adaptivefiltering.logger import attach_file_logger
 from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
 from adaptivefiltering.segmentation import Segmentation, merge_classes
 from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
@@ -53,8 +54,9 @@ def apply_adaptive_pipeline(
     :type suffix: str
     """
 
-    # We decrease the logging level
+    # We decrease the logging level and add a file handler
     logger.setLevel(logging.INFO)
+    attach_file_logger(os.path.join(output_dir, "output.log"))
 
     if not isinstance(dataset, DataSet):
         raise AdaptiveFilteringError(
