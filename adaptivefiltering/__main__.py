@@ -7,8 +7,11 @@ from adaptivefiltering.segmentation import Segmentation
 from adaptivefiltering.utils import check_spatial_reference
 
 import click
+import logging
 import os
 import re
+
+logger = logging.getLogger("adaptivefiltering")
 
 
 def locate_lidar_dataset(ctx, param, path):
@@ -152,8 +155,11 @@ def main(**args):
     args["dataset"].spatial_reference = args.pop("dataset_crs")
     args["segmentation"].spatial_reference = args.pop("segmentation_crs")
 
-    # Call Python API
-    apply_adaptive_pipeline(**args)
+    # Call Python API and log errors
+    try:
+        apply_adaptive_pipeline(**args)
+    except Exception:
+        logger.exception("adaptivefiltering failed with the following error")
 
 
 if __name__ == "__main__":
