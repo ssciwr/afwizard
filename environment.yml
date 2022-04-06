@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - gdal
+  - gdal=3.4.0
   - IPython=7.21.0
   - ipyleaflet
   - jsonschema=3.2.0
