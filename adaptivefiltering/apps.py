@@ -791,6 +791,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
                 if value == feature["properties"][feature_dropdown.value]:
                     feature["properties"]["pipeline_key"] = feature_dropdown.value
                     feature["properties"]["pipeline"] = dropdown_widget.value
+                    feature["properties"]["pipeline_title"] = dropdown_widget.label
         return assigned_segmentation
 
     def _update_assignment_widget(c):

@@ -120,7 +120,7 @@ def apply_adaptive_pipeline(
 
         # Write the filter into the output directory
         # TODO: Change this filename from hash to the saved filename once it is implemented
-        save_filter(filter, os.path.join(output_dir, "{hash}.json"))
+        save_filter(filter, os.path.join(output_dir, "{filter.title}.json"))
 
         # Apply the filter
         filtered = filter.execute(dataset)
