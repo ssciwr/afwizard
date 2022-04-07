@@ -67,12 +67,30 @@ def apply_adaptive_pipeline(
     # We decrease the logging level
     logger.setLevel(logging.INFO)
 
+    # We add a file logging handler
+    attach_file_logger(os.path.join(output_dir, "output.log"))
+
+    # if no spatial_refence is defined for the dataset it is tried to be extracted from the metadata
+    if dataset.spatial_reference is None:
+        from adaptivefiltering.pdal import PDALInMemoryDataSet
+
+        dataset.spatial_reference = PDALInMemoryDataSet.convert(
+            dataset
+        ).spatial_reference
+        logger.info(
+            f"No spatial reference system added by the user. Found spatial reference system in DataSet metadata."
+        )
+
+    if segmentation.spatial_reference is None:
+        raise AdaptiveFilteringError(
+            "No spatial reference system found for the segmentation. Please provide one via the following methods:\n"
+            + "1: When loading a segmentation, specify the crs. Example: af.load_segmentation(filename, spatial_reference=None) \n"
+            + '2: Specify a spatial reference directly. Example: segmentation.spatial_reference = "EPSG:4326" '
+        )
+
     # Ensure existence of output directory
     logger.info(f"Creating output directory {os.path.abspath(output_dir)}")
     os.makedirs(output_dir, exist_ok=True)
-
-    # We add a file logging handler
-    attach_file_logger(os.path.join(output_dir, "output.log"))
 
     # Determine the extension of LAS/LAZ files
     extension = "laz" if compress else "las"
@@ -119,7 +137,6 @@ def apply_adaptive_pipeline(
         )
 
         # Write the filter into the output directory
-        # TODO: Change this filename from hash to the saved filename once it is implemented
         save_filter(filter, os.path.join(output_dir, f"{filter.title}.json"))
 
         # Apply the filter
