@@ -66,6 +66,10 @@ def apply_adaptive_pipeline(
 
     # We decrease the logging level
     logger.setLevel(logging.INFO)
+    # Ensure existence of output directory
+    # This is not written in the log file
+    logger.info(f"Creating output directory {os.path.abspath(output_dir)}")
+    os.makedirs(output_dir, exist_ok=True)
 
     # We add a file logging handler
     attach_file_logger(os.path.join(output_dir, "output.log"))
@@ -87,10 +91,6 @@ def apply_adaptive_pipeline(
             + "1: When loading a segmentation, specify the crs. Example: af.load_segmentation(filename, spatial_reference=None) \n"
             + '2: Specify a spatial reference directly. Example: segmentation.spatial_reference = "EPSG:4326" '
         )
-
-    # Ensure existence of output directory
-    logger.info(f"Creating output directory {os.path.abspath(output_dir)}")
-    os.makedirs(output_dir, exist_ok=True)
 
     # Determine the extension of LAS/LAZ files
     extension = "laz" if compress else "las"
