@@ -851,7 +851,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
     return segmentation_proxy
 
 
-def apply_restriction(dataset, segmentation=None):
+def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
     """The Jupyter UI to create a segmentation object from scratch.
 
     The use of this UI will soon be described in detail.
@@ -897,6 +897,15 @@ def apply_restriction(dataset, segmentation=None):
 
     # If this is interactive, construct the widgets
     controls, map_ = setup_overlay_control(dataset, with_map=True)
+
+    if segmentation_overlay is not None:
+        if isinstance(segmentation_overlay, Segmentation):
+            map_.load_geojson(segmentation_overlay, "Segmentation")
+        else:
+            raise Exception(
+                f"segmentation_overlay should be of type adaptivefiltering.Segmentation but is {type(segmentation_overlay)}."
+            )
+
     finalize = ipywidgets.Button(description="Finalize")
     dataset_proxy = return_proxy(lambda: dataset, [])
 
