@@ -12,6 +12,9 @@ import jsonmerge
 import jsonschema
 import os
 import pyrsistent
+import logging
+
+logger = logging.getLogger("adaptivefiltering")
 
 
 class FilterError(AdaptiveFilteringError):
@@ -521,7 +524,7 @@ def save_filter(filter_, filename):
             print(
                 "WARNING: This filter has insufficient metadata. Please consider adding in af.pipeline_tuning!"
             )
-
+    logger.info(f"Save Filter named {filter_.title} to {filename}.\n")
     with open(filename, "w") as f:
         json.dump(serialize_filter(filter_), f)
 

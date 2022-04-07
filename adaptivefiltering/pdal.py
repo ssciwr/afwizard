@@ -62,7 +62,7 @@ def execute_pdal_pipeline(dataset=None, config=None):
 
     # Define and execute the pipeline
     config_str = json.dumps(config)
-    logger.info(f"Executing PDAL pipeline with configuration '{config_str}'")
+    logger.info(f"Executing PDAL pipeline with configuration: \n \t '{config_str}' \n")
     pipeline = pdal.Pipeline(config_str, arrays=arrays)
 
     # Execute the filter and suppress spurious file output
@@ -161,6 +161,7 @@ class PDALInMemoryDataSet(DataSet):
             The data set instance to convert.
         """
         # Conversion should be itempotent
+        logger.debug("Convert DataSet to PDALInMemoryDataSet.\n")
         if isinstance(dataset, PDALInMemoryDataSet):
             return dataset
 

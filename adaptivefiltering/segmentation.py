@@ -15,6 +15,9 @@ import collections
 import copy
 from itertools import groupby
 from pyproj import Transformer, crs
+import logging
+
+logger = logging.getLogger("adaptivefiltering")
 
 
 class Segmentation(geojson.FeatureCollection):
@@ -72,6 +75,7 @@ class Segmentation(geojson.FeatureCollection):
         for feature in self["features"]:
             _ = feature["properties"].pop("style", None)
 
+        logger.info(f"Save Segmentation as {filename}.\n")
         with open(filename, "w") as f:
             geojson.dump(self, f)
 
@@ -94,19 +98,22 @@ def merge_classes(segmentation, keyword=None):
     If multiple polygons share the same class attribute they will be combined in one multipolygon feature.
     Warning, if members of the same class have different metadata it will not be preserved.
     """
-
+    logger.debug("\n Begin merge_classes.\n")
     new_segmentation = Segmentation(
         [], spatial_reference=segmentation.spatial_reference
     )
     added_classes = {}
 
     if keyword == None:
-
+        logger.debug(
+            "No keyword was given, all segments will be merged into one multipolygon."
+        )
         for feature in segmentation["features"]:
 
             feature["properties"].setdefault("merge", 1)
         keyword = "merge"
 
+    logger.debug(f"Segmentation pre merge: \n {segmentation}\n")
     for feature in segmentation["features"]:
         if keyword in feature["properties"]:
             if feature["properties"][keyword] not in added_classes.keys():
@@ -138,6 +145,7 @@ def merge_classes(segmentation, keyword=None):
 
         if "merge" in feature["properties"].keys():
             _ = feature["properties"].pop("merge")
+    logger.debug(f"Segmentation post merge: \n {new_segmentation}\n\n")
 
     return new_segmentation
 
@@ -180,18 +188,17 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         :type: adaptivefiltering.segmentation.Segmentation
 
 
-        :param srs_in:
-            Current spatial reference system of the segmentation.
-            Must be either EPSG or wkt.
-        :type: str
-
         :param srs_out:
             Desired spatial reference system.
             Must be either EPSG or wkt.
-            Default: None
         :type: str
 
+        :param srs_in:
+            Current spatial reference system of the segmentation.
+            Must be either EPSG or wkt.
+            Default: None
 
+        :type: str
 
         :return: Transformed segmentation.
         :rtype: adaptivefiltering.segmentation.Segmentation
@@ -211,6 +218,7 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
     if crs.CRS(srs_in) == crs.CRS(srs_out):
         return segmentation
 
+    logger.debug(f"Transform segmentation from {srs_in} to {srs_out}.\n")
     new_features = copy.deepcopy(segmentation["features"])
 
     for feature, new_feature in zip(segmentation["features"], new_features):
@@ -279,6 +287,8 @@ def split_segmentation_classes(segmentation):
         g = groupby(iterable)
         return next(g, True) and not next(g, False)
 
+    logger.debug("\n Begin segmentation split \n.")
+    logger.debug(f"pre split:\n {segmentation}\n")
     keys_list = [
         [
             k
@@ -290,6 +300,7 @@ def split_segmentation_classes(segmentation):
 
     # only use keys that are present in all features:
     if _all_equal(keys_list):
+
         property_keys = keys_list[0]
 
     else:
@@ -334,6 +345,7 @@ def split_segmentation_classes(segmentation):
     for key in split_dict.keys():
 
         split_dict[key] = dict(sorted(split_dict[key].items()))
+    logger.debug(f"post split:\n {split_dict}\n\n")
 
     return split_dict
 

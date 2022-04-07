@@ -18,6 +18,9 @@ import jsonschema
 import os
 import pytools
 import shutil
+import logging
+
+logger = logging.getLogger("adaptivefiltering")
 
 
 class DataSet:
@@ -75,9 +78,6 @@ class DataSet:
             classification = asprs(slice(None))
 
         classification = asprs(classification)
-
-        if resolution <= 0:
-            raise Warning("Negative Resolutions are not possible for rasterization.")
 
         return DigitalSurfaceModel(
             dataset=self, resolution=resolution, classification=classification
@@ -201,6 +201,8 @@ class DataSet:
             )
 
         # Return a DataSet instance
+
+        logger.info(f"Save file to {filename}. \n")
         return DataSet(
             filename=filename,
             spatial_reference=self.spatial_reference,

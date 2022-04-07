@@ -309,6 +309,7 @@ class OPALSDataManagerObject(DataSet):
                 "OPALS requires manual setting of the spatial_reference parameter of the DataSet."
             )
 
+        logger.debug("convert to OPALSDataManagerObject\n.")
         # If dataset is of unknown type, we should first dump it to disk
         dataset = dataset.save(get_temporary_filename("las"))
 

@@ -34,7 +34,9 @@ import pyrsistent
 import pytools
 import wrapt
 import functools
+import logging
 
+logger = logging.getLogger("adaptivefiltering")
 
 fullwidth = ipywidgets.Layout(width="100%")
 
@@ -801,6 +803,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
         right_side.children = right_side.children + (
             box_dict["VBox"][feature_dropdown.value],
         )
+        logger.info(f"Switched to {feature_dropdown.value}. \n")
 
     dataset = PDALInMemoryDataSet.convert(dataset)
 
@@ -826,7 +829,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
         left_sidebar=controls,
         center=map_widget,
         right_sidebar=right_side,
-        footer=None,
+        footer=create_foldable_log_widget(),
         pane_widths=[1, 3, 1],
     )
 
@@ -900,6 +903,7 @@ def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
 
     if segmentation_overlay is not None:
         if isinstance(segmentation_overlay, Segmentation):
+            logger.info("Found segmentation_overlay.")
             map_.load_geojson(segmentation_overlay, "Segmentation")
         else:
             raise Exception(
@@ -923,7 +927,7 @@ def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
         left_sidebar=controls,
         center=map_widget,
         right_sidebar=None,
-        footer=None,
+        footer=create_foldable_log_widget(),
         pane_widths=[1, 3, 0],
     )
 
@@ -978,7 +982,7 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
         left_sidebar=controls,
         center=content,
         right_sidebar=None,
-        footer=None,
+        footer=create_foldable_log_widget(),
         pane_widths=[1, 3, 0],
     )
 
@@ -1184,6 +1188,7 @@ def select_pipeline_from_library(multiple=False):
         center=filter_list_widget,
         right_sidebar=ipywidgets.VBox([button, metadata_form.widget]),
         pane_widths=(1, 1, 1),
+        footer=None,
     )
     IPython.display.display(app)
 
