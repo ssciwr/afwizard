@@ -30,6 +30,10 @@ Core features
   * Assignment of filter pipeline settings to spatial subregions in map-based user interface
   * Command Line Interface for large scale application of filter pipelines
 
+## Documentation
+
+The documentation of `adaptivefiltering` can be found here: [https://adaptivefiltering.readthedocs.io/en/latest](https://adaptivefiltering.readthedocs.io/en/latest)
+
 ## Prerequisites
 
 In order to work with `adaptivefiltering`, you need the following required pieces of Software.
