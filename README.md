@@ -39,7 +39,6 @@ The documentation of `adaptivefiltering` can be found here: [https://adaptivefil
 In order to work with `adaptivefiltering`, you need the following required pieces of Software.
 
 * Python >= 3.7
-* A [WebGL-enabled](https://get.webgl.org/) browser. We recommend Google Chrome and advise you to test with it whenever you experience difficulties with user intefaces.
 * A [Conda installation](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 
 There are alternatives to Conda for installation, but we strongly advise you to use Conda as it offers the best experience for this type of project.
