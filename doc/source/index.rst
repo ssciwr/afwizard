@@ -6,8 +6,8 @@
    workflows
    datasets
    libraries
-   selection
    filtering
+   selection
    segmentation
    execution
    python
