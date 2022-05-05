@@ -41,6 +41,11 @@ In order to work with `adaptivefiltering`, you need the following required piece
 * Python >= 3.7
 * A [Conda installation](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 
+If you want to use the respective backends, you also need to install the following pieces of software:
+
+* [OPALS](https://opals.geo.tuwien.ac.at/html/stable/index.html) in the latest (nightly) version that contains the `TerrainFilter` module.
+* [LASTools](https://rapidlasso.com/)
+
 There are alternatives to Conda for installation, but we strongly advise you to use Conda as it offers the best experience for this type of project.
 
 ## Installing and using
