@@ -67,9 +67,8 @@ def apply_adaptive_pipeline(
     # We decrease the logging level
     logger.setLevel(logging.INFO)
     # Ensure existence of output directory
-    # This is not written in the log file
-    logger.info(f"Creating output directory {os.path.abspath(output_dir)}")
     os.makedirs(output_dir, exist_ok=True)
+    logger.info(f"Created output directory {os.path.abspath(output_dir)}")
 
     # We add a file logging handler
     attach_file_logger(os.path.join(output_dir, "output.log"))
@@ -137,7 +136,10 @@ def apply_adaptive_pipeline(
         )
 
         # Write the filter into the output directory
-        save_filter(filter, os.path.join(output_dir, f"{filter.title}.json"))
+        save_filter(
+            filter,
+            os.path.join(output_dir, f"{filter.title.lower().replace(' ' ,'_')}.json"),
+        )
 
         # Apply the filter
         filtered = filter.execute(dataset)
