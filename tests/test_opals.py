@@ -26,6 +26,11 @@ def test_set_opals_directory(monkeypatch):
     assert opals_is_present()
     set_opals_directory(None)
 
+    # Check that we correctly validate an OPALS path
+    with pytest.raises(AdaptiveFilteringError):
+        set_opals_directory("bla")
+    assert not opals_is_present()
+
 
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
 def test_get_opals_module_executable():
