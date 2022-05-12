@@ -206,7 +206,7 @@ class DataSet:
             spatial_reference=self.spatial_reference,
         )
 
-    def restrict(self, segmentation=None):
+    def restrict(self, segmentation=None, segmentation_overlay=None):
         """Restrict the data set to a spatial subset
 
         This is of vital importance when working with large Lidar datasets
@@ -218,11 +218,18 @@ class DataSet:
             for the cropping. If omitted, an interactive selection tool is
             shown in Jupyter.
         :type: adaptivefiltering.segmentation.Segmentation
+
+
+        :param segmentation_overlay:
+            A segmentation object that will be overlayed on the map for easier use of the restrict app.
+        :type: adaptivefiltering.segmentation.Segmentation
+
+
         """
 
         from adaptivefiltering.apps import apply_restriction
 
-        return apply_restriction(self, segmentation)
+        return apply_restriction(self, segmentation, segmentation_overlay)
 
     @classmethod
     def convert(cls, dataset):
