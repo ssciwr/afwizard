@@ -44,6 +44,7 @@ def set_opals_directory(dir):
         try:
             get_opals_module_executable("RobFilter", base=dir)
         except AdaptiveFilteringError:
+            _opals_directory = None
             raise AdaptiveFilteringError(
                 f"Path {dir} does not contain an OPALS installation!"
             )

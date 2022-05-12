@@ -36,8 +36,12 @@ def set_lastools_directory(dir):
 
     # Validate the given directory if it is not None
     if dir is not None:
-        # If this throws, we show a meaningful error where we looked for LASTools
-        lasground_executable(base=dir)
+        try:
+            # If this throws, we show a meaningful error where we looked for LASTools
+            lasground_executable(base=dir)
+        except AdaptiveFilteringError as e:
+            _lastools_directory = None
+            raise e
 
 
 def get_lastools_directory():
