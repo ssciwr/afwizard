@@ -35,16 +35,32 @@ def set_opals_directory(dir):
         The OPALS installation directory to use
     :type dir: str
     """
+    # Globally store the given path
     global _opals_directory
     _opals_directory = dir
+
+    # Validate the given directory if it is not None
+    if dir is not None:
+        try:
+            get_opals_module_executable("RobFilter", base=dir)
+        except AdaptiveFilteringError:
+            _opals_directory = None
+            raise AdaptiveFilteringError(
+                f"Path {dir} does not contain an OPALS installation!"
+            )
 
 
 def get_opals_directory():
     """Find the OPALS directory specified by the user"""
-    dir = _opals_directory
-    if dir is None:
+    global _opals_directory
+
+    # Maybe set the directory from an environment variable
+    if _opals_directory is None:
         dir = os.environ.get("OPALS_DIR", None)
-    return dir
+        if dir is not None:
+            set_opals_directory(dir)
+
+    return _opals_directory
 
 
 def opals_is_present():
@@ -53,7 +69,7 @@ def opals_is_present():
     return dir is not None
 
 
-def get_opals_module_executable(module):
+def get_opals_module_executable(module, base=None):
     """Find an OPALS executable by inspecting the OPALS installation
 
     :param module:
@@ -62,7 +78,9 @@ def get_opals_module_executable(module):
         OPALS documentation.
     :type name: str
     """
-    base = get_opals_directory()
+
+    if base is None:
+        base = get_opals_directory()
     if base is None:
         raise AdaptiveFilteringError("OPALS not found")
 
