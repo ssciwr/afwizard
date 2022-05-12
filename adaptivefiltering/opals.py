@@ -35,6 +35,9 @@ def set_opals_directory(dir):
         The OPALS installation directory to use
     :type dir: str
     """
+    # Globally store the given path
+    global _opals_directory
+    _opals_directory = dir
 
     # Validate the given directory if it is not None
     if dir is not None:
@@ -44,10 +47,6 @@ def set_opals_directory(dir):
             raise AdaptiveFilteringError(
                 f"Path {dir} does not contain an OPALS installation!"
             )
-
-    # Globally store the given path
-    global _opals_directory
-    _opals_directory = dir
 
 
 def get_opals_directory():

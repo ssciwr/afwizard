@@ -30,15 +30,14 @@ def set_lastools_directory(dir):
         The LASTools installation directory to use
     :type dir: str
     """
+    # Globally store the given path
+    global _lastools_directory
+    _lastools_directory = dir
 
     # Validate the given directory if it is not None
     if dir is not None:
         # If this throws, we show a meaningful error where we looked for LASTools
         lasground_executable(base=dir)
-
-    # Globally store the given path
-    global _lastools_directory
-    _lastools_directory = dir
 
 
 def get_lastools_directory():
