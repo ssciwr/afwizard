@@ -30,16 +30,28 @@ def set_lastools_directory(dir):
         The LASTools installation directory to use
     :type dir: str
     """
+
+    # Validate the given directory if it is not None
+    if dir is not None:
+        # If this throws, we show a meaningful error where we looked for LASTools
+        lasground_executable(base=dir)
+
+    # Globally store the given path
     global _lastools_directory
     _lastools_directory = dir
 
 
 def get_lastools_directory():
     """Find the LASTools directory specified by the user"""
-    dir = _lastools_directory
-    if dir is None:
+    global _lastools_directory
+
+    # Maybe set the directory from an environment variable
+    if _lastools_directory is None:
         dir = os.environ.get("LASTOOLS_DIR", None)
-    return dir
+        if dir is not None:
+            set_lastools_directory(dir)
+
+    return _lastools_directory
 
 
 def lastools_is_present():
@@ -54,6 +66,23 @@ def lastools_is_present():
     return get_lastools_directory() is not None
 
 
+def lasground_executable(base=None):
+    """The full path to the lasground executable"""
+    if base is None:
+        base = get_lastools_directory()
+
+    # Determine the name of the executable (32 vs. 64 Bit)
+    execname = "lasground_new.exe"
+    if platform.architecture()[0] == "64bit":
+        execname = "lasground_new64.exe"
+
+    fullpath = os.path.join(base, "bin", execname)
+    if not os.path.exists(fullpath):
+        raise AdaptiveFilteringError(f"Executable {fullpath} was not found!")
+
+    return fullpath
+
+
 class LASToolsFilter(Filter, identifier="lastools", backend=True):
     def execute(self, dataset, **variability_data):
         # Apply variabilility without changing self
@@ -62,18 +91,13 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
         # The lasground executable operates on raw LAS/LAZ input
         dataset = DataSet.convert(dataset)
 
-        # Determine the name of the executable (32 vs. 64 Bit)
-        execname = "lasground_new.exe"
-        if platform.architecture()[0] == "64bit":
-            execname = "lasground_new64.exe"
-
         # Maybe add wine to the command line to execute
         executable = []
         if platform.system() in ["Linux", "Darwin"]:
             executable.append(shutil.which("wine"))
 
         # Add the full path to the lasground_new executable
-        executable.append(os.path.join(get_lastools_directory(), "bin", execname))
+        executable.append(lasground_executable())
 
         # Build the argument list
         args = []
