@@ -2,6 +2,12 @@ import adaptivefiltering
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def reset_path_variables():
+    adaptivefiltering.set_opals_directory(None)
+    adaptivefiltering.set_lastools_directory(None)
+
+
 def _dataset_fixture(filename, spatial_reference=None):
     @pytest.fixture
     def _fixture():
