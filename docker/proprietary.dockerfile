@@ -55,4 +55,4 @@ COPY --from=lastools-unpack /opt/lastools /opt/lastools
 
 # Export the locations as environment variables
 ENV OPALS_DIR=/opt/opals/opals_2.4.0
-ENV LASTOOLS_DIR=/opt/lastools/LASTools
+ENV LASTOOLS_DIR=/opt/lastools/LAStools
