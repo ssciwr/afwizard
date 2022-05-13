@@ -154,7 +154,7 @@ def cached_pipeline_application(dataset, pipeline, **config):
 
 
 def expand_variability_string(varlist, type_="string", samples_for_continuous=5):
-    """Split a string into variants allowing comma separation and ranges with dashes
+    """Split a string into variants allowing comma separation and ranges with a colon
 
     :param varlist:
         The input string to expand
@@ -170,7 +170,7 @@ def expand_variability_string(varlist, type_="string", samples_for_continuous=5)
     for part in varlist.split(","):
         part = part.strip()
 
-        # If this is a numeric parameter it might also have ranges specified by dashes
+        # If this is a numeric parameter it might also have ranges specified by colons
         if type_ == "number":
             slice_ = part.split(":")
 
