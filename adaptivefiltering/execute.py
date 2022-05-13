@@ -176,4 +176,4 @@ def apply_adaptive_pipeline(
     gtiff_output = os.path.join(output_dir, f"{filename}_{suffix}.tiff")
     merged = DataSet(las_output)
     rastered = merged.rasterize(resolution=resolution)
-    shutil.move(rastered.filename, gtiff_output)
+    shutil.copy(rastered.filename, gtiff_output)
