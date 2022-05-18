@@ -1,13 +1,13 @@
 FROM jupyter/base-notebook:2022-02-02 AS builder
 
 # Copy the repository into the container
-COPY --chown=${NB_UID} . /opt/adaptivefiltering
+COPY --chown=${NB_UID} . /opt/afwizard
 
 # Install Conda environment
-RUN conda env update -n base --file /opt/adaptivefiltering/environment.yml
+RUN conda env update -n base --file /opt/afwizard/environment.yml
 
 # Build and install the project
-RUN conda run -n base python -m pip install /opt/adaptivefiltering
+RUN conda run -n base python -m pip install /opt/afwizard
 
 # Thoroughly clean up the conda environment to save space
 RUN conda clean --force-pkgs-dirs -a -q -y
@@ -23,4 +23,4 @@ RUN rm -rf ${HOME}/work
 
 # Copy the artifacts from stage 0 that we need
 COPY --from=builder /opt/conda /opt/conda
-COPY --from=builder /opt/adaptivefiltering/jupyter/*.ipynb ${HOME}/
+COPY --from=builder /opt/afwizard/jupyter/*.ipynb ${HOME}/

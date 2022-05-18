@@ -1,4 +1,4 @@
-name: adaptivefiltering-rtd
+name: afwizard-rtd
 channels:
   - conda-forge
 dependencies:
@@ -15,7 +15,7 @@ dependencies:
   - pillow
   - wrapt
   - pip:
-    - adaptivefiltering-library
+    - afwizard-library
     - Click
     - geojson
     - ipyfilechooser

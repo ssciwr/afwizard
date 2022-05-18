@@ -1,11 +1,11 @@
-from adaptivefiltering.paths import load_schema, check_file_extension
-from adaptivefiltering.utils import AdaptiveFilteringError, as_number_type
-from adaptivefiltering.versioning import (
-    ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION,
-    ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION,
+from afwizard.paths import load_schema, check_file_extension
+from afwizard.utils import AFWizardError, as_number_type
+from afwizard.versioning import (
+    AFWIZARD_DATAMODEL_MAJOR_VERSION,
+    AFWIZARD_DATAMODEL_MINOR_VERSION,
     upgrade_filter,
 )
-from adaptivefiltering.widgets import BatchDataWidgetForm
+from afwizard.widgets import BatchDataWidgetForm
 
 import json
 import jsonmerge
@@ -14,16 +14,16 @@ import os
 import pyrsistent
 
 
-class FilterError(AdaptiveFilteringError):
+class FilterError(AFWizardError):
     pass
 
 
 class Filter:
     def __init__(self, _variability=[], **config):
-        """The base class for a filter in adaptivefiltering
+        """The base class for a filter in AFWizard
 
         A filter can either be constructed from a configuration or be deserialized
-        from a file using the :func:`~adaptivefiltering.load_filter` function.
+        from a file using the :func:`~afwizard.load_filter` function.
 
         :param config:
             The dictionary of configuration values that conforms to the schema
@@ -120,7 +120,7 @@ class Filter:
         # Iterate over given variation points
         for var in self._variability:
             if "name" not in var:
-                raise AdaptiveFilteringError(
+                raise AFWizardError(
                     f"Name argument is required for variability definition"
                 )
 
@@ -165,7 +165,7 @@ class Filter:
                             )
                         varschema["enum"] = options
                     else:
-                        raise AdaptiveFilteringError(
+                        raise AFWizardError(
                             f"Variability string '{splitted[0]}' not understood!"
                         )
             else:
@@ -190,7 +190,7 @@ class Filter:
 
         :param dataset:
             The data set to apply the filter to.
-        :type dataset: adaptivefiltering.DataSet
+        :type dataset: afwizard.DataSet
         :param variability_data:
             Configuration values for the variation points of this filter.
         :return:
@@ -206,12 +206,12 @@ class Filter:
 
         :param dataset:
             The data set to apply the filter to.
-        :type dataset: adaptivefiltering.DataSet
+        :type dataset: afwizard.DataSet
         :returns:
             A filter pipeline copy with the fine tuning configuration baked in.
         """
 
-        from adaptivefiltering.apps import execute_interactive
+        from afwizard.apps import execute_interactive
 
         return execute_interactive(dataset, self)
 
@@ -219,10 +219,10 @@ class Filter:
         """Serialize this filter.
 
         Serialize this object into a (nested) built-in data structure. Passing
-        the result to :func:`~adaptivefiltering.filter.Filter._deserialize` should
+        the result to :func:`~afwizard.filter.Filter._deserialize` should
         reconstruct the object. Note that this method is an implementation detail
         of a given filter implementation: To serialize a given filter, use
-        :func:`~adaptivefiltering.filter.serialize` instead.
+        :func:`~afwizard.filter.serialize` instead.
 
         :return:
             The data structure after serialization.
@@ -237,10 +237,10 @@ class Filter:
         """Deserialize this filter.
 
         Deserialize this objecte from a (nested) built-in data structure. This is
-        the counterpart of :func:`~adaptivefiltering.filter.Filter._serialize`.
+        the counterpart of :func:`~afwizard.filter.Filter._serialize`.
         Note that this method is an implementation detail
         of a given filter implementation: To serialize a given filter, use
-        :func:`~adaptivefiltering.filter.serialize` instead.
+        :func:`~afwizard.filter.serialize` instead.
 
         :param data:
             The data string from which to deserialize the filter.
@@ -266,9 +266,9 @@ class Filter:
     def form_schema(cls):
         """Define the part of the configuration schema that should be exposed to the user
 
-        Backend's inheriting from the :class:`~adaptivefiltering.filter.Filter` interface class can use that to
+        Backend's inheriting from the :class:`~afwizard.filter.Filter` interface class can use that to
         implicitly handle some parameters. These would still be part of the
-        schema, but they are automatically added in the :func:`~adaptivefiltering.filter.Filter.execute` part.
+        schema, but they are automatically added in the :func:`~afwizard.filter.Filter.execute` part.
         """
         return cls.schema()
 
@@ -291,7 +291,7 @@ class Filter:
         """Create a widget form for this filter
 
         :return: The widget form
-        :rtype: :class:`~adaptivefiltering.widgets.BatchDataWidgetForm`
+        :rtype: :class:`~afwizard.widgets.BatchDataWidgetForm`
         """
         form = BatchDataWidgetForm(
             pyrsistent.thaw(self.form_schema()),
@@ -453,8 +453,8 @@ class Pipeline(PipelineMixin, Filter, identifier="pipeline", backend=False):
 
         for f in config["filters"]:
             data = pyrsistent.thaw(f)
-            data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
-            data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
+            data["_major"] = AFWIZARD_DATAMODEL_MAJOR_VERSION
+            data["_minor"] = AFWIZARD_DATAMODEL_MINOR_VERSION
             fobj = deserialize_filter(data)
             dataset = fobj.execute(dataset)
 
@@ -469,8 +469,8 @@ def serialize_filter(filter_):
     """
     data = filter_._serialize()
     data["_backend"] = filter_._identifier
-    data["_major"] = ADAPTIVEFILTERING_DATAMODEL_MAJOR_VERSION
-    data["_minor"] = ADAPTIVEFILTERING_DATAMODEL_MINOR_VERSION
+    data["_major"] = AFWIZARD_DATAMODEL_MAJOR_VERSION
+    data["_minor"] = AFWIZARD_DATAMODEL_MINOR_VERSION
     return data
 
 
@@ -493,7 +493,7 @@ def save_filter(filter_, filename):
     """Save a filter to a file
 
     Filters saved to disk with this function can be reconstructed with the
-    :func:`~adaptivefiltering.load_filter` method.
+    :func:`~afwizard.load_filter` method.
 
     :param filter_:
         The filter object to write to disk
@@ -507,7 +507,7 @@ def save_filter(filter_, filename):
     # If the filename is not already absolute, we maybe preprend the path
     # of the current filter library
     if not os.path.isabs(filename):
-        from adaptivefiltering.library import get_current_filter_library
+        from afwizard.library import get_current_filter_library
 
         lib = get_current_filter_library()
         if lib is None:
@@ -530,7 +530,7 @@ def load_filter(filename):
     """Load a filter from a file
 
     This function restores filters that were previously saved to disk using the
-    :func:`~adaptivefiltering.save_filter` function.
+    :func:`~afwizard.save_filter` function.
 
     :param filename:
         The filename to load the filter from. Relative paths are interpreted
@@ -538,7 +538,7 @@ def load_filter(filename):
     :type filename: str
     """
     # Find the file across all libraries
-    from adaptivefiltering.library import locate_filter
+    from afwizard.library import locate_filter
 
     filename = locate_filter(filename)
 

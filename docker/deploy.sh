@@ -11,7 +11,7 @@ docker push ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-proprietary:la
 docker logout
 
 # Retag the public image and push it to DockerHub
-docker tag ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest ssciwr/adaptivefiltering:latest
+docker tag ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest ssciwr/afwizard:latest
 docker login
-docker push ssciwr/adaptivefiltering:latest
+docker push ssciwr/afwizard:latest
 docker logout

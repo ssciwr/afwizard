@@ -1,14 +1,14 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter, PipelineMixin
-from adaptivefiltering.paths import (
+from afwizard.dataset import DataSet
+from afwizard.filter import Filter, PipelineMixin
+from afwizard.paths import (
     get_temporary_filename,
     load_schema,
     locate_file,
     check_file_extension,
     within_temporary_workspace,
 )
-from adaptivefiltering.utils import (
-    AdaptiveFilteringError,
+from afwizard.utils import (
+    AFWizardError,
     check_spatial_reference,
 )
 
@@ -18,16 +18,16 @@ import os
 import pdal
 import pyrsistent
 
-logger = logging.getLogger("adaptivefiltering")
+logger = logging.getLogger("afwizard")
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
     """Execute a PDAL pipeline
 
     :param dataset:
-        The :class:`~adaptivefiltering.DataSet` instance that this pipeline
+        The :class:`~afwizard.DataSet` instance that this pipeline
         operates on. If :code:`None`, the pipeline will operate without inputs.
-    :type dataset: :class:`~adaptivefiltering.DataSet`
+    :type dataset: :class:`~afwizard.DataSet`
     :param config:
         The configuration of the PDAL pipeline, according to the PDAL documentation.
     :type config: dict
@@ -56,7 +56,7 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # Check for arrays of 0 points - they throw hard to read errors in PDAL
     for array in arrays:
         if array.shape[0] == 0:
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 "PDAL cannot handle point clouds with 0 points, this can in some cases be caused by an out of bound segmentation or a wrong crs of the dataset."
             )
 
@@ -205,7 +205,7 @@ class PDALInMemoryDataSet(DataSet):
             compress = "laszip"
 
         if not overwrite and os.path.exists(filename):
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 

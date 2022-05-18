@@ -1,5 +1,5 @@
-from adaptivefiltering.pdal import *
-from adaptivefiltering.paths import get_temporary_filename
+from afwizard.pdal import *
+from afwizard.paths import get_temporary_filename
 
 import jsonschema
 import os

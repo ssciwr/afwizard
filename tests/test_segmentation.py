@@ -1,4 +1,4 @@
-from adaptivefiltering.segmentation import *
+from afwizard.segmentation import *
 
 import geojson
 import os
@@ -70,7 +70,7 @@ def test_convert_segmentation(boundary_segmentation):
             },
         ]
     )
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         test4 = convert_segmentation(segmentation, "EPSG:5243")
 
 

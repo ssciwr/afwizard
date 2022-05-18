@@ -1,5 +1,5 @@
-from adaptivefiltering.filter import *
-from adaptivefiltering.pdal import PDALFilter
+from afwizard.filter import *
+from afwizard.pdal import PDALFilter
 
 import pytest
 

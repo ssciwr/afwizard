@@ -1,4 +1,4 @@
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from afwizard.utils import AFWizardError, is_iterable
 
 
 # Mapping from human-readable name to class codes
@@ -29,7 +29,7 @@ def asprs_class_code(name):
     try:
         return _name_to_class[name]
     except KeyError:
-        raise AdaptiveFilteringError(
+        raise AFWizardError(
             f"Classification identifier '{name}'' not known to adaptivefiltering"
         )
 
@@ -39,9 +39,7 @@ def asprs_class_name(code):
     try:
         return _class_to_name[code]
     except IndexError:
-        raise AdaptiveFilteringError(
-            f"Classification code '{code}' not in range [0, 255]"
-        )
+        raise AFWizardError(f"Classification code '{code}' not in range [0, 255]")
 
 
 def asprs(vals):
@@ -72,7 +70,7 @@ def _asprs(val):
         return asprs_class_code(pieces[0].strip())
     elif isinstance(val, int):
         if val < 0 or val > 255:
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 "Classification values need to be in the interval [0, 255]"
             )
         return (val,)

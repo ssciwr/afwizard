@@ -10,7 +10,7 @@ import tempfile
 import uuid
 import xdg
 
-from adaptivefiltering.utils import AdaptiveFilteringError
+from afwizard.utils import AFWizardError
 
 # Storage for the temporary workspace directory
 _tmp_dir = None
@@ -19,7 +19,7 @@ _tmp_dir = None
 _data_dir = None
 
 # The current data archive URL
-TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/releases/download/2022-03-02/data.tar.gz"
+TEST_DATA_ARCHIVE = "https://github.com/ssciwr/afwizard-test-data/releases/download/2022-03-02/data.tar.gz"
 TEST_DATA_CHECKSUM = "26f61c7f6681d6e558b3765689f110f09eaf34543ea5d8716ff5e55ab0557980"
 
 
@@ -30,7 +30,7 @@ def set_data_directory(directory, create_dir=False):
         The name of the custom data directory.
     :type directory: str
     :param create_dir:
-        Whether adaptivefiltering should create the directory if it does
+        Whether AFWizard should create the directory if it does
         not already exist.
     :type created_dir: bool
     """
@@ -118,7 +118,7 @@ def check_file_extension(filename, possible_values, default_value):
         ext = default_value
     possible_extensions = [possible_ext.lower() for possible_ext in possible_values]
     if ext.lower() not in possible_extensions:
-        raise AdaptiveFilteringError(
+        raise AFWizardError(
             f"The file extension {ext} is not supported. Please use the following: {possible_extensions}"
         )
     return os.path.join(name + ext)

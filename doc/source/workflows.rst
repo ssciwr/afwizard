@@ -1,27 +1,27 @@
-Overview of the workflows in adaptivefiltering
-==============================================
+Overview of the workflows in AFWizard
+=====================================
 
-The goal of adaptivefiltering is to provide a high productivity environment
+The goal of AFWizard is to provide a high productivity environment
 for archaelogists and other researchers working with Lidar data to produce
 high precision ground point filterings. To that end it implements an *adaptive*
 approach that allows human-in-the-loop optimization of ground point filtering
 algorithms. By adaptive we mean two things:
 
 * Parameter Adaptivity: We allow interactive, human-in-the-loop finetuning of
-  filtering algorithm parameters. Adaptivefiltering does not implement its own filtering
+  filtering algorithm parameters. AFWizard does not implement its own filtering
   algorithm, but instead provides access to a variety of established backends
   through a common interface (PDAL, OPALS, LASTools).
 * Spatial Adaptivity: In order to produce high precision ground point filterings,
   parameters for filtering algorithms need to be spatially varied in order to choose
-  the best algorithm for each terrain type. Adaptivefiltering manages this process
+  the best algorithm for each terrain type. AFWizard manages this process
   in an interactive way.
 
-adaptivefiltering is a Python library with deep integration into the Jupyter
+AFWizard is a Python library with deep integration into the Jupyter
 ecosystem. Some familiarity with Python and Jupyter is useful when using it,
 but the necessary skills can also be developed while using the library. In that
 case you should start by reading our short `Introduction to Python + Jupyter`_.
 
-The overall procedure when working with adaptivefiltering is described in the
+The overall procedure when working with AFWizard is described in the
 following. This is at the same time an outline of the rest of this documentation.
 Users are expected to have their own point cloud datasets acquired by airborne
 laser scanning in LAS/LAZ format.
@@ -36,9 +36,9 @@ in `Working with datasets`_.
 Given such a dataset sample for a terrain type, the next step would be to choose and customize a
 suitable filter pipeline from a number of available filter libraries. The concept of
 filter libraries is explained in `Working with filter libraries`_. If you are new to
-adaptivefiltering, you can leverage the existing crowd-sourced filter pipelines provided
-with adaptivefiltering. The process of selecting and customizing the best filter pipeline
-for your particular dataset sample is described in ..`Selecting a filter pipeline for a dataset`_.
+AFWizard, you can leverage the existing crowd-sourced filter pipelines provided
+with AFWizard. The process of selecting and customizing the best filter pipeline
+for your particular dataset sample is described in `Selecting a filter pipeline for a dataset`_.
 
 If none of the provided filter pipelines matches your needs or you want to tune the
 process even more, you can read about `Creating filter pipelines` yourself. You will

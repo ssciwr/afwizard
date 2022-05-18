@@ -1,24 +1,22 @@
-from adaptivefiltering.asprs import asprs_class_name
-from adaptivefiltering.dataset import DataSet, DigitalSurfaceModel, reproject_dataset
-from adaptivefiltering.filter import Pipeline, Filter, update_data
-from adaptivefiltering.library import (
+from afwizard.asprs import asprs_class_name
+from afwizard.dataset import DataSet, DigitalSurfaceModel, reproject_dataset
+from afwizard.filter import Pipeline, Filter, update_data
+from afwizard.library import (
     get_filter_libraries,
     library_keywords,
     metadata_hash,
 )
-from adaptivefiltering.logger import create_foldable_log_widget
-from adaptivefiltering.paths import load_schema, within_temporary_workspace
-from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.segmentation import (
+from afwizard.logger import create_foldable_log_widget
+from afwizard.paths import load_schema, within_temporary_workspace
+from afwizard.pdal import PDALInMemoryDataSet
+from afwizard.segmentation import (
     Map,
     convert_segmentation,
     merge_classes,
     Segmentation,
 )
-from adaptivefiltering.utils import (
-    AdaptiveFilteringError,
-)
-from adaptivefiltering.widgets import WidgetFormWithLabels
+from afwizard.utils import AFWizardError
+from afwizard.widgets import WidgetFormWithLabels
 
 from osgeo import ogr
 
@@ -295,10 +293,10 @@ def pipeline_tuning(datasets=[], pipeline=None):
     :type datasets: list
     :param pipeline:
         A pipeline to use as a starting point. If omitted, a new pipeline object will be created.
-    :type pipeline: adaptivefiltering.filter.Pipeline
+    :type pipeline: afwizard.filter.Pipeline
     :return:
         Returns the created pipeline object
-    :rtype: adaptivefiltering.filter.Pipeline
+    :rtype: afwizard.filter.Pipeline
     """
 
     # Instantiate a new pipeline object if we are not modifying an existing one.
@@ -311,9 +309,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Assert that at least one dataset has been provided
     if len(datasets) == 0:
-        raise AdaptiveFilteringError(
-            "At least one dataset must be provided to pipeline_tuning"
-        )
+        raise AFWizardError("At least one dataset must be provided to pipeline_tuning")
 
     # Create the data structure to store the history of visualizations in this app
     history = []
@@ -644,17 +640,17 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
     :param segmentation:
         This segmentation object needs to have one multipolygon for every type of ground class (dense forrest, steep hill, etc..).
-    :type: adaptivefiltering.segmentation.Segmentation
+    :type: afwizard.segmentation.Segmentation
 
     :param pipelines:
         All pipelines that one wants to link with the given segmentations.
 
-    :type: list of adaptivefiltering.filter.Pipeline
+    :type: list of afwizard.filter.Pipeline
 
 
     :return:
         A segmentation object with added pipeline information
-    :rtype:  adaptivefiltering.segmentation.Segmentation
+    :rtype:  afwizard.segmentation.Segmentation
     """
 
     # passes the segment to the _update_seg_pin function
@@ -694,7 +690,7 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
     def _create_right_side_menu():
         right_side_label = ipywidgets.Label("Assign Pipelines to Segmentations")
-        from adaptivefiltering.segmentation import split_segmentation_classes
+        from afwizard.segmentation import split_segmentation_classes
 
         # needed to quickly check if all features have the same keys
 
@@ -874,12 +870,12 @@ def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
             polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
 
         except ValueError:
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 "Oops something very bad happend to your geometry. This can be caused by giving wrong crs to a segmentation."
             )
         polygons_wkt = polygons.ExportToWkt()
 
-        from adaptivefiltering.pdal import execute_pdal_pipeline
+        from afwizard.pdal import execute_pdal_pipeline
 
         # Apply the cropping filter with all polygons
         newdata = execute_pdal_pipeline(
@@ -903,7 +899,7 @@ def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
             map_.load_geojson(segmentation_overlay, "Segmentation")
         else:
             raise Exception(
-                f"segmentation_overlay should be of type adaptivefiltering.Segmentation but is {type(segmentation_overlay)}."
+                f"segmentation_overlay should be of type afwizard.Segmentation but is {type(segmentation_overlay)}."
             )
 
     finalize = ipywidgets.Button(description="Finalize")
@@ -944,7 +940,7 @@ def show_interactive(dataset, filtering_callback=None, update_classification=Fal
 
     :param dataset:
         The Lidar dataset to visualize
-    :type dataset: adaptivefiltering.DataSet
+    :type dataset: afwizard.DataSet
     :param filtering_callback:
         A callback that is called to transform the dataset before visualization.
         This may be used to hook in additional functionality like the execution
@@ -1024,7 +1020,7 @@ def select_pipeline_from_library(multiple=False):
     :type multiple: bool
     :return:
         Returns the selected pipeline object(s)
-    :rtype: adaptivefiltering.filter.Pipeline
+    :rtype: afwizard.filter.Pipeline
     """
 
     def library_name(lib):
@@ -1209,7 +1205,7 @@ def select_pipelines_from_library():
 
     :return:
         Returns the selected pipeline object(s)
-    :rtype: adaptivefiltering.filter.Pipeline
+    :rtype: afwizard.filter.Pipeline
     """
 
     return select_pipeline_from_library(multiple=True)
@@ -1224,20 +1220,20 @@ def select_best_pipeline(dataset=None, pipelines=None):
 
     :param dataset:
         The dataset to use for visualization of ground point filtering results
-    :type dataset: adaptivefiltering.DataSet
+    :type dataset: afwizard.DataSet
     :param pipelines:
         The tentative list of pipelines to try. May e.g. have been selected using
         the select_pipelines_from_library tool.
     :type pipelines: list
     :return:
         The selected pipeline with end user configuration baked in
-    :rtype: adaptivefiltering.filter.Pipeline
+    :rtype: afwizard.filter.Pipeline
     """
     if dataset is None:
-        raise AdaptiveFilteringError("A dataset is required for 'select_best_pipeline'")
+        raise AFWizardError("A dataset is required for 'select_best_pipeline'")
 
     if pipelines is None:
-        raise AdaptiveFilteringError(
+        raise AFWizardError(
             "At least one pipeline needs to be passed to 'select_best_pipeline'"
         )
 
@@ -1326,13 +1322,13 @@ def execute_interactive(dataset, pipeline):
 
     :param dataset:
         The dataset to work on
-    :type dataset: adaptivefiltering.DataSet
+    :type dataset: afwizard.DataSet
     :param pipeline:
         The pipeline to execute.
-    :type pipelines: adaptivefiltering.filter.Pipeline
+    :type pipelines: afwizard.filter.Pipeline
     :return:
         The pipeline with the end user configuration baked in
-    :rtype: adaptivefiltering.filter.Pipeline
+    :rtype: afwizard.filter.Pipeline
     """
 
     return select_best_pipeline(dataset=dataset, pipelines=[pipeline])

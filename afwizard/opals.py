@@ -1,11 +1,11 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter
-from adaptivefiltering.paths import (
+from afwizard.dataset import DataSet
+from afwizard.filter import Filter
+from afwizard.paths import (
     get_temporary_filename,
     get_temporary_workspace,
     load_schema,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
+from afwizard.utils import AFWizardError, stringify_parameters
 
 import click
 import json
@@ -19,7 +19,7 @@ import shutil
 import subprocess
 import xmltodict
 
-logger = logging.getLogger("adaptivefiltering")
+logger = logging.getLogger("afwizard")
 
 _opals_directory = None
 
@@ -27,7 +27,7 @@ _opals_directory = None
 def set_opals_directory(dir):
     """Set custom OPALS installation directory
 
-    Use this function at the beginning of your code to point adaptivefiltering
+    Use this function at the beginning of your code to point AFWizard
     to a custom OPALS installation directory. Alternatively, you can use the
     environment variable :code:`OPALS_DIR` to do so.
 
@@ -43,11 +43,9 @@ def set_opals_directory(dir):
     if dir is not None:
         try:
             get_opals_module_executable("RobFilter", base=dir)
-        except AdaptiveFilteringError:
+        except AFWizardError:
             _opals_directory = None
-            raise AdaptiveFilteringError(
-                f"Path {dir} does not contain an OPALS installation!"
-            )
+            raise AFWizardError(f"Path {dir} does not contain an OPALS installation!")
 
 
 def get_opals_directory():
@@ -82,7 +80,7 @@ def get_opals_module_executable(module, base=None):
     if base is None:
         base = get_opals_directory()
     if base is None:
-        raise AdaptiveFilteringError("OPALS not found")
+        raise AFWizardError("OPALS not found")
 
     # Construct the path and double-check its existence
     execname = f"opals{module}"
@@ -93,7 +91,7 @@ def get_opals_module_executable(module, base=None):
 
     path = os.path.join(get_opals_directory(), "opals", execname)
     if not os.path.exists(path):
-        raise AdaptiveFilteringError(f"Executable {path} not found!")
+        raise AFWizardError(f"Executable {path} not found!")
 
     return path
 
@@ -134,7 +132,7 @@ def _opals_to_jsonschema_typemapping(_type, schema):
 def _automated_opals_schema(mod):
     """Automatically extract the JSON schema for a given module
 
-    This can be used as a great basis to add a new module MOD to adaptivefiltering,
+    This can be used as a great basis to add a new module MOD to AFWizard,
     but it might need some manual adaption to be fully functional.
     """
     xmloutput = subprocess.run(
@@ -237,7 +235,7 @@ def execute_opals_module(dataset=None, config=None):
 
     # If the OPALS run was not successful, we raise an error
     if result.returncode != 0:
-        raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
+        raise AFWizardError(f"OPALS error: {result.stdout.decode()}")
 
 
 class OPALSFilter(Filter, identifier="opals", backend=True):
@@ -310,7 +308,7 @@ class OPALSNightlyFilter(OPALSFilter, identifier="opals_nightly", backend=True):
         try:
             get_opals_module_executable("TerrainFilter")
             return True
-        except AdaptiveFilteringError:
+        except AFWizardError:
             return False
 
 
@@ -323,7 +321,7 @@ class OPALSDataManagerObject(DataSet):
 
         # OPALS requires manual specification of the reference system
         if dataset.spatial_reference is None:
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 "OPALS requires manual setting of the spatial_reference parameter of the DataSet."
             )
 
@@ -348,7 +346,7 @@ class OPALSDataManagerObject(DataSet):
 
         # If the OPALS run was not successful, we raise an error
         if result.returncode != 0:
-            raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
+            raise AFWizardError(f"OPALS error: {result.stdout.decode()}")
 
         # Wrap the result in a new data set object
         return OPALSDataManagerObject(
@@ -359,11 +357,11 @@ class OPALSDataManagerObject(DataSet):
     def save(self, filename, compress=False, overwrite=False):
         # I cannot find LAZ export in the OPALS docs
         if compress:
-            raise AdaptiveFilteringError("OPALS does not implement LAZ exporting")
+            raise AFWizardError("OPALS does not implement LAZ exporting")
 
         # Check if we would overwrite an input file
         if not overwrite and os.path.exists(filename):
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
@@ -384,7 +382,7 @@ class OPALSDataManagerObject(DataSet):
 
         # If the OPALS run was not successful, we raise an error
         if result.returncode != 0:
-            raise AdaptiveFilteringError(f"OPALS error: {result.stdout.decode()}")
+            raise AFWizardError(f"OPALS error: {result.stdout.decode()}")
 
         # Wrap the result in a new data set object
         return DataSet(

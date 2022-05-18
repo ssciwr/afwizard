@@ -1,17 +1,17 @@
-Extending adaptivefiltering with custom backends
-================================================
+Extending AFWizard with custom backends
+=======================================
 
-In this section, we will describe how the :code:`adaptivefiltering` data model
+In this section, we will describe how the :code:`afwizard` data model
 can be extended with custom backends. Such extensions can be done from your project
-that depends on :code:`adaptivefiltering` - you do not necessarily need to contribute
-your custom backend to :code:`adaptivefiltering` for it to integrate with the rest of
-:code:`adaptivefiltering`.
+that depends on :code:`afwizard` - you do not necessarily need to contribute
+your custom backend to :code:`afwizard` for it to integrate with the rest of
+:code:`afwizard`.
 
 In this documentation we will treat the following use case: You do have an
 executable :code:`myfilter` that performs ground point filtering. It accepts
 an LAS input filename, an output filename and floating point finetuning value
 as command line arguments. You want to expose this filtering backend in
-:code:`adaptivefiltering`.
+:code:`afwizard`.
 
 .. note::
 
@@ -22,7 +22,7 @@ as command line arguments. You want to expose this filtering backend in
 The filter backend class
 ------------------------
 
-Custom backends are created by inheriting from the :class:`adaptivefiltering.filter.Filter`
+Custom backends are created by inheriting from the :class:`afwizard.filter.Filter`
 class. When inheriting, your derived class needs to specify an :code:`identifier` that
 will be used to register your derived class with the base class. Having done that you only
 need to implement two methods on the derived class: :code:`schema` describes the
@@ -31,11 +31,11 @@ logic of your backend:
 
 .. code:: python
 
-    import adaptivefiltering as af
+    import afwizard
     import shutil
     import subprocess
 
-    class MyBackend(af.filter.Filter, identifier="mybackend"):
+    class MyBackend(afwizard.filter.Filter, identifier="mybackend"):
         @classmethod
         def schema(cls):
             # The configuration schema here follows the JSONSchema standard.
@@ -61,10 +61,10 @@ logic of your backend:
 
         def execute(self, dataset):
             # Ensure that the dataset is of type DataSet (maybe applying conversion)
-            dataset = af.DataSet.convert(dataset)
+            dataset = afwizard.DataSet.convert(dataset)
 
             # Create a temporary filename for the output
-            filename = af.paths.get_temporary_filename("las")
+            filename = afwizard.paths.get_temporary_filename("las")
 
             # Run the filter program as a subprocess
             subprocess.run(
@@ -73,7 +73,7 @@ logic of your backend:
             )
 
             # Construct a new DataSet object with the result
-            return af.DataSet(filename, spatial_reference=dataset.spatial_reference)
+            return afwizard.DataSet(filename, spatial_reference=dataset.spatial_reference)
 
         @classmethod
         def enabled(cls):
@@ -91,7 +91,7 @@ property as shown in the code example.
 
 The :code:`execute` method implements the core functionality of your filter. It is passed
 a dataset and returns a filtered dataset. We first assert that we are dealing with a dataset
-that is represented by a LAS file by converting it to :class:`adaptivefiltering.DataSet`.
+that is represented by a LAS file by converting it to :class:`afwizard.DataSet`.
 The actual execution is done using :code:`subprocess.run`.
 
 The :code:`enabled` method in the above can be used to exclude the custom backend if
@@ -105,7 +105,7 @@ Using a custom backend class
 
 As backend classes register themselves with the base class, it is only necessary to ensure
 that the module that contains the class has been imported before other functionality of
-:code:`adaptivefiltering` is used. This can e.g. be done from :code:`__init__.py`.
+:code:`afwizard` is used. This can e.g. be done from :code:`__init__.py`.
 
 Backends that operate on custom data representations
 ----------------------------------------------------
@@ -113,12 +113,12 @@ Backends that operate on custom data representations
 In above example, the ground point filtering algorithm operated directly on LAS files
 from the file system. Other backends might operate on other data representations, e.g.
 OPALS is working with its own *OPALS Data Manager* object. If your backend should work
-on a different representation, you can inherit from :class:`adaptivefiltering.DataSet` and implement the following
+on a different representation, you can inherit from :class:`afwizard.DataSet` and implement the following
 methods which are shown as no-op here:
 
 .. code:: python
 
-    class CustomDataSet(af.DataSet):
+    class CustomDataSet(afwizard.DataSet):
         @classmethod
         def convert(cls, dataset):
             # Make sure that conversion is idempotent

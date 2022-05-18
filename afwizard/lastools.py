@@ -1,11 +1,11 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter
-from adaptivefiltering.paths import (
+from afwizard.dataset import DataSet
+from afwizard.filter import Filter
+from afwizard.paths import (
     get_temporary_filename,
     load_schema,
     within_temporary_workspace,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError, stringify_parameters
+from afwizard.utils import AFWizardError, stringify_parameters
 
 import logging
 import os
@@ -13,7 +13,7 @@ import platform
 import shutil
 import subprocess
 
-logger = logging.getLogger("adaptivefiltering")
+logger = logging.getLogger("afwizard")
 
 # The module wide storage for the lasground prefix
 _lastools_directory = None
@@ -22,7 +22,7 @@ _lastools_directory = None
 def set_lastools_directory(dir):
     """Set custom LASTools installation directory
 
-    Use this function at the beginning of your code to point adaptivefiltering
+    Use this function at the beginning of your code to point AFWizard
     to a custom LASTools installation directory. Alternatively, you can use the
     environment variable :code:`LASTOOLS_DIR` to do so.
 
@@ -39,7 +39,7 @@ def set_lastools_directory(dir):
         try:
             # If this throws, we show a meaningful error where we looked for LASTools
             lasground_executable(base=dir)
-        except AdaptiveFilteringError as e:
+        except AFWizardError as e:
             _lastools_directory = None
             raise e
 
@@ -81,7 +81,7 @@ def lasground_executable(base=None):
 
     fullpath = os.path.join(base, "bin", execname)
     if not os.path.exists(fullpath):
-        raise AdaptiveFilteringError(f"Executable {fullpath} was not found!")
+        raise AFWizardError(f"Executable {fullpath} was not found!")
 
     return fullpath
 
@@ -127,7 +127,7 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
             )
 
         if result.returncode != 0:
-            raise AdaptiveFilteringError(f"LASTools error: {result.stdout.decode()}")
+            raise AFWizardError(f"LASTools error: {result.stdout.decode()}")
 
         return DataSet(
             filename=outfile,

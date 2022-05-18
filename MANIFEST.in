@@ -1,1 +1,1 @@
-recursive-include adaptivefiltering/schema *.json
+recursive-include afwizard/schema *.json
