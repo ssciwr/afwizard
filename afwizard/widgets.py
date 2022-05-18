@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import load_schema
+from afwizard.paths import load_schema
 
 import collections
 import ipywidgets

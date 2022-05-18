@@ -1,4 +1,4 @@
-This is the list of copyright holders of adaptivefiltering.
+This is the list of copyright holders of afwizard.
 
 For information on the license, see LICENSE.md.
 

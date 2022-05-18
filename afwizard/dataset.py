@@ -1,12 +1,12 @@
-from adaptivefiltering.asprs import asprs
-from adaptivefiltering.paths import (
+from afwizard.asprs import asprs
+from afwizard.paths import (
     locate_file,
     get_temporary_filename,
     load_schema,
     check_file_extension,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError
-from adaptivefiltering.visualization import visualization_dispatcher
+from afwizard.utils import AFWizardError
+from afwizard.visualization import visualization_dispatcher
 
 from osgeo import gdal
 
@@ -31,7 +31,7 @@ class DataSet:
         :param filename:
             Filename to load the dataset from. The dataset is expected to be in LAS/LAZ 1.2-1.4 format.
             If an absolute filename is given, the dataset is loaded from that location. Relative paths
-            are interpreted (in this order) with respect to the directory set with :func:`~adaptivefiltering.set_data_directory`,
+            are interpreted (in this order) with respect to the directory set with :func:`~afwizard.set_data_directory`,
             the current working directory, XDG data directories (Unix only) and the Python package
             installation directory.
         :type filename: str
@@ -89,7 +89,7 @@ class DataSet:
         Several visualization options can be chosen via the *visualization_type* parameter.
         Some of the arguments given below are only available for specific visualization
         types. To explore the visualization capabilities, you can also use the interactive
-        user interface with :func:`~adaptivefiltering.DataSet.show_interactive`.
+        user interface with :func:`~afwizard.DataSet.show_interactive`.
 
         :param visualization_type:
             Which visualization to use. Current implemented values are :code:`hillshade` for a
@@ -99,7 +99,7 @@ class DataSet:
         :param classification:
             Which classification values to include into the visualization. By default,
             all classes are considered. The best interface to provide this information is
-            using :code:`adaptivefiltering.asprs`.
+            using :code:`afwizard.asprs`.
         :type classification: tuple
         :param resolution:
             The spatial resolution in meters.
@@ -134,7 +134,7 @@ class DataSet:
 
     def show_interactive(self):
         """Visualize the dataset with interactive visualization controls in Jupyter"""
-        from adaptivefiltering.apps import show_interactive
+        from afwizard.apps import show_interactive
 
         return show_interactive(self)
 
@@ -158,7 +158,7 @@ class DataSet:
         :type overwrite: bool
         :return:
             A dataset object wrapping the written file
-        :rtype: adaptivefiltering.DataSet
+        :rtype: afwizard.DataSet
         """
         # check for valid file name
 
@@ -172,7 +172,7 @@ class DataSet:
         # Otherwise, we can simply copy the file to the new location
         # after checking that we are not accidentally overriding something
         if not overwrite and os.path.exists(filename):
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
@@ -187,7 +187,7 @@ class DataSet:
             # If it changed, we use PDAL to convert LAS <-> LAZ
             compress = "laszip" if new_extension == ".laz" else "none"
 
-            from adaptivefiltering.pdal import execute_pdal_pipeline
+            from afwizard.pdal import execute_pdal_pipeline
 
             execute_pdal_pipeline(
                 config=[
@@ -210,24 +210,24 @@ class DataSet:
         """Restrict the data set to a spatial subset
 
         This is of vital importance when working with large Lidar datasets
-        in adaptivefiltering. The interactive exploration process for filtering
+        in AFWizard. The interactive exploration process for filtering
         pipelines requires a reasonably sized subset to allow fast previews.
 
         :param segmentation:
             A segmentation object that provides the geometric information
             for the cropping. If omitted, an interactive selection tool is
             shown in Jupyter.
-        :type: adaptivefiltering.segmentation.Segmentation
+        :type: afwizard.segmentation.Segmentation
 
 
         :param segmentation_overlay:
             A segmentation object that will be overlayed on the map for easier use of the restrict app.
-        :type: adaptivefiltering.segmentation.Segmentation
+        :type: afwizard.segmentation.Segmentation
 
 
         """
 
-        from adaptivefiltering.apps import apply_restriction
+        from afwizard.apps import apply_restriction
 
         return apply_restriction(self, segmentation, segmentation_overlay)
 
@@ -240,7 +240,7 @@ class DataSet:
 
         :return:
             A dataset with transformed datapoints.
-        :rtype: adaptivefiltering.DataSet
+        :rtype: afwizard.DataSet
         """
         return dataset.save(get_temporary_filename(extension="las"))
 
@@ -250,10 +250,10 @@ class DigitalSurfaceModel:
         """Representation of a rasterized DEM/DTM/DSM/DFM
 
         Constructs a raster model from a dataset. This is typically used
-        implicitly or through :func:`~adaptivefiltering.DataSet.rasterize`.
+        implicitly or through :func:`~afwizard.DataSet.rasterize`.
         """
 
-        from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
+        from afwizard.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
 
         # Store a reference to the generating dataset
         self.dataset = PDALInMemoryDataSet.convert(dataset)
@@ -318,7 +318,7 @@ class DigitalSurfaceModel:
                 config=config,
             )
         except RuntimeError:
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 "The writers.raster was not able to generate a raster. Did you specify a classification that is not present in the dataset?"
             )
         self.raster = gdal.Open(self.filename, gdal.GA_ReadOnly)
@@ -394,7 +394,7 @@ class DigitalSurfaceModel:
                 if selector.value == "LAZ":
                     self.dataset.save(filename.value, compress=True, overwrite=True)
             else:
-                raise AdaptiveFilteringError("Please choose a filename before saving!")
+                raise AFWizardError("Please choose a filename before saving!")
 
         button.on_click(_save_to_file)
 
@@ -416,12 +416,12 @@ def remove_classification(dataset):
 
     :param dataset:
         The dataset to remove the classification from
-    :type dataset: adaptivefiltering.Dataset
+    :type dataset: afwizard.Dataset
     :return:
         A transformed dataset with unclassified points
-    :rtype: adaptivefiltering.DataSet
+    :rtype: afwizard.DataSet
     """
-    from adaptivefiltering.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
+    from afwizard.pdal import PDALInMemoryDataSet, execute_pdal_pipeline
 
     dataset = PDALInMemoryDataSet.convert(dataset)
     pipeline = execute_pdal_pipeline(
@@ -445,10 +445,9 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
     :type in_srs: str
     :return:
         A reprojected dataset
-    :rtype: adaptivefiltering.DataSet
+    :rtype: afwizard.DataSet
     """
-    from adaptivefiltering.pdal import execute_pdal_pipeline
-    from adaptivefiltering.pdal import PDALInMemoryDataSet
+    from afwizard.pdal import execute_pdal_pipeline, PDALInMemoryDataSet
 
     dataset = PDALInMemoryDataSet.convert(dataset)
     if in_srs is None:

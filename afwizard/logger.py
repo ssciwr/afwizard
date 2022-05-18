@@ -2,7 +2,7 @@ import ipywidgets
 import logging
 
 # Configure the basic logger
-logger = logging.getLogger("adaptivefiltering")
+logger = logging.getLogger("afwizard")
 logger.setLevel(logging.DEBUG)
 _handler = logging.StreamHandler()
 _handler.setLevel(logging.WARNING)

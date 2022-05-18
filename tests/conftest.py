@@ -1,17 +1,17 @@
-import adaptivefiltering
+import afwizard
 import pytest
 
 
 @pytest.fixture(autouse=True)
 def reset_path_variables():
-    adaptivefiltering.set_opals_directory(None)
-    adaptivefiltering.set_lastools_directory(None)
+    afwizard.set_opals_directory(None)
+    afwizard.set_lastools_directory(None)
 
 
 def _dataset_fixture(filename, spatial_reference=None):
     @pytest.fixture
     def _fixture():
-        return adaptivefiltering.DataSet(filename, spatial_reference=spatial_reference)
+        return afwizard.DataSet(filename, spatial_reference=spatial_reference)
 
     return _fixture
 
@@ -19,9 +19,7 @@ def _dataset_fixture(filename, spatial_reference=None):
 def _segmentation_fixture(filename, spatial_reference=None):
     @pytest.fixture
     def _fixture():
-        return adaptivefiltering.load_segmentation(
-            filename, spatial_reference=spatial_reference
-        )
+        return afwizard.load_segmentation(filename, spatial_reference=spatial_reference)
 
     return _fixture
 
@@ -36,7 +34,7 @@ dataset_seg = _segmentation_fixture(
 
 @pytest.fixture
 def boundary_segmentation():
-    return adaptivefiltering.segmentation.Segmentation(
+    return afwizard.segmentation.Segmentation(
         {
             "features": [
                 {
@@ -91,7 +89,7 @@ def boundary_segmentation():
 
 @pytest.fixture
 def multipolygon_segmentation():
-    return adaptivefiltering.segmentation.Segmentation(
+    return afwizard.segmentation.Segmentation(
         {
             "type": "FeatureCollection",
             "features": [

@@ -1,6 +1,6 @@
-from adaptivefiltering.filter import load_filter, save_filter
-from adaptivefiltering.paths import load_schema, download_test_file
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from afwizard.filter import load_filter, save_filter
+from afwizard.paths import load_schema, download_test_file
+from afwizard.utils import AFWizardError, is_iterable
 
 import click
 import hashlib
@@ -67,7 +67,7 @@ def get_current_filter_library():
     """Get the user-defined 'current' filter library
 
     That filter library is used preferrably for saving filters.
-    It can be set with :ref:~adaptivefiltering.set_current_filter_library.
+    It can be set with :ref:~afwizard.set_current_filter_library.
     """
     return _current_library
 
@@ -81,7 +81,7 @@ def set_current_filter_library(path, create_dirs=False, name="My filter library"
         current working directory.
     :type path: str
     :param create_dirs:
-        Whether adaptivefiltering should create this directory (and
+        Whether afwizard should create this directory (and
         potentially some parent directories) for you
     :type create_dirs: bool
     :param name:
@@ -96,7 +96,7 @@ def set_current_filter_library(path, create_dirs=False, name="My filter library"
         if create_dirs:
             os.makedirs(path)
         else:
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 f"The given path does not exist and create_dirs was not set"
             )
 
@@ -128,7 +128,7 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
     :param package:
         Alternatively, you can specify a Python package that is installed on
         the system and that contains the relevant JSON files. This is used for
-        adaptivefilterings library of community-contributed filter pipelines.
+        afwizards library of community-contributed filter pipelines.
     :type package: str
     :param recursive:
         Whether the file system should be traversed recursively from
@@ -249,7 +249,7 @@ def locate_filter_by_hash(hash):
             "A filter pipeline for your segmentation could not be located!"
         )
     if len(found) > 1:
-        raise AdaptiveFilteringError("Ambiguous pipeline metadata detected!")
+        raise AFWizardError("Ambiguous pipeline metadata detected!")
     else:
         return found[0]
 
@@ -259,7 +259,7 @@ def reset_filter_libraries():
 
     The default libraries are the current working directory and the
     library of community-contributed filter pipelines provided by
-    :code:`adaptivefiltering`.
+    :code:`afwizard`.
     """
     # Remove all registered filter libraries
     global _filter_libraries
@@ -271,7 +271,7 @@ def reset_filter_libraries():
 
     # Register default paths
     add_filter_library(path=os.getcwd(), name="Current working directory")
-    add_filter_library(package="adaptivefiltering_library")
+    add_filter_library(package="afwizard_library")
 
 
 @click.command()

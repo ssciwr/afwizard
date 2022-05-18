@@ -4,7 +4,7 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import adaptivefiltering
+import afwizard
 import os
 import subprocess
 import sys
@@ -18,12 +18,12 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "adaptivefiltering"
+project = "Adaptive Filtering Wizard"
 copyright = "2021, Scientific Software Center, Heidelberg University"
 author = "Dominic Kempf"
 
 # The full version, including alpha/beta/rc tags
-release = adaptivefiltering.__version__
+release = afwizard.__version__
 
 # -- General configuration ---------------------------------------------------
 

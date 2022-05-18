@@ -2,15 +2,15 @@
 __version__ = "1.0.0b1"
 
 # Ensure inclusion of the logging configuration
-import adaptivefiltering.logger
+import afwizard.logger
 
 # Make sure to import modules that register filter backends
-import adaptivefiltering.lastools
-import adaptivefiltering.opals
-import adaptivefiltering.pdal
+import afwizard.lastools
+import afwizard.opals
+import afwizard.pdal
 
 # Import those functions and objects that we consider the package user API
-from adaptivefiltering.apps import (
+from afwizard.apps import (
     execute_interactive,
     pipeline_tuning,
     select_pipeline_from_library,
@@ -18,22 +18,22 @@ from adaptivefiltering.apps import (
     select_best_pipeline,
     assign_pipeline,
 )
-from adaptivefiltering.dataset import DataSet, remove_classification, reproject_dataset
-from adaptivefiltering.execute import apply_adaptive_pipeline
-from adaptivefiltering.filter import load_filter, save_filter
-from adaptivefiltering.lastools import set_lastools_directory
-from adaptivefiltering.library import (
+from afwizard.dataset import DataSet, remove_classification, reproject_dataset
+from afwizard.execute import apply_adaptive_pipeline
+from afwizard.filter import load_filter, save_filter
+from afwizard.lastools import set_lastools_directory
+from afwizard.library import (
     add_filter_library,
     reset_filter_libraries,
     set_current_filter_library,
 )
-from adaptivefiltering.opals import set_opals_directory
-from adaptivefiltering.paths import set_data_directory
-from adaptivefiltering.segmentation import load_segmentation
+from afwizard.opals import set_opals_directory
+from afwizard.paths import set_data_directory
+from afwizard.segmentation import load_segmentation
 
 
 def print_version():
-    """Print the current version of adaptivefiltering"""
+    """Print the current version of AFWizard"""
     print(__version__)
 
 

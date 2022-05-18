@@ -1,124 +1,123 @@
-adaptivefiltering package
-=========================
+afwizard package
+================
 
-adaptivefiltering.apps module
+afwizard.apps module
+--------------------
+
+.. automodule:: afwizard.apps
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.asprs module
+---------------------
+
+.. automodule:: afwizard.asprs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.dataset module
+-----------------------
+
+.. automodule:: afwizard.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.execute module
+-----------------------
+
+.. automodule:: afwizard.execute
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.filter module
+----------------------
+
+.. automodule:: afwizard.filter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.lastools module
+------------------------
+
+.. automodule:: afwizard.lastools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.library module
+-----------------------
+
+.. automodule:: afwizard.library
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.opals module
+---------------------
+
+.. automodule:: afwizard.opals
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.paths module
+---------------------
+
+.. automodule:: afwizard.paths
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.pdal module
+--------------------
+
+.. automodule:: afwizard.pdal
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+afwizard.segmentation module
+----------------------------
+
+.. automodule:: afwizard.segmentation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.utils module
+---------------------
+
+.. automodule:: afwizard.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.versioning module
+--------------------------
+
+.. automodule:: afwizard.versioning
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+afwizard.visualization module
 -----------------------------
 
-.. automodule:: adaptivefiltering.apps
+.. automodule:: afwizard.visualization
    :members:
    :undoc-members:
    :show-inheritance:
 
-adaptivefiltering.asprs module
---------------------------------
+afwizard.widgets module
+-----------------------
 
-.. automodule:: adaptivefiltering.asprs
+.. automodule:: afwizard.widgets
    :members:
    :undoc-members:
    :show-inheritance:
-
-adaptivefiltering.dataset module
---------------------------------
-
-.. automodule:: adaptivefiltering.dataset
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.execute module
---------------------------------
-
-.. automodule:: adaptivefiltering.execute
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.filter module
--------------------------------
-
-.. automodule:: adaptivefiltering.filter
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.lastools module
----------------------------------
-
-.. automodule:: adaptivefiltering.lastools
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.library module
---------------------------------
-
-.. automodule:: adaptivefiltering.library
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.opals module
-------------------------------
-
-.. automodule:: adaptivefiltering.opals
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.paths module
-------------------------------
-
-.. automodule:: adaptivefiltering.paths
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.pdal module
------------------------------
-
-.. automodule:: adaptivefiltering.pdal
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-adaptivefiltering.segmentation module
--------------------------------------
-
-.. automodule:: adaptivefiltering.segmentation
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.utils module
-------------------------------
-
-.. automodule:: adaptivefiltering.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.versioning module
------------------------------------
-
-.. automodule:: adaptivefiltering.versioning
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.visualization module
---------------------------------------
-
-.. automodule:: adaptivefiltering.visualization
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-adaptivefiltering.widgets module
---------------------------------
-
-.. automodule:: adaptivefiltering.widgets
-   :members:
-   :undoc-members:
-   :show-inheritance:
-

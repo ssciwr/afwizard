@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import get_temporary_filename
+from afwizard.paths import get_temporary_filename
 
 from osgeo import gdal
 from PIL import Image

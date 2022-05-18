@@ -3,6 +3,6 @@ User API
 
 .. toctree::
 
-.. automodule:: adaptivefiltering
+.. automodule:: afwizard
     :members:
     :undoc-members:

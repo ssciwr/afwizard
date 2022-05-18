@@ -1,20 +1,20 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.library import (
+from afwizard.dataset import DataSet
+from afwizard.library import (
     locate_filter_by_hash,
     add_filter_library,
 )
-from adaptivefiltering.logger import attach_file_logger
-from adaptivefiltering.paths import get_temporary_filename, get_temporary_workspace
-from adaptivefiltering.segmentation import Segmentation, merge_classes
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
-from adaptivefiltering.filter import save_filter
+from afwizard.logger import attach_file_logger
+from afwizard.paths import get_temporary_filename, get_temporary_workspace
+from afwizard.segmentation import Segmentation, merge_classes
+from afwizard.utils import AFWizardError, is_iterable
+from afwizard.filter import save_filter
 
 import os
 import shutil
 import subprocess
 import logging
 
-logger = logging.getLogger("adaptivefiltering")
+logger = logging.getLogger("afwizard")
 
 
 def apply_adaptive_pipeline(
@@ -30,15 +30,15 @@ def apply_adaptive_pipeline(
 
     This function implements the large scale application of a spatially
     adaptive filter pipeline to a potentially huge dataset. This can either
-    be used from Python or through adaptivefiltering's command line interface.
+    be used from Python or through AFWizard's command line interface.
 
     :param datasets:
-        One or more datasets of type :ref:`~adaptivefiltering.dataset.DataSet`.
+        One or more datasets of type :ref:`~afwizard.dataset.DataSet`.
     :type datasets: list
     :param segmentation:
         The segmentation that provides the geometric information about the spatial
         segmentation of the dataset and what filter pipelines to apply in which segments.
-    :type segmentation: adaptivefiltering.segmentation.Segmentation
+    :type segmentation: afwizard.segmentation.Segmentation
     :param output_dir:
         The output directory to place the generated output in. Defaults
         to a subdirectory 'output' within the current working directory/
@@ -55,13 +55,11 @@ def apply_adaptive_pipeline(
     """
 
     if not isinstance(dataset, DataSet):
-        raise AdaptiveFilteringError(
-            "Dataset are expected to be of type adaptivefiltering.DataSet"
-        )
+        raise AFWizardError("Dataset are expected to be of type afwizard.DataSet")
 
     if not isinstance(segmentation, Segmentation):
-        raise AdaptiveFilteringError(
-            "Segmentations are expected to be of type adaptivefiltering.segmentation.Segmentation"
+        raise AFWizardError(
+            "Segmentations are expected to be of type afwizard.segmentation.Segmentation"
         )
 
     # We decrease the logging level
@@ -75,7 +73,7 @@ def apply_adaptive_pipeline(
 
     # if no spatial_refence is defined for the dataset it is tried to be extracted from the metadata
     if dataset.spatial_reference is None:
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
+        from afwizard.pdal import PDALInMemoryDataSet
 
         dataset.spatial_reference = PDALInMemoryDataSet.convert(
             dataset
@@ -85,7 +83,7 @@ def apply_adaptive_pipeline(
         )
 
     if segmentation.spatial_reference is None:
-        raise AdaptiveFilteringError(
+        raise AFWizardError(
             "No spatial reference system found for the segmentation. Please provide one via the following methods:\n"
             + "1: When loading a segmentation, specify the crs. Example: af.load_segmentation(filename, spatial_reference=None) \n"
             + '2: Specify a spatial reference directly. Example: segmentation.spatial_reference = "EPSG:4326" '
@@ -97,7 +95,7 @@ def apply_adaptive_pipeline(
     # Ensure that the segmentation contains pipeline information
     for s in segmentation["features"]:
         if "pipeline" not in s.get("properties", {}):
-            raise AdaptiveFilteringError(
+            raise AFWizardError(
                 "All features in segmentation are required to define the 'pipeline' property"
             )
 

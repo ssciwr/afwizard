@@ -1,4 +1,4 @@
-from adaptivefiltering.asprs import *
+from afwizard.asprs import *
 
 import pytest
 
@@ -30,13 +30,13 @@ def test_asprs_classification():
     assert len(asprs(slice(None))) == 256
 
     # Erroneous input to asprs.__getitem__
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         asprs("non-existing")
 
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         asprs(-1)
 
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         asprs(256)
 
     # Test convenience functions
@@ -46,8 +46,8 @@ def test_asprs_classification():
         assert asprs_class_code(name)[0] == code
 
     # Test erroneous input of convenience functions
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         asprs_class_name(256)
 
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         asprs_class_code("foobar")

@@ -3,7 +3,7 @@ import re
 import pyproj
 
 
-class AdaptiveFilteringError(Exception):
+class AFWizardError(Exception):
     pass
 
 
@@ -37,7 +37,7 @@ def check_spatial_reference(crs):
 
         return new_crs
     else:
-        raise AdaptiveFilteringError(
+        raise AFWizardError(
             f"The given crs is neither a WKT nor a 4 to 5 digit EPSG code, but is {crs}"
         )
 

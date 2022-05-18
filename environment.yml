@@ -1,4 +1,4 @@
-name: adaptivefiltering
+name: afwizard
 channels:
   - conda-forge
 dependencies:

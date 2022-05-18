@@ -1,9 +1,9 @@
-from adaptivefiltering.dataset import *
-from adaptivefiltering.paths import get_temporary_filename
-from adaptivefiltering.segmentation import Segmentation
-from adaptivefiltering.asprs import asprs
-from adaptivefiltering.pdal import PDALFilter
-from adaptivefiltering.apps import assign_pipeline
+from afwizard.dataset import *
+from afwizard.paths import get_temporary_filename
+from afwizard.segmentation import Segmentation
+from afwizard.asprs import asprs
+from afwizard.pdal import PDALFilter
+from afwizard.apps import assign_pipeline
 
 import numpy as np
 import os
@@ -26,7 +26,7 @@ def test_assign_pipeline(dataset, boundary_segmentation):
     f = PDALFilter(type="filters.smrf")
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         assign_pipeline(dataset, boundary_segmentation, [pipeline, pipeline])
     boundary_segmentation["features"][0]["properties"]["class"] = "A"
 
@@ -97,7 +97,7 @@ def test_save_dataset(minimal_dataset):
     assert os.stat(tmpfile).st_size == os.stat(minimal_dataset.filename).st_size
 
     # Try doing that again without the override flag
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFWizardError):
         minimal_dataset.save(tmpfile)
 
     # Now with the override flag
@@ -111,7 +111,7 @@ def test_remove_classification(minimal_dataset):
 
 
 def test_reproject_dataset(dataset):
-    from adaptivefiltering.dataset import reproject_dataset
+    from afwizard.dataset import reproject_dataset
 
     dataset2 = reproject_dataset(dataset, "EPSG:4362")
 
