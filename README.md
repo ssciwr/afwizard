@@ -24,7 +24,7 @@ Core features:
   * [OPALS](https://opals.geo.tuwien.ac.at/html/stable/index.html) is a proprietary library for processing Lidar data. It can be tested freely for datasets <1M points.
   * [LASTools](https://rapidlasso.com/) has a proprietary tool called `lasground_new` that can be used for ground point filtering.
 * Access to predefined filter pipeline settings
-  * Crowd-sourced library of filter pipelines at https://github.com/ssciwr/adaptivefiltering-library/
+  * Crowd-sourced library of filter pipelines at https://github.com/ssciwr/afwizard-library/
   * Filter definitions can be shared with colleagues as files
 * Spatially heterogeneous application of filter pipelines
   * Assignment of filter pipeline settings to spatial subregions in map-based user interface
