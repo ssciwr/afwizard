@@ -15,7 +15,7 @@ dependencies:
   - pillow
   - wrapt
   - pip:
-    - adaptivefiltering-library
+    - afwizard-library
     - Click
     - geojson
     - ipyfilechooser
