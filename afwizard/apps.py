@@ -1093,9 +1093,13 @@ def select_pipeline_from_library(multiple=False):
             else:
                 metadata_form.data = {}
         else:
-            metadata_form.data = pyrsistent.thaw(
-                filter_list[change["new"]].config["metadata"]
-            )
+            index = filter_list_widget.index
+            if index is None:
+                metadata_form.data = {}
+            else:
+                metadata_form.data = pyrsistent.thaw(
+                    filter_list[index].config["metadata"]
+                )
 
     filter_list_widget.observe(metadata_updater, names="index")
 
