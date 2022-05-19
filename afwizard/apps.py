@@ -401,6 +401,9 @@ def pipeline_tuning(datasets=[], pipeline=None):
             trivial_tab_titles(center)
 
     def _update_preview(button):
+        # Reset button name
+        button.description = "Preview"
+
         with hourglass_icon(button):
             # Check whether there is batch-processing information
             batchdata = pipeline_form.batchdata
@@ -408,6 +411,11 @@ def pipeline_tuning(datasets=[], pipeline=None):
             if len(batchdata) == 0:
                 _trigger_preview()
             else:
+                # Check if we exceed 30 Visualizations and error out if so
+                if len(list(create_variability(batchdata))) > 30:
+                    button.description = "Preview (batch limit: 30 samples)"
+                    return
+
                 for variant in create_variability(batchdata):
                     config = pyrsistent.freeze(pipeline_form.data)
 
