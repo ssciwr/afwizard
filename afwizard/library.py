@@ -26,8 +26,8 @@ class FilterLibrary:
         self.recursive = recursive
 
     @property
-    def filters(self):
-        result = []
+    def filter_paths(self):
+        result = {}
 
         # Iterate over the JSON documents in the directory and load them
         for filename in glob.glob(
@@ -46,7 +46,7 @@ class FilterLibrary:
                     filter_ = filter_.copy(metadata=md)
 
                 # Add it to our list of filters
-                result.append(filter_)
+                result[filename] = filter_
             except (KeyError, jsonschema.ValidationError):
                 # We ignore the filter if it cannot be validated against our schema.
                 # That is necessary to distinguish filter pipeline JSON data from
@@ -54,6 +54,10 @@ class FilterLibrary:
                 pass
 
         return result
+
+    @property
+    def filters(self):
+        return self.filter_paths.values()
 
 
 def get_filter_libraries():
@@ -239,17 +243,21 @@ def locate_filter_by_hash(hash):
 
     # Collect all matches to throw a meaningful error
     found = []
+    found_paths = []
     for lib in get_filter_libraries():
-        for f in lib.filters:
+        for path, f in lib.filter_paths.items():
             if hash == metadata_hash(f):
                 found.append(f)
+                found_paths.append(path)
 
     if not found:
         raise FileNotFoundError(
             "A filter pipeline for your segmentation could not be located!"
         )
     if len(found) > 1:
-        raise AFWizardError("Ambiguous pipeline metadata detected!")
+        raise AFWizardError(
+            f"Ambiguous pipeline metadata detected! Candidates: {', '.join(found_paths)}"
+        )
     else:
         return found[0]
 
