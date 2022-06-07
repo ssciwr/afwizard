@@ -26,7 +26,7 @@ def test_assign_pipeline(dataset, boundary_segmentation):
     f = PDALFilter(type="filters.smrf")
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         assign_pipeline(dataset, boundary_segmentation, [pipeline, pipeline])
     boundary_segmentation["features"][0]["properties"]["class"] = "A"
 
@@ -97,7 +97,7 @@ def test_save_dataset(minimal_dataset):
     assert os.stat(tmpfile).st_size == os.stat(minimal_dataset.filename).st_size
 
     # Try doing that again without the override flag
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         minimal_dataset.save(tmpfile)
 
     # Now with the override flag

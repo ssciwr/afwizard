@@ -10,7 +10,7 @@
 
 ## Features
 
-AFWizard is a Python package to enhance the productivity of ground point filtering workflows in archaeology and beyond.
+AFwizard is a Python package to enhance the productivity of ground point filtering workflows in archaeology and beyond.
 It provides a Jupyter-based environment for "human-in-the-loop" tuned, spatially heterogeneous ground point filterings.
 Core features:
 
@@ -32,11 +32,11 @@ Core features:
 
 ## Documentation
 
-The documentation of AFWizard can be found here: [https://afwizard.readthedocs.io/en/latest](https://afwizard.readthedocs.io/en/latest)
+The documentation of AFwizard can be found here: [https://afwizard.readthedocs.io/en/latest](https://afwizard.readthedocs.io/en/latest)
 
 ## Prerequisites
 
-In order to work with AFWizard, you need the following required pieces of Software.
+In order to work with AFwizard, you need the following required pieces of Software.
 
 * Python >= 3.7
 * A [Conda installation](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
@@ -70,22 +70,22 @@ jupyter lab
 
 ### Using Binder
 
-You can try AFWizard without prior installation by using [Binder](https://mybinder.org/v2/gh/ssciwr/afwizard/main), which is a free cloud-hosted service to run Jupyter notebooks. This will give you an impression of the library's capabilities, but you will want to work on a local setup when using the library productively: On Binder, you might experience very long startup times, slow user experience and limitations to disk space and memory.
+You can try AFwizard without prior installation by using [Binder](https://mybinder.org/v2/gh/ssciwr/afwizard/main), which is a free cloud-hosted service to run Jupyter notebooks. This will give you an impression of the library's capabilities, but you will want to work on a local setup when using the library productively: On Binder, you might experience very long startup times, slow user experience and limitations to disk space and memory.
 
 ### Using Docker
 
-Having set up [Docker](https://docs.docker.com/get-docker/), you can use AFWizard directly from a provided Docker image:
+Having set up [Docker](https://docs.docker.com/get-docker/), you can use AFwizard directly from a provided Docker image:
 
 ```
 docker run -t -p 8888:8888 ssciwr/afwizard:latest
 ```
 
-Having executed above command, paste the URL given on the command line into your browser and start using AFWizard by looking at the provided Jupyter notebooks.
+Having executed above command, paste the URL given on the command line into your browser and start using AFwizard by looking at the provided Jupyter notebooks.
 This image is limited to working with non-proprietary filtering backends (PDAL only).
 
 ### Using Pip
 
-We advise you to use Conda as AFWizard depends on a lot of other Python packages, some of which have external C/C++ dependencies. Using Conda, you get all of these installed automatically, using pip you might need to do a lot of manual work to get the same result.
+We advise you to use Conda as AFwizard depends on a lot of other Python packages, some of which have external C/C++ dependencies. Using Conda, you get all of these installed automatically, using pip you might need to do a lot of manual work to get the same result.
 
 That being said, `afwizard` can be installed from PyPI:
 

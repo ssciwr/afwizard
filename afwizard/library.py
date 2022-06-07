@@ -1,6 +1,6 @@
 from afwizard.filter import load_filter, save_filter
 from afwizard.paths import load_schema, download_test_file
-from afwizard.utils import AFWizardError, is_iterable
+from afwizard.utils import AFwizardError, is_iterable
 
 import click
 import hashlib
@@ -100,7 +100,7 @@ def set_current_filter_library(path, create_dirs=False, name="My filter library"
         if create_dirs:
             os.makedirs(path)
         else:
-            raise AFWizardError(
+            raise AFwizardError(
                 f"The given path does not exist and create_dirs was not set"
             )
 
@@ -255,7 +255,7 @@ def locate_filter_by_hash(hash):
             "A filter pipeline for your segmentation could not be located!"
         )
     if len(found) > 1:
-        raise AFWizardError(
+        raise AFwizardError(
             f"Ambiguous pipeline metadata detected! Candidates: {', '.join(found_paths)}"
         )
     else:

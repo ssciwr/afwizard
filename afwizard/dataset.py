@@ -5,7 +5,7 @@ from afwizard.paths import (
     load_schema,
     check_file_extension,
 )
-from afwizard.utils import AFWizardError
+from afwizard.utils import AFwizardError
 from afwizard.visualization import visualization_dispatcher
 
 from osgeo import gdal
@@ -172,7 +172,7 @@ class DataSet:
         # Otherwise, we can simply copy the file to the new location
         # after checking that we are not accidentally overriding something
         if not overwrite and os.path.exists(filename):
-            raise AFWizardError(
+            raise AFwizardError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 
@@ -210,7 +210,7 @@ class DataSet:
         """Restrict the data set to a spatial subset
 
         This is of vital importance when working with large Lidar datasets
-        in AFWizard. The interactive exploration process for filtering
+        in AFwizard. The interactive exploration process for filtering
         pipelines requires a reasonably sized subset to allow fast previews.
 
         :param segmentation:
@@ -318,7 +318,7 @@ class DigitalSurfaceModel:
                 config=config,
             )
         except RuntimeError:
-            raise AFWizardError(
+            raise AFwizardError(
                 "The writers.raster was not able to generate a raster. Did you specify a classification that is not present in the dataset?"
             )
         self.raster = gdal.Open(self.filename, gdal.GA_ReadOnly)
@@ -394,7 +394,7 @@ class DigitalSurfaceModel:
                 if selector.value == "LAZ":
                     self.dataset.save(filename.value, compress=True, overwrite=True)
             else:
-                raise AFWizardError("Please choose a filename before saving!")
+                raise AFwizardError("Please choose a filename before saving!")
 
         button.on_click(_save_to_file)
 

@@ -8,7 +8,7 @@ from afwizard.paths import (
     within_temporary_workspace,
 )
 from afwizard.utils import (
-    AFWizardError,
+    AFwizardError,
     check_spatial_reference,
 )
 
@@ -56,7 +56,7 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # Check for arrays of 0 points - they throw hard to read errors in PDAL
     for array in arrays:
         if array.shape[0] == 0:
-            raise AFWizardError(
+            raise AFwizardError(
                 "PDAL cannot handle point clouds with 0 points, this can in some cases be caused by an out of bound segmentation or a wrong crs of the dataset."
             )
 
@@ -205,7 +205,7 @@ class PDALInMemoryDataSet(DataSet):
             compress = "laszip"
 
         if not overwrite and os.path.exists(filename):
-            raise AFWizardError(
+            raise AFwizardError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 

@@ -74,10 +74,10 @@ def test_select_pipeline_from_library(minimal_dataset):
 
 
 def test_select_best_pipeline(minimal_dataset):
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         select_best_pipeline()
 
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         select_best_pipeline(pipelines=[])
 
     f = load_filter(

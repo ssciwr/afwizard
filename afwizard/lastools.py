@@ -5,7 +5,7 @@ from afwizard.paths import (
     load_schema,
     within_temporary_workspace,
 )
-from afwizard.utils import AFWizardError, stringify_parameters
+from afwizard.utils import AFwizardError, stringify_parameters
 
 import logging
 import os
@@ -22,7 +22,7 @@ _lastools_directory = None
 def set_lastools_directory(dir):
     """Set custom LASTools installation directory
 
-    Use this function at the beginning of your code to point AFWizard
+    Use this function at the beginning of your code to point AFwizard
     to a custom LASTools installation directory. Alternatively, you can use the
     environment variable :code:`LASTOOLS_DIR` to do so.
 
@@ -39,7 +39,7 @@ def set_lastools_directory(dir):
         try:
             # If this throws, we show a meaningful error where we looked for LASTools
             lasground_executable(base=dir)
-        except AFWizardError as e:
+        except AFwizardError as e:
             _lastools_directory = None
             raise e
 
@@ -81,7 +81,7 @@ def lasground_executable(base=None):
 
     fullpath = os.path.join(base, "bin", execname)
     if not os.path.exists(fullpath):
-        raise AFWizardError(f"Executable {fullpath} was not found!")
+        raise AFwizardError(f"Executable {fullpath} was not found!")
 
     return fullpath
 
@@ -127,7 +127,7 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
             )
 
         if result.returncode != 0:
-            raise AFWizardError(f"LASTools error: {result.stdout.decode()}")
+            raise AFwizardError(f"LASTools error: {result.stdout.decode()}")
 
         return DataSet(
             filename=outfile,

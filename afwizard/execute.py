@@ -6,7 +6,7 @@ from afwizard.library import (
 from afwizard.logger import attach_file_logger
 from afwizard.paths import get_temporary_filename, get_temporary_workspace
 from afwizard.segmentation import Segmentation, merge_classes
-from afwizard.utils import AFWizardError, is_iterable
+from afwizard.utils import AFwizardError, is_iterable
 from afwizard.filter import save_filter
 
 import os
@@ -30,7 +30,7 @@ def apply_adaptive_pipeline(
 
     This function implements the large scale application of a spatially
     adaptive filter pipeline to a potentially huge dataset. This can either
-    be used from Python or through AFWizard's command line interface.
+    be used from Python or through AFwizard's command line interface.
 
     :param datasets:
         One or more datasets of type :ref:`~afwizard.dataset.DataSet`.
@@ -55,10 +55,10 @@ def apply_adaptive_pipeline(
     """
 
     if not isinstance(dataset, DataSet):
-        raise AFWizardError("Dataset are expected to be of type afwizard.DataSet")
+        raise AFwizardError("Dataset are expected to be of type afwizard.DataSet")
 
     if not isinstance(segmentation, Segmentation):
-        raise AFWizardError(
+        raise AFwizardError(
             "Segmentations are expected to be of type afwizard.segmentation.Segmentation"
         )
 
@@ -83,7 +83,7 @@ def apply_adaptive_pipeline(
         )
 
     if segmentation.spatial_reference is None:
-        raise AFWizardError(
+        raise AFwizardError(
             "No spatial reference system found for the segmentation. Please provide one via the following methods:\n"
             + "1: When loading a segmentation, specify the crs. Example: af.load_segmentation(filename, spatial_reference=None) \n"
             + '2: Specify a spatial reference directly. Example: segmentation.spatial_reference = "EPSG:4326" '
@@ -95,7 +95,7 @@ def apply_adaptive_pipeline(
     # Ensure that the segmentation contains pipeline information
     for s in segmentation["features"]:
         if "pipeline" not in s.get("properties", {}):
-            raise AFWizardError(
+            raise AFwizardError(
                 "All features in segmentation are required to define the 'pipeline' property"
             )
 

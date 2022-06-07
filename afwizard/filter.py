@@ -1,5 +1,5 @@
 from afwizard.paths import load_schema, check_file_extension
-from afwizard.utils import AFWizardError, as_number_type
+from afwizard.utils import AFwizardError, as_number_type
 from afwizard.versioning import (
     AFWIZARD_DATAMODEL_MAJOR_VERSION,
     AFWIZARD_DATAMODEL_MINOR_VERSION,
@@ -14,13 +14,13 @@ import os
 import pyrsistent
 
 
-class FilterError(AFWizardError):
+class FilterError(AFwizardError):
     pass
 
 
 class Filter:
     def __init__(self, _variability=[], **config):
-        """The base class for a filter in AFWizard
+        """The base class for a filter in AFwizard
 
         A filter can either be constructed from a configuration or be deserialized
         from a file using the :func:`~afwizard.load_filter` function.
@@ -120,7 +120,7 @@ class Filter:
         # Iterate over given variation points
         for var in self._variability:
             if "name" not in var:
-                raise AFWizardError(
+                raise AFwizardError(
                     f"Name argument is required for variability definition"
                 )
 
@@ -165,7 +165,7 @@ class Filter:
                             )
                         varschema["enum"] = options
                     else:
-                        raise AFWizardError(
+                        raise AFwizardError(
                             f"Variability string '{splitted[0]}' not understood!"
                         )
             else:

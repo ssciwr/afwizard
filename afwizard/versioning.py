@@ -1,8 +1,8 @@
-from afwizard.utils import AFWizardError
+from afwizard.utils import AFwizardError
 
 
 # Define the current major version of the filter data model defined
-# by AFWizard. This number should be increased whenever there
+# by AFwizard. This number should be increased whenever there
 # is a *non-backwards compatible* change in the data model. It invalidates
 # any filters being written for prior major versions. This is a drastic
 # thing that should have very good, well discussed reasons. Still, it is
@@ -43,11 +43,11 @@ def upgrade_filter(data):
     """Upgrades a given filter configuration to the current data model version"""
     # If this is an incompatible major version, we throw an error
     if data["_major"] != AFWIZARD_DATAMODEL_MAJOR_VERSION:
-        raise AFWizardError("Loading an outdated filter")
+        raise AFwizardError("Loading an outdated filter")
 
     # If the filter is newer than the version of adaptivefiltering we also throw
     if data["_minor"] > AFWIZARD_DATAMODEL_MINOR_VERSION:
-        raise AFWizardError(
+        raise AFwizardError(
             "Update your version of adaptivefiltering to use this filter"
         )
 

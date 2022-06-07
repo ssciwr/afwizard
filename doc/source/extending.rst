@@ -1,4 +1,4 @@
-Extending AFWizard with custom backends
+Extending AFwizard with custom backends
 =======================================
 
 In this section, we will describe how the :code:`afwizard` data model
