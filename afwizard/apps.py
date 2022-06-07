@@ -15,7 +15,7 @@ from afwizard.segmentation import (
     merge_classes,
     Segmentation,
 )
-from afwizard.utils import AFWizardError
+from afwizard.utils import AFwizardError
 from afwizard.widgets import WidgetFormWithLabels
 
 from osgeo import ogr
@@ -309,7 +309,7 @@ def pipeline_tuning(datasets=[], pipeline=None):
 
     # Assert that at least one dataset has been provided
     if len(datasets) == 0:
-        raise AFWizardError("At least one dataset must be provided to pipeline_tuning")
+        raise AFwizardError("At least one dataset must be provided to pipeline_tuning")
 
     # Create the data structure to store the history of visualizations in this app
     history = []
@@ -878,7 +878,7 @@ def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
             polygons = ogr.CreateGeometryFromJson(str(seg["features"][0]["geometry"]))
 
         except ValueError:
-            raise AFWizardError(
+            raise AFwizardError(
                 "Oops something very bad happend to your geometry. This can be caused by giving wrong crs to a segmentation."
             )
         polygons_wkt = polygons.ExportToWkt()
@@ -1242,10 +1242,10 @@ def select_best_pipeline(dataset=None, pipelines=None):
     :rtype: afwizard.filter.Pipeline
     """
     if dataset is None:
-        raise AFWizardError("A dataset is required for 'select_best_pipeline'")
+        raise AFwizardError("A dataset is required for 'select_best_pipeline'")
 
     if pipelines is None:
-        raise AFWizardError(
+        raise AFwizardError(
             "At least one pipeline needs to be passed to 'select_best_pipeline'"
         )
 

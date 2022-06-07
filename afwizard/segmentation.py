@@ -3,7 +3,7 @@ from afwizard.paths import locate_file, check_file_extension
 from afwizard.utils import (
     is_iterable,
 )
-from afwizard.utils import AFWizardError
+from afwizard.utils import AFwizardError
 
 import base64
 import geojson
@@ -203,7 +203,7 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         if segmentation.spatial_reference:
             srs_in = segmentation.spatial_reference
         else:
-            raise AFWizardError("No srs was given for Segmentation transformation.")
+            raise AFwizardError("No srs was given for Segmentation transformation.")
 
     # check if transformation is neccesary:
     if crs.CRS(srs_in) == crs.CRS(srs_out):
@@ -323,7 +323,7 @@ def split_segmentation_classes(segmentation):
         _ = split_dict.pop(key)
 
     if len(split_dict.keys()) == 0:
-        raise AFWizardError(
+        raise AFwizardError(
             "No suitable property key was found. "
             + "Please make sure there are classification properties present and that at least one of them has less than 20 categories."
         )
@@ -363,37 +363,37 @@ class Map:
 
         # handle exeptions
         if dataset and segmentation:
-            raise AFWizardError(
+            raise AFwizardError(
                 "A dataset and a segmentation can't be loaded at the same time."
             )
 
         if dataset is None and segmentation["features"] is []:
-            raise AFWizardError("an empty segmention was given.")
+            raise AFwizardError("an empty segmention was given.")
 
         if dataset is None and segmentation is None:
             # if no dataset or segmentation is given, the map will be centered at the SSC office
-            raise AFWizardError(
+            raise AFwizardError(
                 "Please use either a dataset or a segmentation. None were given."
             )
 
         # check if dataset and segmentation are of correct type
         if dataset:
             if isinstance(dataset, Segmentation):
-                raise AFWizardError(
+                raise AFwizardError(
                     "A segmentation was given as a dataset, please call Map(segmentation=yourSegmentation)"
                 )
             elif not isinstance(dataset, DataSet):
-                raise AFWizardError(
+                raise AFwizardError(
                     f"The given dataset is not of type DataSet, but {type(dataset)}."
                 )
 
         elif segmentation:
             if isinstance(segmentation, DataSet):
-                raise AFWizardError(
+                raise AFwizardError(
                     "A DataSet was given as a Segmentation, please call Map(dataset=yourDataset)"
                 )
             elif not isinstance(segmentation, Segmentation):
-                raise AFWizardError(
+                raise AFwizardError(
                     f"The given segmentation is not of type Segmentation, but {type(segmentation)}."
                 )
 
@@ -406,7 +406,7 @@ class Map:
                 self.original_srs = dataset.spatial_reference
             else:
                 if in_srs is None:
-                    raise AFWizardError(
+                    raise AFwizardError(
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs

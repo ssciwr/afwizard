@@ -10,7 +10,7 @@ import tempfile
 import uuid
 import xdg
 
-from afwizard.utils import AFWizardError
+from afwizard.utils import AFwizardError
 
 # Storage for the temporary workspace directory
 _tmp_dir = None
@@ -30,7 +30,7 @@ def set_data_directory(directory, create_dir=False):
         The name of the custom data directory.
     :type directory: str
     :param create_dir:
-        Whether AFWizard should create the directory if it does
+        Whether AFwizard should create the directory if it does
         not already exist.
     :type created_dir: bool
     """
@@ -118,7 +118,7 @@ def check_file_extension(filename, possible_values, default_value):
         ext = default_value
     possible_extensions = [possible_ext.lower() for possible_ext in possible_values]
     if ext.lower() not in possible_extensions:
-        raise AFWizardError(
+        raise AFwizardError(
             f"The file extension {ext} is not supported. Please use the following: {possible_extensions}"
         )
     return os.path.join(name + ext)

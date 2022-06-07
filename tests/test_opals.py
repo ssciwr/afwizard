@@ -1,6 +1,6 @@
 from afwizard.opals import *
 from afwizard.pdal import PDALInMemoryDataSet
-from afwizard.utils import AFWizardError
+from afwizard.utils import AFwizardError
 
 import jsonschema
 import os
@@ -27,7 +27,7 @@ def test_set_opals_directory(monkeypatch):
     set_opals_directory(None)
 
     # Check that we correctly validate an OPALS path
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         set_opals_directory("bla")
     assert not opals_is_present()
 
@@ -35,7 +35,7 @@ def test_set_opals_directory(monkeypatch):
 @pytest.mark.skipif(not opals_is_present(), reason="OPALS not found.")
 def test_get_opals_module_executable():
     # Looking for a non-existent OPALS module should throw
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         get_opals_module_executable("NonExist")
 
     # Looking for implemented ones should always succeed
@@ -47,7 +47,7 @@ def test_get_opals_module_executable_failure(monkeypatch):
     # In the absence of OPALS, asking for a module should throw
     monkeypatch.delenv("OPALS_DIR", raising=False)
     for mod in _availableOpalsModules:
-        with pytest.raises(AFWizardError):
+        with pytest.raises(AFwizardError):
             get_opals_module_executable(mod)
 
 

@@ -93,7 +93,7 @@ def validate_spatial_reference(ctx, param, crs):
     "--library",
     type=click.Path(exists=True, file_okay=False),
     multiple=True,
-    help="A filter library location that AFWizard should take into account. Can be given multiple times.",
+    help="A filter library location that AFwizard should take into account. Can be given multiple times.",
 )
 @click.option(
     "--output-dir",
@@ -135,15 +135,15 @@ def validate_spatial_reference(ctx, param, crs):
     help="The directory where to find a LASTools installation",
 )
 def main(**args):
-    """Command Line Interface for AFWizard
+    """Command Line Interface for AFwizard
 
     This CLI is used once you have finished the interactive exploration
-    work with the AFWizard Jupyter UI. The CLI takes your dataset
+    work with the AFwizard Jupyter UI. The CLI takes your dataset
     and the segmentation file created in Jupyter and executes the ground
     point filtering on the entire dataset.
     """
 
-    # Register all filter libraries with AFWizard
+    # Register all filter libraries with AFwizard
     for lib in args.pop("library"):
         add_filter_library(path=lib)
 
@@ -159,7 +159,7 @@ def main(**args):
     try:
         apply_adaptive_pipeline(**args)
     except Exception:
-        logger.exception("AFWizard failed with the following error")
+        logger.exception("AFwizard failed with the following error")
 
 
 if __name__ == "__main__":

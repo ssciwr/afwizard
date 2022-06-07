@@ -70,7 +70,7 @@ def test_convert_segmentation(boundary_segmentation):
             },
         ]
     )
-    with pytest.raises(AFWizardError):
+    with pytest.raises(AFwizardError):
         test4 = convert_segmentation(segmentation, "EPSG:5243")
 
 

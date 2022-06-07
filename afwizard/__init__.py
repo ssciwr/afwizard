@@ -33,7 +33,7 @@ from afwizard.segmentation import load_segmentation
 
 
 def print_version():
-    """Print the current version of AFWizard"""
+    """Print the current version of AFwizard"""
     print(__version__)
 
 
