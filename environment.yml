@@ -1,29 +1,30 @@
-name: afwizard
+name: test-afwizard
 channels:
   - conda-forge
+  - conda-forge/label/ipywidgets_rc
+  - conda-forge/label/jupyterlab_widgets_rc
+  - conda-forge/label/widgetsnbextension_rc
 dependencies:
   - python=3.9
+  - afwizard-library
+  - click
   - gdal=3.4.0
-  - IPython=7.21.0
+  - geojson
+  - IPython
+  - ipyfilechooser
   - ipyleaflet
-  - jsonschema=3.2.0
+  - ipywidgets=8.0.0rc0
+  - ipywidgets-jsonschema
+  - jsonmerge
+  - jsonschema<4
   - jupyter-resource-usage
   - jupyterlab
-  - pdal=2.3.0
-  - python-pdal=2.4.2
-  - pip
+  - pdal
+  - pyproj
+  - pyrsistent
+  - python-pdal
+  - pytools
   - pillow
   - wrapt
-  - pip:
-    - afwizard-library
-    - Click
-    - geojson
-    - ipyfilechooser
-    - ipywidgets==8.0.0b1
-    - ipywidgets-jsonschema
-    - jsonmerge
-    - pyrsistent
-    - pytools
-    - xdg
-    - xmltodict
-    - pyproj
+  - xdg
+  - xmltodict
