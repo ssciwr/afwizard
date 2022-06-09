@@ -13,7 +13,6 @@ from osgeo import gdal
 import fnmatch
 import ipyfilechooser
 import ipywidgets
-import json
 import jsonschema
 import os
 import pytools
@@ -459,9 +458,9 @@ def reproject_dataset(dataset, out_srs, in_srs=None):
         "out_srs": out_srs,
     }
     pipeline = execute_pdal_pipeline(dataset=dataset, config=config)
-    spatial_reference = json.loads(pipeline.metadata)["metadata"][
-        "filters.reprojection"
-    ]["comp_spatialreference"]
+    spatial_reference = pipeline.metadata["metadata"]["filters.reprojection"][
+        "comp_spatialreference"
+    ]
 
     return PDALInMemoryDataSet(
         pipeline=pipeline,

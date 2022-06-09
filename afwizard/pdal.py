@@ -184,9 +184,9 @@ class PDALInMemoryDataSet(DataSet):
         pipeline = execute_pdal_pipeline(config=[config])
 
         if spatial_reference is None:
-            spatial_reference = json.loads(pipeline.metadata)["metadata"][
-                "readers.las"
-            ]["comp_spatialreference"]
+            spatial_reference = pipeline.metadata["metadata"]["readers.las"][
+                "comp_spatialreference"
+            ]
 
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
