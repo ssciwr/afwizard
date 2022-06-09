@@ -9,7 +9,6 @@ import base64
 import geojson
 import ipyleaflet
 import ipywidgets
-import json
 import numpy as np
 import collections
 import copy
@@ -584,7 +583,7 @@ class Map:
                 config=[
                     {
                         "type": "filters.hexbin",
-                        "sample_size": json.loads(info_pipeline.metadata)["metadata"][
+                        "sample_size": info_pipeline.metadata["metadata"][
                             "filters.info"
                         ]["num_points"],
                         "precision": 10,
@@ -596,9 +595,9 @@ class Map:
             # get the coordinates from the metadata:
             # this gives us lat, lon but for geojson we need lon, lat
 
-            hexbin_geometry = json.loads(hexbin_pipeline.metadata)["metadata"][
-                "filters.hexbin"
-            ]["boundary_json"]
+            hexbin_geometry = hexbin_pipeline.metadata["metadata"]["filters.hexbin"][
+                "boundary_json"
+            ]
 
         elif segmentation:
 

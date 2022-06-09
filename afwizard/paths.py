@@ -19,8 +19,8 @@ _tmp_dir = None
 _data_dir = None
 
 # The current data archive URL
-TEST_DATA_ARCHIVE = "https://github.com/ssciwr/afwizard-test-data/releases/download/2022-03-02/data.tar.gz"
-TEST_DATA_CHECKSUM = "26f61c7f6681d6e558b3765689f110f09eaf34543ea5d8716ff5e55ab0557980"
+TEST_DATA_ARCHIVE = "https://github.com/ssciwr/afwizard-test-data/releases/download/2022-06-09/data.tar.gz"
+TEST_DATA_CHECKSUM = "fae90a3cf758e2346b81fa0e3b005f2914d059ca182202a1de8f627b1ec0c160"
 
 
 def set_data_directory(directory, create_dir=False):
