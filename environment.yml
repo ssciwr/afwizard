@@ -5,7 +5,7 @@ channels:
   - conda-forge/label/jupyterlab_widgets_rc
   - conda-forge/label/widgetsnbextension_rc
 dependencies:
-  - python=3.9
+  - python
   - afwizard-library
   - click
   - gdal
