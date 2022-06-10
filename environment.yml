@@ -1,4 +1,4 @@
-name: test-afwizard
+name: afwizard-dev
 channels:
   - conda-forge
   - conda-forge/label/ipywidgets_rc

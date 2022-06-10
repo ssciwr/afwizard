@@ -2,11 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ssciwr/afwizard/CI)](https://github.com/ssciwr/afwizard/actions?query=workflow%3ACI)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/afwizard.svg)](https://anaconda.org/conda-forge/afwizard)
 [![codecov](https://codecov.io/gh/ssciwr/afwizard/branch/main/graph/badge.svg?token=ONIG38R74Y)](https://codecov.io/gh/ssciwr/afwizard)
 [![Documentation Status](https://readthedocs.org/projects/afwizard/badge/)](https://afwizard.readthedocs.io/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ssciwr/afwizard/main)
-
-**This library is currently under development.**
 
 ## Features
 
@@ -38,7 +37,6 @@ The documentation of AFwizard can be found here: [https://afwizard.readthedocs.i
 
 In order to work with AFwizard, you need the following required pieces of Software.
 
-* Python >= 3.7
 * A [Conda installation](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 
 If you want to use the respective backends, you also need to install the following pieces of software:
@@ -46,19 +44,16 @@ If you want to use the respective backends, you also need to install the followi
 * [OPALS](https://opals.geo.tuwien.ac.at/html/stable/index.html) in the latest (nightly) version that contains the `TerrainFilter` module.
 * [LASTools](https://rapidlasso.com/)
 
-There are alternatives to Conda for installation, but we strongly advise you to use Conda as it offers the best experience for this type of project.
-
 ## Installing and using
 
 ### Using Conda
 
-Having a [local installation of Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), the following sequence of commands sets up a Conda environment for `afwizard`:
+Having a [local installation of Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), the following sequence of commands sets up a new Conda environment and installs `afwizard` into it:
 
 ```
-git clone https://github.com/ssciwr/afwizard.git
-cd afwizard
-conda env create -f environment.yml --force
-conda run -n afwizard python -m pip install .
+conda create -n afwizard
+conda activate afwizard
+conda install -c conda-forge/label/afwizard_dev -c conda-forge -c conda-forge/label/ipywidgets_rc -c conda-forge/label/jupyterlab_widgets_rc -c conda-forge/label/widgetsnbextension_rc afwizard
 ```
 
 You can start the JupyterLab frontend by doing:
@@ -66,6 +61,24 @@ You can start the JupyterLab frontend by doing:
 ```
 conda activate afwizard
 jupyter lab
+```
+
+If you need some example notebooks to get started, you can copy them into the current working directory like this:
+
+```
+conda activate afwizard
+copy_afwizard_notebooks
+```
+
+### Development Build
+
+If you are intending to contribute to the development of the library, we recommend the following setup:
+
+```
+git clone https://github.com/ssciwr/afwizard.git
+cd afwizard
+conda env create -f environment-dev.yml --force
+conda run -n afwizard-dev python -m pip install .
 ```
 
 ### Using Binder
