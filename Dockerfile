@@ -23,4 +23,6 @@ RUN rm -rf ${HOME}/work
 
 # Copy the artifacts from stage 0 that we need
 COPY --from=builder /opt/conda /opt/conda
-COPY --from=builder /opt/afwizard/jupyter/*.ipynb ${HOME}/
+
+# Ensure that the Jupyter notebooks are located in the home directory
+RUN copy_afwizard_notebooks ${HOME}/
