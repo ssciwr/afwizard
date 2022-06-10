@@ -6,7 +6,6 @@
 
 import afwizard
 import os
-import subprocess
 import sys
 
 # -- Path setup --------------------------------------------------------------
@@ -74,3 +73,14 @@ nbsphinx_allow_errors = True
 # https://stackoverflow.com/a/43186995/2819459
 def setup(app):
     app.add_css_file("style.css")
+
+
+# Ensure that the conda provided PROJ database is found. This
+# is somewhat not possible in the base environment. There is
+# this discussion which allowed me to solve the issue although I
+# think it is a horrible situation and definitely a bug:
+# https://github.com/conda-forge/geopandas-feedstock/issues/63
+if os.environ.get("READTHEDOCS", None) == "True":
+    os.environ[
+        "PROJ_LIB"
+    ] = "/home/docs/checkouts/readthedocs.org/user_builds/afwizard/conda/package-jupyter/share/proj"

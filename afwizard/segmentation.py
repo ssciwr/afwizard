@@ -305,7 +305,7 @@ def split_segmentation_classes(segmentation):
         for key in property_keys:
             value = feature["properties"][key]
             # only use hashable objects as keys
-            if isinstance(value, collections.Hashable):
+            if isinstance(value, collections.abc.Hashable):
                 split_dict.setdefault(key, {}).setdefault(
                     value,
                     Segmentation([], spatial_reference=segmentation.spatial_reference),
