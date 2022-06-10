@@ -70,6 +70,17 @@ conda activate afwizard
 copy_afwizard_notebooks
 ```
 
+### Development Build
+
+If you are intending to contribute to the development of the library, we recommend the following setup:
+
+```
+git clone https://github.com/ssciwr/afwizard.git
+cd afwizard
+conda env create -f environment-dev.yml --force
+conda run -n afwizard-dev python -m pip install .
+```
+
 ### Using Binder
 
 You can try AFwizard without prior installation by using [Binder](https://mybinder.org/v2/gh/ssciwr/afwizard/main), which is a free cloud-hosted service to run Jupyter notebooks. This will give you an impression of the library's capabilities, but you will want to work on a local setup when using the library productively: On Binder, you might experience very long startup times, slow user experience and limitations to disk space and memory.
