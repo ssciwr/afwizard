@@ -1,3 +1,6 @@
+Adaptive Filtering Wizard
+=========================
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
