@@ -17,3 +17,4 @@ Adaptive Filtering Wizard
    extending
    user_API
    developer_API
+   faq

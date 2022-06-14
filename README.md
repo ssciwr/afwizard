@@ -78,7 +78,7 @@ If you are intending to contribute to the development of the library, we recomme
 git clone https://github.com/ssciwr/afwizard.git
 cd afwizard
 conda env create -f environment-dev.yml --force
-conda run -n afwizard-dev python -m pip install .
+conda run -n afwizard-dev python -m pip install --no-deps .
 ```
 
 ### Using Binder
