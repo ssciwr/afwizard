@@ -105,3 +105,16 @@ That being said, `afwizard` can be installed from PyPI:
 ```
 python -m pip install afwizard
 ```
+
+## Troubleshooting
+
+If you run into problems using AFwizard, we kindly ask you to do the following in this order:
+
+* Have a look at the list of our [Frequently Asked Questions]() for a solution
+* Search through the [GitHub issue tracker](https://github.com/ssciwr/afwizard/issues)
+* Open a new issue on the [GitHub issue tracker](https://github.com/ssciwr/afwizard/issues) providing
+  * The version of `afwizard` used
+  * Information about your OS
+  * The output of `conda list` on your machine
+  * As much information as possible about how to reproduce the bug
+  * If you can share the data that produced the error, it is much appreciated.
