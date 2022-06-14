@@ -110,7 +110,7 @@ python -m pip install afwizard
 
 If you run into problems using AFwizard, we kindly ask you to do the following in this order:
 
-* Have a look at the list of our [Frequently Asked Questions]() for a solution
+* Have a look at the list of our [Frequently Asked Questions](https://afwizard.readthedocs.io/en/latest/faq.html) for a solution
 * Search through the [GitHub issue tracker](https://github.com/ssciwr/afwizard/issues)
 * Open a new issue on the [GitHub issue tracker](https://github.com/ssciwr/afwizard/issues) providing
   * The version of `afwizard` used
