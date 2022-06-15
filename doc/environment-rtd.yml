@@ -34,4 +34,3 @@ dependencies:
     - nbsphinx
     - nbsphinx-link
     - sphinx-click
-    - ..
