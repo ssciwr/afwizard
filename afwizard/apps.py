@@ -704,6 +704,11 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
         split_segmentation = split_segmentation_classes(segmentation)
 
+        # Filter the 'pipeline_title' key because it should not be used
+        split_segmentation = {
+            k: v for k, v in split_segmentation.items() if k != "pipeline_title"
+        }
+
         feature_dropdown = ipywidgets.Dropdown(
             options=split_segmentation.keys(),
             layout=fullwidth,
