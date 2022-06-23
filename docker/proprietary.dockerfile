@@ -3,19 +3,19 @@ FROM ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest AS opals-
 USER ${NB_USER}
 
 # Copy the tarball into the container
-COPY --chown=${NB_UID} ./opals_nightly_linux64.tar.gz /opt/opals/opals_nightly_linux64.tar.gz
+COPY --chown=${NB_UID} ./opals_nightly_linux64.tar.gz /opt/opals/opals_2.5.0_linux64.tar.gz
 
 # Extract the tarball
 WORKDIR /opt/opals
-RUN tar xzvf opals_nightly_linux64.tar.gz && \
-    rm opals_nightly_linux64.tar.gz
+RUN tar xzvf opals_2.5.0_linux64.tar.gz && \
+    rm opals_2.5.0_linux64.tar.gz
 
 # Copy the license file into the correct location
-ADD --chown=${NB_UID} opals.key /opt/opals/opals_2.4.0/cfg
+ADD --chown=${NB_UID} opals.key /opt/opals/opals_2.5.0/cfg
 
 # Remove some parts of OPALS that are just not needed for our purpose but take up a lot of space
-RUN rm -rf /opt/opals/opals_2.4.0/demo && \
-    rm -rf /opt/opals/opals_2.4.0/doc
+RUN rm -rf /opt/opals/opals_2.5.0/demo && \
+    rm -rf /opt/opals/opals_2.5.0/doc
 
 FROM ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest AS lastools-unpack
 
@@ -54,5 +54,5 @@ COPY --from=opals-unpack /opt/opals /opt/opals
 COPY --from=lastools-unpack /opt/lastools /opt/lastools
 
 # Export the locations as environment variables
-ENV OPALS_DIR=/opt/opals/opals_2.4.0
+ENV OPALS_DIR=/opt/opals/opals_2.5.0
 ENV LASTOOLS_DIR=/opt/lastools/LAStools

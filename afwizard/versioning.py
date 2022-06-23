@@ -14,7 +14,7 @@ AFWIZARD_DATAMODEL_MAJOR_VERSION = 0
 # change to the model e.g. the addition or renaming of metadata. When
 # increasing this number you should also add an upgrade function that allows
 # adaptivefiltering to port existing filters to the new minor version.
-AFWIZARD_DATAMODEL_MINOR_VERSION = 0
+AFWIZARD_DATAMODEL_MINOR_VERSION = 1
 
 # A global registry of update functions
 _upgrade_functions = {}
@@ -62,8 +62,10 @@ def upgrade_filter(data):
 #
 # A potential first upgrade function could look like this:
 #
-# @upgrade_function(0, 0)
-# def add_keywords_field(config):
-#     config["keywords"] = []
-#     return config
-#
+@upgrade_function(0, 0)
+def remove_opals_nightly(config):
+    for f in config["filters"]:
+        if f["_backend"] == "opals_nightly":
+            f["_backend"] = "opals"
+
+    return config

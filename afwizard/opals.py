@@ -24,6 +24,18 @@ logger = logging.getLogger("afwizard")
 _opals_directory = None
 
 
+def parse_opals_version(dir):
+    try:
+        with open(os.path.join(dir, "version.txt")) as f:
+            for line in f:
+                match = re.match('OPALS_VERSION="(.*)"', line)
+                if match:
+                    parts = match.groups()[0].split(".")
+                    return int(parts[0]), int(parts[1])
+    except FileNotFoundError:
+        return None
+
+
 def set_opals_directory(dir):
     """Set custom OPALS installation directory
 
@@ -41,11 +53,14 @@ def set_opals_directory(dir):
 
     # Validate the given directory if it is not None
     if dir is not None:
-        try:
-            get_opals_module_executable("RobFilter", base=dir)
-        except AFwizardError:
-            _opals_directory = None
-            raise AFwizardError(f"Path {dir} does not contain an OPALS installation!")
+        # Parse the version string and check it being 2.5
+        version = parse_opals_version(dir)
+        if version is not None:
+            if version[0] == 2 and version[1] == 5:
+                return
+
+        _opals_directory = None
+        raise AFwizardError(f"Path {dir} does not contain an OPALS v2.5 installation!")
 
 
 def get_opals_directory():
@@ -293,23 +308,6 @@ class OPALSFilter(Filter, identifier="opals", backend=True):
     @classmethod
     def enabled(cls):
         return opals_is_present()
-
-
-class OPALSNightlyFilter(OPALSFilter, identifier="opals_nightly", backend=True):
-    @classmethod
-    def schema(cls):
-        return load_schema("opals_nightly.json")
-
-    @classmethod
-    def enabled(cls):
-        # We identify the OPALS nightly installation by the existence
-        # of the TerrainFilter module. My OPALS tarball contains an outdated
-        # version file, so that cannot be used as a version source
-        try:
-            get_opals_module_executable("TerrainFilter")
-            return True
-        except AFwizardError:
-            return False
 
 
 class OPALSDataManagerObject(DataSet):
