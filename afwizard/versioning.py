@@ -60,10 +60,16 @@ def upgrade_filter(data):
 #
 # In the following all upgrade functions to the afwizard data model are implemented.
 #
-# A potential first upgrade function could look like this:
-#
+
+
 @upgrade_function(0, 0)
 def remove_opals_nightly(config):
+    """Update function (0, 0) -> (0, 1)
+
+    The OPALS Nightly backend was a temporary solution to allow usage
+    of the TerrainFilter module. Starting with OPALS v2.5 it is part of
+    main OPALS. We do require that version.
+    """
     for f in config["filters"]:
         if f["_backend"] == "opals_nightly":
             f["_backend"] = "opals"
