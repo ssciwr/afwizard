@@ -28,7 +28,7 @@ def parse_opals_version(dir):
     try:
         with open(os.path.join(dir, "version.txt")) as f:
             for line in f:
-                match = re.match('OPALS_VERSION="(.*)"', line)
+                match = re.match('OPALS_VERSION="?(.*)"?', line)
                 if match:
                     parts = match.groups()[0].split(".")
                     return int(parts[0]), int(parts[1])
