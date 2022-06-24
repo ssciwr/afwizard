@@ -41,7 +41,7 @@ In order to work with AFwizard, you need the following required pieces of Softwa
 
 If you want to use the respective backends, you also need to install the following pieces of software:
 
-* [OPALS](https://opals.geo.tuwien.ac.at/html/stable/index.html) in the latest (nightly) version that contains the `TerrainFilter` module.
+* [OPALS](https://opals.geo.tuwien.ac.at/html/stable/index.html) in version 2.5
 * [LASTools](https://rapidlasso.com/)
 
 ## Installing and using

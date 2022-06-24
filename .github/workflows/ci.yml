@@ -64,9 +64,9 @@ jobs:
     - name: Install OPALS
       working-directory: ${{ runner.workspace }}
       run: |
-        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
-        tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
-        echo "OPALS_DIR=${{ runner.workspace }}/opals_2.3.2" >> $GITHUB_ENV
+        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz ${{ runner.workspace }}
+        tar xzvf ${{ runner.workspace }}/opals_2.5.0_linux64.tar.gz
+        echo "OPALS_DIR=${{ runner.workspace }}/opals_2.5.0" >> $GITHUB_ENV
 
     - name: Install LAStools
       working-directory: ${{ runner.workspace }}
@@ -142,13 +142,13 @@ jobs:
       working-directory: ${{ runner.workspace }}
       shell: powershell
       run: |
-        c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
+        c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_win64-setup.exe ${{ runner.workspace }}
 
     - name: Install OPALS (Windows)
       working-directory: ${{ runner.workspace }}
       shell: powershell
       run: |
-        Start-Process -FilePath ${{ runner.workspace }}\opals_nightly_win64-setup.exe -ArgumentList /S,/TYPE=typical,/DATA=,/D=${{ runner.workspace }}\opalsInstallation -Wait
+        Start-Process -FilePath ${{ runner.workspace }}\opals_2.5.0_win64-setup.exe -ArgumentList /S,/TYPE=typical,/DATA=,/D=${{ runner.workspace }}\opalsInstallation -Wait
         echo "OPALS_DIR=${{ runner.workspace }}\opalsInstallation" >> $env:GITHUB_ENV
 
     - name: Install LAStools
