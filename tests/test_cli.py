@@ -18,11 +18,3 @@ def test_opals_schema_cli(mod):
     assert result.exit_code == 0
     schema = json.loads(result.stdout)
     assert len(schema) > 0
-
-
-def test_copy_notebooks(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    runner = CliRunner()
-    result = runner.invoke(copy_notebooks, os.getcwd())
-    assert result.exit_code == 0
-    assert len(glob.glob("*.ipynb")) > 0
