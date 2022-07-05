@@ -33,12 +33,12 @@ jobs:
         path: ~/conda_pkgs_dir
         key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
 
-    - name: Create adaptivefiltering conda environment
+    - name: Create afwizard conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
         auto-update-conda: true
         auto-activate-base: false
-        activate-environment: adaptivefiltering
+        activate-environment: afwizard
         environment-file: environment.yml
         use-only-tar-bz2: true
 
@@ -64,9 +64,9 @@ jobs:
     - name: Install OPALS
       working-directory: ${{ runner.workspace }}
       run: |
-        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_linux64.tar.gz ${{ runner.workspace }}
-        tar xzvf ${{ runner.workspace }}/opals_nightly_linux64.tar.gz
-        echo "OPALS_DIR=${{ runner.workspace }}/opals_2.3.2" >> $GITHUB_ENV
+        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz ${{ runner.workspace }}
+        tar xzvf ${{ runner.workspace }}/opals_2.5.0_linux64.tar.gz
+        echo "OPALS_DIR=${{ runner.workspace }}/opals_2.5.0" >> $GITHUB_ENV
 
     - name: Install LAStools
       working-directory: ${{ runner.workspace }}
@@ -78,7 +78,7 @@ jobs:
 
     - name: Install Python package
       run: |
-        python -m pip install .
+        python -m pip install --no-deps .
 
     - name: Run Python tests including notebooks
       run: |
@@ -86,7 +86,7 @@ jobs:
 
     - name: Run coverage tests
       run: |
-        python -m pytest --cov=./adaptivefiltering --cov-report=xml
+        python -m pytest --cov=./afwizard --cov-report=xml
 
     - name: "Upload coverage to Codecov"
       uses: codecov/codecov-action@v1
@@ -115,12 +115,12 @@ jobs:
         path: ~/conda_pkgs_dir
         key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
 
-    - name: Create adaptivefiltering conda environment
+    - name: Create afwizard conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
         auto-update-conda: true
         auto-activate-base: false
-        activate-environment: adaptivefiltering
+        activate-environment: afwizard
         environment-file: environment.yml
         use-only-tar-bz2: true
 
@@ -142,13 +142,13 @@ jobs:
       working-directory: ${{ runner.workspace }}
       shell: powershell
       run: |
-        c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_nightly_win64-setup.exe ${{ runner.workspace }}
+        c://progra~1//git//usr//bin//scp.exe -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_win64-setup.exe ${{ runner.workspace }}
 
     - name: Install OPALS (Windows)
       working-directory: ${{ runner.workspace }}
       shell: powershell
       run: |
-        Start-Process -FilePath ${{ runner.workspace }}\opals_nightly_win64-setup.exe -ArgumentList /S,/TYPE=typical,/DATA=,/D=${{ runner.workspace }}\opalsInstallation -Wait
+        Start-Process -FilePath ${{ runner.workspace }}\opals_2.5.0_win64-setup.exe -ArgumentList /S,/TYPE=typical,/DATA=,/D=${{ runner.workspace }}\opalsInstallation -Wait
         echo "OPALS_DIR=${{ runner.workspace }}\opalsInstallation" >> $env:GITHUB_ENV
 
     - name: Install LAStools
@@ -159,9 +159,9 @@ jobs:
         Expand-Archive -LiteralPath ${{ runner.workspace }}\LAStools.zip -DestinationPath ${{ runner.workspace }}
         echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $env:GITHUB_ENV
 
-    - name: Install the adaptivefiltering Python package
+    - name: Install the afwizard Python package
       run: |
-        python -m pip install .
+        python -m pip install --no-deps .
 
     - name: Run Python tests
       run: |

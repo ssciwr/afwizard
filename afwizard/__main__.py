@@ -1,14 +1,17 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.execute import apply_adaptive_pipeline
-from adaptivefiltering.lastools import set_lastools_directory
-from adaptivefiltering.library import add_filter_library
-from adaptivefiltering.opals import set_opals_directory
-from adaptivefiltering.segmentation import Segmentation
-from adaptivefiltering.utils import check_spatial_reference
+from afwizard.dataset import DataSet
+from afwizard.execute import apply_adaptive_pipeline
+from afwizard.lastools import set_lastools_directory
+from afwizard.library import add_filter_library
+from afwizard.opals import set_opals_directory
+from afwizard.segmentation import Segmentation
+from afwizard.utils import check_spatial_reference
 
 import click
+import logging
 import os
 import re
+
+logger = logging.getLogger("afwizard")
 
 
 def locate_lidar_dataset(ctx, param, path):
@@ -90,7 +93,7 @@ def validate_spatial_reference(ctx, param, crs):
     "--library",
     type=click.Path(exists=True, file_okay=False),
     multiple=True,
-    help="A filter library location that adaptivefiltering should take into account. Can be given multiple times.",
+    help="A filter library location that AFwizard should take into account. Can be given multiple times.",
 )
 @click.option(
     "--output-dir",
@@ -132,15 +135,15 @@ def validate_spatial_reference(ctx, param, crs):
     help="The directory where to find a LASTools installation",
 )
 def main(**args):
-    """Command Line Interface for adaptivefiltering
+    """Command Line Interface for AFwizard
 
     This CLI is used once you have finished the interactive exploration
-    work with the adaptivefiltering Jupyter UI. The CLI takes your dataset
+    work with the AFwizard Jupyter UI. The CLI takes your dataset
     and the segmentation file created in Jupyter and executes the ground
     point filtering on the entire dataset.
     """
 
-    # Register all filter libraries with adaptivefiltering
+    # Register all filter libraries with AFwizard
     for lib in args.pop("library"):
         add_filter_library(path=lib)
 
@@ -152,8 +155,11 @@ def main(**args):
     args["dataset"].spatial_reference = args.pop("dataset_crs")
     args["segmentation"].spatial_reference = args.pop("segmentation_crs")
 
-    # Call Python API
-    apply_adaptive_pipeline(**args)
+    # Call Python API and log errors
+    try:
+        apply_adaptive_pipeline(**args)
+    except Exception:
+        logger.exception("AFwizard failed with the following error")
 
 
 if __name__ == "__main__":

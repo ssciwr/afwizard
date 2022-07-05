@@ -3,4 +3,4 @@ Developer API
 
 .. toctree::
 
-   adaptivefiltering
+   afwizard

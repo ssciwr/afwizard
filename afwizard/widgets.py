@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import load_schema
+from afwizard.paths import load_schema
 
 import collections
 import ipywidgets
@@ -157,7 +157,7 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
         # The widget where the variablility input is specified
         var = ipywidgets.Text(
-            tooltip="Use comma separation to specify a discrete set of parameters or dashes to define a parameter range"
+            tooltip="Use comma separation to specify a discrete set of parameters or colons to define a parameter range"
         )
 
         # For persisitent variability, we also need some additional information

@@ -1,30 +1,33 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.filter import Filter, PipelineMixin
-from adaptivefiltering.paths import (
+from afwizard.dataset import DataSet
+from afwizard.filter import Filter, PipelineMixin
+from afwizard.paths import (
     get_temporary_filename,
     load_schema,
     locate_file,
     check_file_extension,
     within_temporary_workspace,
 )
-from adaptivefiltering.utils import (
-    AdaptiveFilteringError,
+from afwizard.utils import (
+    AFwizardError,
     check_spatial_reference,
 )
 
 import json
+import logging
 import os
 import pdal
 import pyrsistent
+
+logger = logging.getLogger("afwizard")
 
 
 def execute_pdal_pipeline(dataset=None, config=None):
     """Execute a PDAL pipeline
 
     :param dataset:
-        The :class:`~adaptivefiltering.DataSet` instance that this pipeline
+        The :class:`~afwizard.DataSet` instance that this pipeline
         operates on. If :code:`None`, the pipeline will operate without inputs.
-    :type dataset: :class:`~adaptivefiltering.DataSet`
+    :type dataset: :class:`~afwizard.DataSet`
     :param config:
         The configuration of the PDAL pipeline, according to the PDAL documentation.
     :type config: dict
@@ -53,12 +56,14 @@ def execute_pdal_pipeline(dataset=None, config=None):
     # Check for arrays of 0 points - they throw hard to read errors in PDAL
     for array in arrays:
         if array.shape[0] == 0:
-            raise AdaptiveFilteringError(
-                "PDAL cannot handle point clouds with 0 points"
+            raise AFwizardError(
+                "PDAL cannot handle point clouds with 0 points, this can in some cases be caused by an out of bound segmentation or a wrong crs of the dataset."
             )
 
     # Define and execute the pipeline
-    pipeline = pdal.Pipeline(json.dumps(config), arrays=arrays)
+    config_str = json.dumps(config)
+    logger.info(f"Executing PDAL pipeline with configuration '{config_str}'")
+    pipeline = pdal.Pipeline(config_str, arrays=arrays)
 
     # Execute the filter and suppress spurious file output
     _ = pipeline.execute()
@@ -93,6 +98,16 @@ class PDALFilter(Filter, identifier="pdal"):
     @classmethod
     def schema(cls):
         return load_schema("pdal.json")
+
+    @classmethod
+    def form_schema(cls):
+        schema = cls.schema()
+
+        return {
+            "anyOf": [
+                s for s in schema["anyOf"] if s["title"] != "No-Op All Ground Filter"
+            ]
+        }
 
     def as_pipeline(self):
         return PDALPipeline(filters=[self])
@@ -169,9 +184,9 @@ class PDALInMemoryDataSet(DataSet):
         pipeline = execute_pdal_pipeline(config=[config])
 
         if spatial_reference is None:
-            spatial_reference = json.loads(pipeline.metadata)["metadata"][
-                "readers.las"
-            ]["comp_spatialreference"]
+            spatial_reference = pipeline.metadata["metadata"]["readers.las"][
+                "comp_spatialreference"
+            ]
 
         spatial_reference = check_spatial_reference(spatial_reference)
         return PDALInMemoryDataSet(
@@ -190,7 +205,7 @@ class PDALInMemoryDataSet(DataSet):
             compress = "laszip"
 
         if not overwrite and os.path.exists(filename):
-            raise AdaptiveFilteringError(
+            raise AFwizardError(
                 f"Would overwrite file '{filename}'. Set overwrite=True to proceed"
             )
 

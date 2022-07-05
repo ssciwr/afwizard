@@ -1,11 +1,9 @@
 import collections
-import copy
-import numpy as np
 import re
 import pyproj
 
 
-class AdaptiveFilteringError(Exception):
+class AFwizardError(Exception):
     pass
 
 
@@ -14,12 +12,12 @@ def is_iterable(object):
     return isinstance(object, collections.abc.Iterable) and not isinstance(object, str)
 
 
-def stringify_value(value):
+def stringify_parameters(value):
     """Stringify a value, making sequence space delimited"""
     if is_iterable(value):
-        return " ".join(value)
+        return sum((stringify_parameters(v) for v in value), [])
 
-    return str(value)
+    return [str(value)]
 
 
 def check_spatial_reference(crs):
@@ -39,7 +37,7 @@ def check_spatial_reference(crs):
 
         return new_crs
     else:
-        raise Exception(
+        raise AFwizardError(
             f"The given crs is neither a WKT nor a 4 to 5 digit EPSG code, but is {crs}"
         )
 

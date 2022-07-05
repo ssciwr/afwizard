@@ -1,9 +1,8 @@
-from adaptivefiltering.filter import load_filter, save_filter
-from adaptivefiltering.paths import load_schema, download_test_file
-from adaptivefiltering.utils import AdaptiveFilteringError, is_iterable
+from afwizard.filter import load_filter, save_filter
+from afwizard.paths import load_schema, download_test_file
+from afwizard.utils import AFwizardError, is_iterable
 
 import click
-import collections
 import hashlib
 import glob
 import importlib
@@ -20,11 +19,45 @@ _filter_libraries = []
 _current_library = None
 
 
-FilterLibrary = collections.namedtuple(
-    "FilterLibrary",
-    ["filters", "name", "path", "recursive"],
-    defaults=[[], None, "", False],
-)
+class FilterLibrary:
+    def __init__(self, name=None, path="", recursive=False):
+        self.name = name
+        self.path = path
+        self.recursive = recursive
+
+    @property
+    def filter_paths(self):
+        result = {}
+
+        # Iterate over the JSON documents in the directory and load them
+        for filename in glob.glob(
+            os.path.join(self.path, "*.json"), recursive=self.recursive
+        ):
+            # If this is the library meta file, skip it
+            if os.path.split(filename)[1] == "library.json":
+                continue
+
+            # If the title field has not been specified, use the filename
+            try:
+                filter_ = load_filter(filename)
+                if filter_.title == "":
+                    md = filter_.config.get("metadata", pyrsistent.pmap())
+                    md = md.update({"title": filename})
+                    filter_ = filter_.copy(metadata=md)
+
+                # Add it to our list of filters
+                result[filename] = filter_
+            except (KeyError, jsonschema.ValidationError):
+                # We ignore the filter if it cannot be validated against our schema.
+                # That is necessary to distinguish filter pipeline JSON data from
+                # other JSON data e.g. segmentations.
+                pass
+
+        return result
+
+    @property
+    def filters(self):
+        return self.filter_paths.values()
 
 
 def get_filter_libraries():
@@ -38,7 +71,7 @@ def get_current_filter_library():
     """Get the user-defined 'current' filter library
 
     That filter library is used preferrably for saving filters.
-    It can be set with :ref:~adaptivefiltering.set_current_filter_library.
+    It can be set with :ref:~afwizard.set_current_filter_library.
     """
     return _current_library
 
@@ -52,7 +85,7 @@ def set_current_filter_library(path, create_dirs=False, name="My filter library"
         current working directory.
     :type path: str
     :param create_dirs:
-        Whether adaptivefiltering should create this directory (and
+        Whether afwizard should create this directory (and
         potentially some parent directories) for you
     :type create_dirs: bool
     :param name:
@@ -67,7 +100,7 @@ def set_current_filter_library(path, create_dirs=False, name="My filter library"
         if create_dirs:
             os.makedirs(path)
         else:
-            raise AdaptiveFilteringError(
+            raise AFwizardError(
                 f"The given path does not exist and create_dirs was not set"
             )
 
@@ -99,7 +132,7 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
     :param package:
         Alternatively, you can specify a Python package that is installed on
         the system and that contains the relevant JSON files. This is used for
-        adaptivefilterings library of community-contributed filter pipelines.
+        afwizards library of community-contributed filter pipelines.
     :type package: str
     :param recursive:
         Whether the file system should be traversed recursively from
@@ -135,38 +168,12 @@ def add_filter_library(path=None, package=None, recursive=False, name=None):
         schema = load_schema("library.json")
         jsonschema.validate(metadata, schema)
 
-    # Iterate over the JSON documents in the directory and load them
-    filters = []
-    for filename in glob.glob(os.path.join(path, "*.json"), recursive=recursive):
-        # If this is the library meta file, skip it
-        if os.path.split(filename)[1] == "library.json":
-            continue
-
-        # If the title field has not been specified, use the filename
-        try:
-            filter_ = load_filter(filename)
-            if filter_.title == "":
-                md = filter_.config.get("metadata", pyrsistent.pmap())
-                md = md.update({"title": filename})
-                filter_ = filter_.copy(metadata=md)
-
-            # Add it to our list of filters
-            filters.append(filter_)
-        except (KeyError, jsonschema.ValidationError):
-            # We ignore the filter if it cannot be validated against our schema.
-            # That is necessary to distinguish filter pipeline JSON data from
-            # other JSON data e.g. segmentations.
-            pass
-
     # Maybe override the name field in metadata
     if name is not None:
         metadata["name"] = name
 
-    # Register the library object if it is existent
-    if metadata or filters:
-        _filter_libraries.append(
-            FilterLibrary(filters=filters, path=path, recursive=recursive, **metadata)
-        )
+    # Register the library
+    _filter_libraries.append(FilterLibrary(path=path, recursive=recursive, **metadata))
 
 
 def library_keywords(libs=None):
@@ -236,17 +243,21 @@ def locate_filter_by_hash(hash):
 
     # Collect all matches to throw a meaningful error
     found = []
+    found_paths = []
     for lib in get_filter_libraries():
-        for f in lib.filters:
+        for path, f in lib.filter_paths.items():
             if hash == metadata_hash(f):
                 found.append(f)
+                found_paths.append(path)
 
     if not found:
         raise FileNotFoundError(
             "A filter pipeline for your segmentation could not be located!"
         )
     if len(found) > 1:
-        raise AdaptiveFilteringError("Ambiguous pipeline metadata detected!")
+        raise AFwizardError(
+            f"Ambiguous pipeline metadata detected! Candidates: {', '.join(found_paths)}"
+        )
     else:
         return found[0]
 
@@ -256,7 +267,7 @@ def reset_filter_libraries():
 
     The default libraries are the current working directory and the
     library of community-contributed filter pipelines provided by
-    :code:`adaptivefiltering`.
+    :code:`afwizard`.
     """
     # Remove all registered filter libraries
     global _filter_libraries
@@ -268,7 +279,7 @@ def reset_filter_libraries():
 
     # Register default paths
     add_filter_library(path=os.getcwd(), name="Current working directory")
-    add_filter_library(package="adaptivefiltering_library")
+    add_filter_library(package="afwizard_library")
 
 
 @click.command()

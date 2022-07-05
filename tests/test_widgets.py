@@ -1,4 +1,4 @@
-from adaptivefiltering.widgets import *
+from afwizard.widgets import *
 
 import pyrsistent
 import pytest

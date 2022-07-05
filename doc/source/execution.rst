@@ -7,10 +7,10 @@ terrain type, you might want to apply your filter to the entire dataset.
 This step can be done in two ways: Either through the Python API or
 more conveniently through a command line interface.
 
-.. click:: adaptivefiltering.__main__:main
-   :prog: adaptivefiltering
+.. click:: afwizard.__main__:main
+   :prog: afwizard
 
 Python API
 ----------
 
-.. autofunction:: adaptivefiltering.execute.apply_adaptive_pipeline
+.. autofunction:: afwizard.execute.apply_adaptive_pipeline

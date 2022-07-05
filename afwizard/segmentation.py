@@ -1,15 +1,14 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.paths import locate_file, check_file_extension
-from adaptivefiltering.utils import (
+from afwizard.dataset import DataSet
+from afwizard.paths import locate_file, check_file_extension
+from afwizard.utils import (
     is_iterable,
 )
-from adaptivefiltering.utils import AdaptiveFilteringError
+from afwizard.utils import AFwizardError
 
 import base64
 import geojson
 import ipyleaflet
 import ipywidgets
-import json
 import numpy as np
 import collections
 import copy
@@ -68,6 +67,9 @@ class Segmentation(geojson.FeatureCollection):
         :type filename: str
         """
         filename = check_file_extension(filename, [".geojson"], ".geojson")
+
+        for feature in self["features"]:
+            _ = feature["properties"].pop("style", None)
 
         with open(filename, "w") as f:
             geojson.dump(self, f)
@@ -174,7 +176,7 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         For this program all segmentations should be in EPSG:4326.
         :param segmentation:
             The segmentation that should be transformed
-        :type: adaptivefiltering.segmentation.Segmentation
+        :type: afwizard.segmentation.Segmentation
 
 
         :param srs_in:
@@ -191,7 +193,7 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
 
 
         :return: Transformed segmentation.
-        :rtype: adaptivefiltering.segmentation.Segmentation
+        :rtype: afwizard.segmentation.Segmentation
 
     """
     # logic for determining crs_in
@@ -200,9 +202,7 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         if segmentation.spatial_reference:
             srs_in = segmentation.spatial_reference
         else:
-            raise AdaptiveFilteringError(
-                "No srs was given for Segmentation transformation."
-            )
+            raise AFwizardError("No srs was given for Segmentation transformation.")
 
     # check if transformation is neccesary:
     if crs.CRS(srs_in) == crs.CRS(srs_out):
@@ -277,8 +277,14 @@ def split_segmentation_classes(segmentation):
         return next(g, True) and not next(g, False)
 
     keys_list = [
-        list(feature["properties"].keys()) for feature in segmentation["features"]
+        [
+            k
+            for k in list(feature["properties"].keys())
+            if k not in ("pipeline", "pipeline_key")
+        ]
+        for feature in segmentation["features"]
     ]
+
     # only use keys that are present in all features:
     if _all_equal(keys_list):
         property_keys = keys_list[0]
@@ -299,7 +305,7 @@ def split_segmentation_classes(segmentation):
         for key in property_keys:
             value = feature["properties"][key]
             # only use hashable objects as keys
-            if isinstance(value, collections.Hashable):
+            if isinstance(value, collections.abc.Hashable):
                 split_dict.setdefault(key, {}).setdefault(
                     value,
                     Segmentation([], spatial_reference=segmentation.spatial_reference),
@@ -316,7 +322,7 @@ def split_segmentation_classes(segmentation):
         _ = split_dict.pop(key)
 
     if len(split_dict.keys()) == 0:
-        raise AdaptiveFilteringError(
+        raise AFwizardError(
             "No suitable property key was found. "
             + "Please make sure there are classification properties present and that at least one of them has less than 20 categories."
         )
@@ -352,41 +358,41 @@ class Map:
         :type in_srs: str
 
         """
-        from adaptivefiltering.pdal import PDALInMemoryDataSet
+        from afwizard.pdal import PDALInMemoryDataSet
 
         # handle exeptions
         if dataset and segmentation:
-            raise AdaptiveFilteringError(
+            raise AFwizardError(
                 "A dataset and a segmentation can't be loaded at the same time."
             )
 
         if dataset is None and segmentation["features"] is []:
-            raise AdaptiveFilteringError("an empty segmention was given.")
+            raise AFwizardError("an empty segmention was given.")
 
         if dataset is None and segmentation is None:
             # if no dataset or segmentation is given, the map will be centered at the SSC office
-            raise AdaptiveFilteringError(
+            raise AFwizardError(
                 "Please use either a dataset or a segmentation. None were given."
             )
 
         # check if dataset and segmentation are of correct type
         if dataset:
             if isinstance(dataset, Segmentation):
-                raise AdaptiveFilteringError(
+                raise AFwizardError(
                     "A segmentation was given as a dataset, please call Map(segmentation=yourSegmentation)"
                 )
             elif not isinstance(dataset, DataSet):
-                raise AdaptiveFilteringError(
+                raise AFwizardError(
                     f"The given dataset is not of type DataSet, but {type(dataset)}."
                 )
 
         elif segmentation:
             if isinstance(segmentation, DataSet):
-                raise AdaptiveFilteringError(
+                raise AFwizardError(
                     "A DataSet was given as a Segmentation, please call Map(dataset=yourDataset)"
                 )
             elif not isinstance(segmentation, Segmentation):
-                raise AdaptiveFilteringError(
+                raise AFwizardError(
                     f"The given segmentation is not of type Segmentation, but {type(segmentation)}."
                 )
 
@@ -399,7 +405,7 @@ class Map:
                 self.original_srs = dataset.spatial_reference
             else:
                 if in_srs is None:
-                    raise AdaptiveFilteringError(
+                    raise AFwizardError(
                         "No srs could be found. Please specify one or use a dataset that includes one."
                     )
                 self.original_srs = in_srs
@@ -565,7 +571,7 @@ class Map:
         takes the dataset returns the boundary Segmentation.
         If a segmentation is given, this will convert it into a boundary segmentation.
         """
-        from adaptivefiltering.pdal import execute_pdal_pipeline
+        from afwizard.pdal import execute_pdal_pipeline
 
         if dataset:
             info_pipeline = execute_pdal_pipeline(
@@ -577,7 +583,7 @@ class Map:
                 config=[
                     {
                         "type": "filters.hexbin",
-                        "sample_size": json.loads(info_pipeline.metadata)["metadata"][
+                        "sample_size": info_pipeline.metadata["metadata"][
                             "filters.info"
                         ]["num_points"],
                         "precision": 10,
@@ -589,9 +595,9 @@ class Map:
             # get the coordinates from the metadata:
             # this gives us lat, lon but for geojson we need lon, lat
 
-            hexbin_geometry = json.loads(hexbin_pipeline.metadata)["metadata"][
-                "filters.hexbin"
-            ]["boundary_json"]
+            hexbin_geometry = hexbin_pipeline.metadata["metadata"]["filters.hexbin"][
+                "boundary_json"
+            ]
 
         elif segmentation:
 
@@ -627,7 +633,7 @@ class Map:
         From the segmentation it calculates the center point as well as the edge points to implement the starting location of the map.
         The edge points are used to draw the boundary square of the given dataset.
         """
-        from adaptivefiltering.pdal import execute_pdal_pipeline
+        from afwizard.pdal import execute_pdal_pipeline
 
         coordinates_mean = [
             (self.boundary_edges["maxX"] + self.boundary_edges["minX"]) / 2,

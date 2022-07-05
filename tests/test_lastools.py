@@ -1,4 +1,4 @@
-from adaptivefiltering.lastools import *
+from afwizard.lastools import *
 
 import pyrsistent
 import pytest

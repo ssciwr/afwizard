@@ -1,10 +1,10 @@
-from adaptivefiltering.dataset import DataSet
-from adaptivefiltering.execute import *
-from adaptivefiltering.filter import load_filter
-from adaptivefiltering.library import add_filter_library, metadata_hash
-from adaptivefiltering.paths import get_temporary_workspace
-from adaptivefiltering.pdal import PDALInMemoryDataSet
-from adaptivefiltering.utils import AdaptiveFilteringError
+from afwizard.dataset import DataSet
+from afwizard.execute import *
+from afwizard.filter import load_filter
+from afwizard.library import add_filter_library, metadata_hash
+from afwizard.paths import get_temporary_workspace
+from afwizard.pdal import PDALInMemoryDataSet
+from afwizard.utils import AFwizardError
 
 import os
 import pytest
@@ -14,7 +14,7 @@ def test_apply_adaptive_pipeline(dataset, dataset_seg, monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
 
     # Apply without pipeline information in segmentation
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFwizardError):
         apply_adaptive_pipeline(dataset=dataset, segmentation=dataset_seg)
 
     # Register the test data filter library

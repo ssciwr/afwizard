@@ -4,7 +4,6 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import adaptivefiltering
 import os
 import subprocess
 import sys
@@ -16,14 +15,24 @@ import sys
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath("../.."))
 
+# Install the afwizard package - this is a horrible but necessary to work around
+# a Conda/Pip compatibility issue on RTD: We can only provide either a conda env
+# OR a pip requirements file. From the pip section of the env file, we cannot
+# specify the --no-deps flag, but without this the pip install of afwizard
+# corrupts the conda environment. See e.g. https://github.com/conda/conda/issues/6805
+if os.environ.get("READTHEDOCS", None) == "True":
+    subprocess.run([sys.executable, "-m", "pip", "install", "--no-deps", "../.."])
+
+import afwizard
+
 # -- Project information -----------------------------------------------------
 
-project = "adaptivefiltering"
+project = "Adaptive Filtering Wizard"
 copyright = "2021, Scientific Software Center, Heidelberg University"
 author = "Dominic Kempf"
 
 # The full version, including alpha/beta/rc tags
-release = adaptivefiltering.__version__
+release = afwizard.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -74,3 +83,14 @@ nbsphinx_allow_errors = True
 # https://stackoverflow.com/a/43186995/2819459
 def setup(app):
     app.add_css_file("style.css")
+
+
+# Ensure that the conda provided PROJ database is found. This
+# is somewhat not possible in the base environment. There is
+# this discussion which allowed me to solve the issue although I
+# think it is a horrible situation and definitely a bug:
+# https://github.com/conda-forge/geopandas-feedstock/issues/63
+if os.environ.get("READTHEDOCS", None) == "True":
+    os.environ[
+        "PROJ_LIB"
+    ] = "/home/docs/checkouts/readthedocs.org/user_builds/afwizard/conda/latest/share/proj"

@@ -1,4 +1,4 @@
-from adaptivefiltering.paths import *
+from afwizard.paths import *
 
 import os
 import platform

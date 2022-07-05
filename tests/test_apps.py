@@ -1,5 +1,5 @@
-from adaptivefiltering.apps import *
-from adaptivefiltering.filter import load_filter
+from afwizard.apps import *
+from afwizard.filter import load_filter
 
 import dataclasses
 import ipywidgets
@@ -74,10 +74,10 @@ def test_select_pipeline_from_library(minimal_dataset):
 
 
 def test_select_best_pipeline(minimal_dataset):
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFwizardError):
         select_best_pipeline()
 
-    with pytest.raises(AdaptiveFilteringError):
+    with pytest.raises(AFwizardError):
         select_best_pipeline(pipelines=[])
 
     f = load_filter(

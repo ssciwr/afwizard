@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Make sure to run this from the top-level directory of adaptivefiltering
+# Make sure to run this from the top-level directory of AFwizard
 # To build the proprietary container, place the following files into
-# the adaptivefiltering root directory before running this script:
+# the AFwizard root directory before running this script:
 #
 # * opals_nightly_linux64.tar.gz
 #       The OPALS (Linux) tarball that you downloaded

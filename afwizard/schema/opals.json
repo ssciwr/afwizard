@@ -1,0 +1,183 @@
+{
+  "anyOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "_backend": {
+          "const": "opals",
+          "type": "string"
+        },
+        "debugOutFile": {
+          "description": "Outputs a xyz file containing all points classified as ground",
+          "title": "debug ground points file",
+          "type": "string"
+        },
+        "filter": {
+          "description": "If a filter string is specified, point classification is only carried out for the set points selected by the filter condition",
+          "title": "(tree of )filter(s) to select search points",
+          "type": "string"
+        },
+        "inFile": {
+          "description": "The path to the opals datamanager whose point data are being classified",
+          "title": "input ODM file",
+          "type": "string"
+        },
+        "interpolation": {
+          "default": "plane",
+          "description": "The interpolation methods are ordered by their polynomial degree. In case adapting is chosen, a suitable interpolator is determined by the module, Higher degree interpolation is only used, if lower degree surfaces are too rigid.",
+          "enum": [
+            "plane",
+            "paraboloid",
+            "adapting"
+          ],
+          "title": "robust interpolation method",
+          "type": "string"
+        },
+        "maxIter": {
+          "default": 100,
+          "description": "Robust interpolation is performed iteratively. In each iteration the individual point weights are adapted based on the residuals (i.e. vertical distance between point and intermediate surface. The process of surface interpolation and re-weighting is repeated until the surface changes are below a threshold or the maximum number of iterations is reached.",
+          "title": "maximum number of iterations",
+          "type": "integer"
+        },
+        "maxSigma": {
+          "default": 0.5,
+          "description": "If the standard deviation of a unit observation of the robust interpolation (i.e. sigma_0 ) exceeds the specified value, the classification of the affected points remains unchanged.",
+          "title": "maximum allowed sigma of interpolation",
+          "type": "number"
+        },
+        "penetration": {
+          "default": 20,
+          "description": "The laser signal is partly or totally reflected at semi-transparent objects like vegetation. Therefore, not all laser pulses reach the ground. The penetration rate is used in the course of the robust interpolation for apriori estimating a reasonable initial course of the local surfaces",
+          "title": "estimated penetration rate [%]",
+          "type": "integer"
+        },
+        "robustWFAdpation": {
+          "default": "adapting",
+          "description": "The module supports different adaption functions",
+          "title": "adaption of the robust weight function",
+          "type": "string"
+        },
+        "searchRadius": {
+          "default": 3,
+          "description": "Only points within the given search radius are considered for the local robust interpolation.If the search area contains too few points for successful interpolation, the classification of the respective points remains unchanged.",
+          "title": "search radius for point selection",
+          "type": "number"
+        },
+        "sigmaApriori": {
+          "default": "0.15",
+          "description": "Either a constant accuracy representing all data points or a user-defined formula (using the generic filter syntax) may be applied. It is important thatthe a specified formula provide realistic accuracy values, otherwise therobust interpolation concept will not work properly.",
+          "title": "a-priori sigma of points",
+          "type": "string"
+        },
+        "type": {
+          "const": "RobFilter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "RobFilter Module (OPALS)",
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "_backend": {
+          "const": "opals",
+          "type": "string"
+        },
+        "feature": {
+          "default": "",
+          "description": "For each pyramid level a different statistical feature used for selecting a representative point within a grid cell can be specified. In general, the lowest points within grid cells(min) represent good starting points for deriving the terrain surface with robust interpolation. If long range outliers are present in the dataset, a more robust feature (e.g. quantile:0.05 (=default) or nmin) may be advantageous. Specify 'null' to suppress thinning for a specific level (recommended for first (i.e. full resolution ) level only.",
+          "title": "Feature for point selection in pyramid levels",
+          "type": "string"
+        },
+        "filter": {
+          "default": "",
+          "description": "Text string describing a (tree of) filter(s) using the WKT filter syntax.",
+          "title": "Modify the input using a (tree of) filter(s)",
+          "type": "string"
+        },
+        "filterThresholds": {
+          "default": [
+            0.2,
+            0.5,
+            1,
+            3
+          ],
+          "items": {
+            "type": "number"
+          },
+          "title": "Filter thresholds for pyramid levels",
+          "type": "array"
+        },
+        "inFile": {
+          "description": "The path to the opals datamanager whose point data are being classified",
+          "title": "input ODM file",
+          "type": "string"
+        },
+        "lowerThresholdScale": {
+          "default": -1.5,
+          "title": "Scale for the lower threshold",
+          "type": "number"
+        },
+        "maxSigma": {
+          "default": 0.5,
+          "title": "Maximum allowed sigma of interpolation",
+          "type": "number"
+        },
+        "maxiter": {
+          "default": 10,
+          "title": "Maximum number of iterations",
+          "type": "integer"
+        },
+        "method": {
+          "default": "robustInterpolation",
+          "enum": [
+            "robustInterpolation"
+          ],
+          "type": "string"
+        },
+        "outFile": {
+          "description": "Path of output grid file in GDAL supported format. Estimation rule: The current directory and the name (body) of the input file are used as file name basis. Additionally, the default extension of the output format is appended.",
+          "items": {
+            "type": "string"
+          },
+          "title": "output gridfile name(s)",
+          "type": "array"
+        },
+        "penetration": {
+          "default": 20,
+          "title": "Estimated penetration rate [%]",
+          "type": "integer"
+        },
+        "pyramidLevels": {
+          "default": 4,
+          "minimum": 1,
+          "title": "Number of data pyramid levels",
+          "type": "integer"
+        },
+        "robustWFAdpation": {
+          "default": "adapting",
+          "title": "Adaption of the robust weight function",
+          "type": "string"
+        },
+        "tileSize": {
+          "default": 128,
+          "title": "Tile (block) size",
+          "type": "integer"
+        },
+        "type": {
+          "const": "TerrainFilter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "TerrainFilter (OPALS)",
+      "type": "object"
+    }
+  ]
+}

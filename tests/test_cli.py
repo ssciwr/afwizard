@@ -1,9 +1,12 @@
-from adaptivefiltering.opals import _automated_opals_schema, opals_is_present
+from afwizard.opals import _automated_opals_schema, opals_is_present
+from afwizard.paths import copy_notebooks
 
 from .test_opals import _availableOpalsModules
 
 from click.testing import CliRunner
+import glob
 import json
+import os
 import pytest
 
 

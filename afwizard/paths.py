@@ -1,15 +1,19 @@
+import click
 import contextlib
 import functools
+import glob
 import hashlib
 import json
 import os
 import platform
 import requests
+import shutil
 import tarfile
 import tempfile
 import uuid
 import xdg
 
+from afwizard.utils import AFwizardError
 
 # Storage for the temporary workspace directory
 _tmp_dir = None
@@ -18,8 +22,8 @@ _tmp_dir = None
 _data_dir = None
 
 # The current data archive URL
-TEST_DATA_ARCHIVE = "https://github.com/ssciwr/adaptivefiltering-test-data/releases/download/2022-03-02/data.tar.gz"
-TEST_DATA_CHECKSUM = "26f61c7f6681d6e558b3765689f110f09eaf34543ea5d8716ff5e55ab0557980"
+TEST_DATA_ARCHIVE = "https://github.com/ssciwr/afwizard-test-data/releases/download/2022-06-09/data.tar.gz"
+TEST_DATA_CHECKSUM = "fae90a3cf758e2346b81fa0e3b005f2914d059ca182202a1de8f627b1ec0c160"
 
 
 def set_data_directory(directory, create_dir=False):
@@ -29,7 +33,7 @@ def set_data_directory(directory, create_dir=False):
         The name of the custom data directory.
     :type directory: str
     :param create_dir:
-        Whether adaptivefiltering should create the directory if it does
+        Whether AFwizard should create the directory if it does
         not already exist.
     :type created_dir: bool
     """
@@ -117,7 +121,7 @@ def check_file_extension(filename, possible_values, default_value):
         ext = default_value
     possible_extensions = [possible_ext.lower() for possible_ext in possible_values]
     if ext.lower() not in possible_extensions:
-        raise Exception(
+        raise AFwizardError(
             f"The file extension {ext} is not supported. Please use the following: {possible_extensions}"
         )
     return os.path.join(name + ext)
@@ -207,3 +211,24 @@ def load_schema(schema):
 
     # Return the schema and memoize it for later requests of the same schema
     return schema
+
+
+@click.command()
+@click.argument(
+    "target",
+    type=click.Path(exists=True, file_okay=False, writable=True),
+    default=os.getcwd(),
+)
+def copy_notebooks(target):
+    """Copy example notebooks into the TARGET directory"""
+
+    # Locate notebook files in the installation tree
+    jupyter_dir = os.path.join(os.path.split(__file__)[0], "jupyter")
+    notebooks = glob.glob(os.path.join(jupyter_dir, "*.ipynb"))
+
+    # Print a verbose message
+    click.echo(f"Copying {len(notebooks)} Jupyter notebooks into directory '{target}'")
+
+    # Do the actual copying
+    for notebook in notebooks:
+        shutil.copy(notebook, target)
