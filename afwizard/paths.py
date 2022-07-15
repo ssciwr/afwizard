@@ -2,13 +2,11 @@ import click
 import contextlib
 import functools
 import glob
-import hashlib
 import json
 import os
 import platform
-import requests
+import pooch
 import shutil
-import tarfile
 import tempfile
 import uuid
 import xdg
@@ -21,9 +19,15 @@ _tmp_dir = None
 # Storage for the data directory that will be used to resolve relative paths
 _data_dir = None
 
-# The current data archive URL
-TEST_DATA_ARCHIVE = "https://github.com/ssciwr/afwizard-test-data/releases/download/2022-06-09/data.tar.gz"
-TEST_DATA_CHECKSUM = "fae90a3cf758e2346b81fa0e3b005f2914d059ca182202a1de8f627b1ec0c160"
+# Create a pooch for our sample data from HeiData
+nakadake_data = pooch.create(
+    path=pooch.os_cache("afwizard"),
+    base_url="https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/",
+    env="AFWIZARD_CACHE_DIR",
+)
+nakadake_data.load_registry(
+    os.path.join(os.path.split(__file__)[0], "data", "registry.txt")
+)
 
 
 def set_data_directory(directory, create_dir=False):
@@ -92,26 +96,17 @@ def get_temporary_filename(extension=""):
 def download_test_file(filename):
     """Ensure the existence of a dataset file by downloading it"""
 
-    # We download test data to the temporary workspce
-    testdata_dir = os.path.join(get_temporary_workspace(), "data")
+    # Maybe fetch and unpack the test data archive
+    filelist = pooch.retrieve(
+        url="https://github.com/ssciwr/afwizard-test-data/releases/download/2022-06-09/data.tar.gz",
+        known_hash="sha256:fae90a3cf758e2346b81fa0e3b005f2914d059ca182202a1de8f627b1ec0c160",
+        processor=pooch.Untar(),
+    )
 
-    # If we have not done that already, we do so now
-    if not os.path.exists(testdata_dir):
-        archive = requests.get(TEST_DATA_ARCHIVE).content
-        checksum = hashlib.sha256(archive).hexdigest()
-        if checksum != TEST_DATA_CHECKSUM:
-            raise ValueError("Checksum for test data archive failed.")
-
-        archive_file = os.path.join(get_temporary_workspace(), "data.tar.gz")
-        with open(archive_file, "wb") as tar:
-            tar.write(archive)
-
-        with tarfile.open(archive_file, "r:gz") as tar:
-            tar.extractall(path=testdata_dir)
-
-    # Return the filename - it is only a candidate. If the given filename
-    # is not in the test data, the file will not exist.
-    return os.path.join(testdata_dir, filename)
+    # Find the file that matches the requested one
+    for fname in filelist:
+        if os.path.split(fname)[-1] == filename:
+            return fname
 
 
 def check_file_extension(filename, possible_values, default_value):
@@ -170,8 +165,14 @@ def locate_file(filename):
         for xdg_dir in xdg.xdg_data_dirs():
             candidates.append(os.path.join(xdg_dir, filename))
 
+    # Maybe use the sample data
+    if filename in nakadake_data.registry:
+        candidates.append(nakadake_data.fetch(filename))
+
     # Use the test data directory
-    candidates.append(download_test_file(filename))
+    test_file = download_test_file(filename)
+    if test_file is not None:
+        candidates.append(test_file)
 
     # Iterate through the list to check for file existence
     for candidate in candidates:

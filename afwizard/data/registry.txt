@@ -1,0 +1,10 @@
+nkd_fpl_paddy_LT.json sha256:d026a3f50ba3ec77e79f73afc93c163c3d177b01978aa5c9660b9bdd946d6ba9 https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/OLDIA2
+nkd_fpl_slope_LT.json sha256:36d5d9f4a13d7447764e5206d8ee73995d3763a257ec586ff2d162cdf606d39d https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/CAIBP7
+nkd_fpl_valley_TF.json sha256:9fa72c1ca716b4bb8253832ec7342d9daa1ea4a4111fb3056f3e6db25a9640ab https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/SGFG60
+nkd_pcl_epsg6670.laz sha256:ff91cbe78f1b48c6be3ffe6fa3aad4fb1547c82a3afc4f096a38c2988ceec41d https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/ZBAZ3I
+nkd_sgm_assigned_TF.geojson sha256:8d989ddb35f788e2c12db5800d3d78e7dccc3a2b5aefb5ae576f5c7aaa6ec02c https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/LV8WAZ
+nkd_sgm.geojson sha256:aff8ed7fa19252ba0db6145bf5d2f751dab6c31a2fce8b062675a0d816175f25 https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/E2PNTV
+sample_pcl_paddy.las sha256:29bb611bfeb8ea506e66446a53faa322a451b62d23c883a325a8275154280028 https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/GNEMBB
+sample_pcl_ridge.las sha256:f9d05542770171c80c08febe326b3b9293b7014895435ced37bfb1463e2e1c82 https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/3GITLI
+sample_pcl_slope.las sha256:673c7e98a7599cf35d6ede5ec4685eaabbe3348961b8ec2d81121685504f6401 https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/VHUHRL
+sample_pcl_valley.las sha256:b3b3e401bce03db9fd81dbd0e76781e3b0d12c3c61521af0bfb34c063fd54cc1 https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/EMRQU1
