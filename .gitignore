@@ -6,9 +6,9 @@
 .vscode
 
 # Exclude OPALS-related files that are not publicly available
-opals_nightly_linux64.tar.gz
+opals_2.5.0_linux64.tar.gz
 opals.key
-opals_2.3.2
+opals_2.5.0
 
 # Exclude LASTools-related files
 LAStools.zip

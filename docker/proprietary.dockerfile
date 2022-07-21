@@ -3,7 +3,7 @@ FROM ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest AS opals-
 USER ${NB_USER}
 
 # Copy the tarball into the container
-COPY --chown=${NB_UID} ./opals_nightly_linux64.tar.gz /opt/opals/opals_2.5.0_linux64.tar.gz
+COPY --chown=${NB_UID} ./opals_2.5.0_linux64.tar.gz /opt/opals/opals_2.5.0_linux64.tar.gz
 
 # Extract the tarball
 WORKDIR /opt/opals

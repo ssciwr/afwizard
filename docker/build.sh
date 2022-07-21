@@ -4,11 +4,10 @@
 # To build the proprietary container, place the following files into
 # the AFwizard root directory before running this script:
 #
-# * opals_nightly_linux64.tar.gz
+# * opals_2.5.0_linux64.tar.gz
 #       The OPALS (Linux) tarball that you downloaded
 #       from https://opals.geo.tuwien.ac.at/html/stable/index.html
-#       Note that the latest development version is required, not
-#       the latest stable release (as of June 21).
+#       Note that AFwizard requires OPALS v2.5.
 # * opals.key
 #       The OPALS keyfile. This file will be present
 #       in the built image. Do only share the image with people that
