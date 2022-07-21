@@ -2,7 +2,7 @@ from afwizard.dataset import DataSet
 from afwizard.execute import *
 from afwizard.filter import load_filter
 from afwizard.library import add_filter_library, metadata_hash
-from afwizard.paths import get_temporary_workspace
+from afwizard.paths import download_test_file, get_temporary_workspace
 from afwizard.pdal import PDALInMemoryDataSet
 from afwizard.utils import AFwizardError
 
@@ -18,7 +18,8 @@ def test_apply_adaptive_pipeline(dataset, dataset_seg, monkeypatch, tmp_path):
         apply_adaptive_pipeline(dataset=dataset, segmentation=dataset_seg)
 
     # Register the test data filter library
-    add_filter_library(os.path.join(get_temporary_workspace(), "data"))
+    pipeline_dir = os.path.split(download_test_file("testfilter1.json"))[0]
+    add_filter_library(pipeline_dir)
 
     # Patch pipeline information into the segementation
     for s in dataset_seg["features"]:
