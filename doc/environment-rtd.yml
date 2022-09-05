@@ -1,9 +1,6 @@
 name: afwizard-rtd
 channels:
   - conda-forge
-  - conda-forge/label/ipywidgets_rc
-  - conda-forge/label/jupyterlab_widgets_rc
-  - conda-forge/label/widgetsnbextension_rc
 dependencies:
   - python
   - afwizard-library
@@ -13,7 +10,7 @@ dependencies:
   - IPython
   - ipyfilechooser
   - ipyleaflet
-  - ipywidgets=8.0.0rc0
+  - ipywidgets>=8
   - ipywidgets-jsonschema
   - jsonmerge
   - jsonschema<4
