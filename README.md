@@ -106,6 +106,25 @@ That being said, `afwizard` can be installed from PyPI:
 python -m pip install afwizard
 ```
 
+## Citation - How to cite AFwizard
+
+The following scientific article can be referenced when using AFwizard in your research.
+
+- Doneus, M., Höfle, B., Kempf, D., Daskalakis, G. & Shinoto, M. (2022): Human-in-the-loop development of spatially adaptive ground point filtering pipelines — An archaeological case study. _Archaeological Prospection_. Vol. 29 (4), pp. 503-524.  DOI: [https://doi.org/10.1002/arp.1873](https://doi.org/10.1002/arp.1873)
+
+Related Bibtex entry:
+```@Article{Doneus_2022,
+  author  = {Michael Doneus and Bernhard H\"ofle and Dominic Kempf and Gwydion Daskalakis and Maria Shinoto},
+  title   = {Human-in-the-loop development of spatially adaptive ground point filtering pipelines {\textemdash} An archaeological case study},
+  journal = {Archaeological Prospection},
+  year    = {2022},
+  volume  = {29},
+  number  = {4},
+  pages   = {503--524},
+  doi     = {10.1002/arp.1873},
+  url     = {https://doi.org/10.1002/arp.1873} }
+```
+
 ## Troubleshooting
 
 If you run into problems using AFwizard, we kindly ask you to do the following in this order:

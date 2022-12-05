@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "We kindly ask you to cite the following article when using AFwizard in your research. "
+authors:
+- family-names: "Doneus"
+  given-names: "Michael"
+- family-names: "Höfle"
+  given-names: "Bernhard"
+- family-names: "Kempf"
+  given-names: "Dominic"
+- family-names: "Daskalakis"
+  given-names: "Gwydion"
+- family-names: "Shinoto"
+  given-names: "Maria"
+title: "Adaptive Filtering Wizard"
+url: "https://github.com/ssciwr/afwizard"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Doneus"
+    given-names: "Michael"
+  - family-names: "Höfle"
+    given-names: "Bernhard"
+  - family-names: "Kempf"
+    given-names: "Dominic"
+  - family-names: "Daskalakis"
+    given-names: "Gwydion"
+  - family-names: "Shinoto"
+    given-names: "Maria"
+  doi: "10.1002/arp.1873"
+  journal: "Archaeological Prospection"
+  title: "Human-in-the-loop development of spatially adaptive ground point filtering pipelines — An archaeological case study"
+  issue: 4
+  volume: 29
+  year: 2022
