@@ -33,3 +33,9 @@ repos:
     rev: v2.2.0
     hooks:
       - id: setup-cfg-fmt
+
+  # Validate CFF format
+  - repo: https://github.com/citation-file-format/cff-converter-python
+    rev: main
+    hooks:
+      - id: validate-cff
