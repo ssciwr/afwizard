@@ -53,7 +53,7 @@ def set_data_directory(directory, create_dir=False):
 
     # Update the module variable
     global _data_dir
-    _data_dir = directory
+    _data_dir = os.path.abspath(directory)
 
 
 def get_temporary_workspace():
