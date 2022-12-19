@@ -1,7 +1,7 @@
 # Welcome to the Adaptive Filtering Wizard
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ssciwr/afwizard/CI)](https://github.com/ssciwr/afwizard/actions?query=workflow%3ACI)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ssciwr/afwizard/ci.yml?branch=main)](https://github.com/ssciwr/afwizard/actions/workflow/ci.yml)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/afwizard.svg)](https://anaconda.org/conda-forge/afwizard)
 [![codecov](https://codecov.io/gh/ssciwr/afwizard/branch/main/graph/badge.svg?token=ONIG38R74Y)](https://codecov.io/gh/ssciwr/afwizard)
 [![Documentation Status](https://readthedocs.org/projects/afwizard/badge/)](https://afwizard.readthedocs.io/)
