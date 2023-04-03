@@ -100,9 +100,7 @@ def merge_classes(segmentation, keyword=None):
     added_classes = {}
 
     if keyword == None:
-
         for feature in segmentation["features"]:
-
             feature["properties"].setdefault("merge", 1)
         keyword = "merge"
 
@@ -134,7 +132,6 @@ def merge_classes(segmentation, keyword=None):
                         ].append(coordinates)
 
     for feature in segmentation["features"]:
-
         if "merge" in feature["properties"].keys():
             _ = feature["properties"].pop("merge")
 
@@ -150,7 +147,6 @@ def get_min_max_values(segmentation):
             feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
         for polygon in feature["geometry"]["coordinates"]:
             for coord_array in polygon:
-
                 coord_array = np.asarray(coord_array)
                 min_max_dict["minX"].append(np.min(coord_array, axis=0)[0])
                 min_max_dict["minY"].append(np.min(coord_array, axis=0)[1])
@@ -211,7 +207,6 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
     new_features = copy.deepcopy(segmentation["features"])
 
     for feature, new_feature in zip(segmentation["features"], new_features):
-
         if feature["geometry"]["type"] == "Polygon":
             feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
         polygon_list = []
@@ -219,7 +214,6 @@ def convert_segmentation(segmentation, srs_out, srs_in=None):
         transformer = Transformer.from_crs(srs_in, srs_out, always_xy=True)
 
         for polygon in feature["geometry"]["coordinates"]:
-
             polygon_list.append([])
             for hole in polygon:
                 hole = np.asarray(hole)
@@ -247,7 +241,6 @@ def swap_coordinates(segmentation):
     new_features = copy.deepcopy(segmentation["features"])
     for feature, new_feature in zip(segmentation["features"], new_features):
         if feature["geometry"]["type"] == "Polygon":
-
             feature["geometry"]["coordinates"] = [feature["geometry"]["coordinates"]]
 
         polygon_list = []
@@ -329,7 +322,6 @@ def split_segmentation_classes(segmentation):
 
     # sort the values to also sort the dropdown menus later.
     for key in split_dict.keys():
-
         split_dict[key] = dict(sorted(split_dict[key].items()))
 
     return split_dict
@@ -398,7 +390,6 @@ class Map:
 
         # convert to pdal dataset
         if dataset:
-
             dataset = PDALInMemoryDataSet.convert(dataset)
             # preserve the original srs from dataset
             if in_srs is None:
@@ -550,7 +541,6 @@ class Map:
             ]
 
         else:
-
             # save current polygon data
             current_data = self.draw_control.data
             # filters only new polygons. to avoid double entrys. Ignores color and style, only checks for the geometry.
@@ -600,7 +590,6 @@ class Map:
             ]
 
         elif segmentation:
-
             segmentation = merge_classes(segmentation)
             hexbin_geometry = segmentation["features"][0]["geometry"]
         boundary_segmentation = Segmentation(

@@ -22,7 +22,6 @@ def test_show(dataset):
 
 
 def test_assign_pipeline(dataset, boundary_segmentation):
-
     f = PDALFilter(type="filters.smrf")
     # Create a pipeline from the filter
     pipeline = f.as_pipeline()

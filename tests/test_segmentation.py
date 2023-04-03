@@ -50,7 +50,6 @@ def test_save_load_segmentation(tmpdir):
 
 
 def test_convert_segmentation(boundary_segmentation):
-
     test2 = convert_segmentation(boundary_segmentation, "EPSG:5243")
     test3 = convert_segmentation(test2, "EPSG:4326", "EPSG:5243")
     test3_coord = np.asarray(test3["features"][0]["geometry"]["coordinates"])
