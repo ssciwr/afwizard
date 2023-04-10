@@ -79,6 +79,7 @@ autodoc_preserve_defaults = True
 # This is kind of unfortunate, but we get errors that are specific to the documentation build:
 nbsphinx_allow_errors = True
 
+
 # Modify the width of the layout. Taken from:
 # https://stackoverflow.com/a/43186995/2819459
 def setup(app):

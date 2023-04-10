@@ -600,7 +600,6 @@ def setup_overlay_control(dataset, with_map=False, inlude_draw_controle=True):
 
     # case for restrict
     if with_map:
-
         # create instance of dataset with srs of "EPSG:3857",
         # this ensures that the slope and hillshade overlay fit the map projection.
         dataset = reproject_dataset(dataset, "EPSG:3857")
@@ -744,7 +743,6 @@ def assign_pipeline(dataset, segmentation, pipelines):
 
             # for every new feature we ccreate alocation button, a nametag and a dropdown menu with all pipeline options.
             for i, (value, segment) in enumerate(split_segmentation[key].items()):
-
                 label = ipywidgets.Label(
                     f"{key}: {value}",
                     layout=ipywidgets.Layout(width="80%"),
@@ -788,7 +786,6 @@ def assign_pipeline(dataset, segmentation, pipelines):
         return box_dict
 
     def _assign_pipelines():
-
         # searches through the segmentation for the currently assigned property and adds all selcted pipeline values.
         assigned_segmentation = copy.deepcopy(segmentation)
         assigned_segmentation["pipeline_property"] = feature_dropdown.value
@@ -796,7 +793,6 @@ def assign_pipeline(dataset, segmentation, pipelines):
             for value, dropdown_widget in box_dict["DropDown"][
                 feature_dropdown.value
             ].items():
-
                 if value == feature["properties"][feature_dropdown.value]:
                     feature["properties"]["pipeline_key"] = feature_dropdown.value
                     feature["properties"]["pipeline"] = dropdown_widget.value
@@ -869,7 +865,6 @@ def apply_restriction(dataset, segmentation=None, segmentation_overlay=None):
     dataset = as_pdal(dataset)
 
     def apply_restriction(seg):
-
         # convert the segmentation from EPSG:4326 to the spatial reference of the dataset
         seg = convert_segmentation(seg, dataset.spatial_reference)
 

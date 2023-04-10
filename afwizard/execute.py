@@ -128,7 +128,6 @@ def apply_adaptive_pipeline(
     # Filter the dataset once per filter
     filtered_datasets = []
     for i, (hash, filter) in enumerate(filters.items()):
-
         logger.info(
             f"Running filter {filter.title if filter.title else ''} ({i+1}/{len(filters)})"
         )
