@@ -1,9 +1,18 @@
 version: 2
 
 build:
-  os: ubuntu-20.04
+  os: ubuntu-22.04
+  apt_packages:
+    - unzip
+    - wget
+    - wine
   tools:
     python: mambaforge-4.10
+  jobs:
+    pre_install:
+      - wget https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_210628.zip
+      - unzip LAStools_210628.zip
+      - echo $(pwd)/LAStools
 
 sphinx:
   builder: html
