@@ -1,5 +1,5 @@
 from afwizard.filter import load_filter, save_filter
-from afwizard.paths import load_schema, download_test_file
+from afwizard.paths import load_schema, download_test_file, nakadake_data
 from afwizard.utils import AFwizardError, is_iterable
 
 import click
@@ -218,6 +218,10 @@ def locate_filter(filename):
         if os.path.exists(os.path.join(lib.path, filename)):
             return os.path.join(lib.path, filename)
 
+    # Maybe this filter is part of the Nakadake test data set
+    if filename in nakadake_data.registry:
+        return nakadake_data.fetch(filename)
+
     # Maybe this is a filter shipped as part of our testing data
     if os.path.exists(download_test_file(filename)):
         return download_test_file(filename)
@@ -280,6 +284,7 @@ def reset_filter_libraries():
     # Register default paths
     add_filter_library(path=os.getcwd(), name="Current working directory")
     add_filter_library(package="afwizard_library")
+    add_filter_library(path=nakadake_data.abspath, name="Nakadake Example Data")
 
 
 @click.command()
