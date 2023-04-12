@@ -22,12 +22,10 @@ _data_dir = None
 # Create a pooch for our sample data from HeiData
 nakadake_data = pooch.create(
     path=pooch.os_cache("afwizard"),
-    base_url="https://heidata.uni-heidelberg.de/api/access/datafile/:persistentId?persistentId=doi:10.11588/data/TJNQZG/",
+    base_url="doi:10.11588/data/TJNQZG",
     env="AFWIZARD_CACHE_DIR",
 )
-nakadake_data.load_registry(
-    os.path.join(os.path.split(__file__)[0], "data", "registry.txt")
-)
+nakadake_data.load_registry_from_doi()
 
 
 def set_data_directory(directory, create_dir=False):
