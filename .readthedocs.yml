@@ -14,6 +14,7 @@ build:
       - unzip LAStools_210628.zip
       - mkdir -p ~/.ssh
       - echo $SSH_KEY > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
       - echo "ssc-jupyter.iwr.uni-heidelberg.de ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlEBwr7Qv0expAPxukZOmIUcVI1erVPya+GkzCd+iQK" >> ~/.ssh/known_hosts
       - scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz .
       - tar xzvf opals_2.5.0_linux64.tar.gz
