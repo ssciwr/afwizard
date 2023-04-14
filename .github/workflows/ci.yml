@@ -38,9 +38,13 @@ jobs:
       with:
         auto-update-conda: true
         auto-activate-base: false
-        activate-environment: afwizard
+        activate-environment: afwizard-dev
         environment-file: environment.yml
         use-only-tar-bz2: true
+
+    - name: Print Conda packages
+      run:
+        conda list
 
     - name: SSH setup
       uses: webfactory/ssh-agent@v0.5.3
