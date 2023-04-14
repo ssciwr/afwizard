@@ -18,7 +18,7 @@ with open(keyfile, "w") as f:
     f.write("-----BEGIN OPENSSH PRIVATE KEY-----\n")
     for line in os.environ["SSH_KEY"].strip("'").split(":"):
         f.write(line + "\n")
-    f.write("-----END OPENSSH PRIVATE KEY-----")
+    f.write("-----END OPENSSH PRIVATE KEY-----\n")
 
 # Manipulate file permissions
 os.chmod(keyfile, 0o600)
