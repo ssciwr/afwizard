@@ -12,9 +12,13 @@ os.makedirs(sshpath)
 
 # Write key into correct file
 with open(keyfile, "w") as f:
-    # We are running into https://github.com/readthedocs/readthedocs.org/issues/8636. Therefore,
-    # we absolutely need to eliminate the single quotes.
-    f.write(os.environ["SSH_KEY"].strip("'"))
+    # We need to reconstruct the keyfile from our env variable, because
+    # https://github.com/readthedocs/readthedocs.org/issues/8636 makes our
+    # input absolutely unusable.
+    f.write("-----BEGIN OPENSSH PRIVATE KEY-----\n")
+    for line in os.environ["SSH_KEY"].strip("'").split(":"):
+        f.write(line + "\n")
+    f.write("-----END OPENSSH PRIVATE KEY-----")
 
 # Manipulate file permissions
 os.chmod(keyfile, 0o600)
