@@ -15,7 +15,7 @@ build:
       - mkdir -p ~/.ssh
       # We are running into https://github.com/readthedocs/readthedocs.org/issues/8636. Therefore,
       # we absolutely need to elimiate the single quotes.
-      - echo "${SSH_KEY//\'}" > ~/.ssh/id_ed25519
+      - echo "${SSH_KEY//\\'}" > ~/.ssh/id_ed25519
       - cat ~/.ssh/id_ed25519
       - chmod 600 ~/.ssh/id_ed25519
       - echo "ssc-jupyter.iwr.uni-heidelberg.de ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlEBwr7Qv0expAPxukZOmIUcVI1erVPya+GkzCd+iQK" >> ~/.ssh/known_hosts
