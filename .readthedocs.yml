@@ -16,6 +16,8 @@ build:
       - cat ~/.ssh/id_ed25519
       - scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz .
       - tar xzvf opals_2.5.0_linux64.tar.gz
+    pre_build:
+      - ./doc/rtd-prefetch-nakadake.py
 
 sphinx:
   builder: html
