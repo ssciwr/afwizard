@@ -1,5 +1,5 @@
 # This is the single source of truth
-__version__ = "1.0.0b9"
+__version__ = "1.0.0b10"
 
 # Ensure inclusion of the logging configuration
 import afwizard.logger
