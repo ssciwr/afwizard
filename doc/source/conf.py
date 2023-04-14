@@ -5,7 +5,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
-import subprocess
 import sys
 
 # -- Path setup --------------------------------------------------------------
