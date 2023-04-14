@@ -25,4 +25,4 @@ os.chmod(keyfile, 0o600)
 
 # Add our server to known hosts
 with open(knownhosts, "w") as f:
-    f.write("ssc-jupyter.iwr.uni-heidelberg.de ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlEBwr7Qv0expAPxukZOmIUcVI1erVPya+GkzCd+iQK")
+    f.write("ssc-jupyter.iwr.uni-heidelberg.de ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJlEBwr7Qv0expAPxukZOmIUcVI1erVPya+GkzCd+iQK\n")
