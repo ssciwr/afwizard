@@ -84,4 +84,4 @@ def setup(app):
 if os.environ.get("READTHEDOCS", None) == "True":
     os.environ[
         "PROJ_LIB"
-    ] = "/home/docs/checkouts/readthedocs.org/user_builds/afwizard/conda/nakadake-data/share/proj"
+    ] = "/home/docs/checkouts/readthedocs.org/user_builds/afwizard/conda/latest/share/proj"
