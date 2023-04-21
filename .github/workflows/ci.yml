@@ -97,23 +97,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Cache conda
-      uses: actions/cache@v2
-      env:
-        # Increase this value to reset cache even if environment.yml has not changed
-        CACHE_NUMBER: 0
-      with:
-        path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
-
     - name: Create afwizard conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
         auto-update-conda: true
         auto-activate-base: false
-        activate-environment: afwizard
+        activate-environment: afwizard-dev
         environment-file: environment.yml
-        use-only-tar-bz2: true
 
     - name: SSH setup
       uses: webfactory/ssh-agent@v0.5.3
