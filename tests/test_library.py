@@ -29,7 +29,7 @@ def test_meta_only_add(monkeypatch, tmp_path):
     # This should be recognized although it has 0 filters
     add_filter_library("lib")
     assert len(afwizard.library._filter_libraries) == 4
-    assert len(afwizard.library._filter_libraries[2].filters) == 0
+    assert len(afwizard.library._filter_libraries[3].filters) == 0
     assert afwizard.library._filter_libraries[3].name is not None
 
 
