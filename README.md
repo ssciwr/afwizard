@@ -53,7 +53,7 @@ Having a [local installation of Conda](https://conda.io/projects/conda/en/latest
 ```
 conda create -n afwizard
 conda activate afwizard
-conda install -c conda-forge/label/afwizard_dev -c conda-forge -c conda-forge/label/ipywidgets_rc -c conda-forge/label/jupyterlab_widgets_rc -c conda-forge/label/widgetsnbextension_rc afwizard
+conda install -c conda-forge afwizard
 ```
 
 You can start the JupyterLab frontend by doing:
