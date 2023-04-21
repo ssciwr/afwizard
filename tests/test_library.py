@@ -13,7 +13,7 @@ def test_noop_add(monkeypatch, tmp_path):
 
     # Without a filter or metadata, this should be no-op
     add_filter_library(os.getcwd(), name=None)
-    assert len(afwizard.library._filter_libraries) == 2
+    assert len(afwizard.library._filter_libraries) == 3
 
 
 def test_meta_only_add(monkeypatch, tmp_path):
@@ -28,9 +28,9 @@ def test_meta_only_add(monkeypatch, tmp_path):
 
     # This should be recognized although it has 0 filters
     add_filter_library("lib")
-    assert len(afwizard.library._filter_libraries) == 3
-    assert len(afwizard.library._filter_libraries[2].filters) == 0
-    assert afwizard.library._filter_libraries[2].name is not None
+    assert len(afwizard.library._filter_libraries) == 4
+    assert len(afwizard.library._filter_libraries[3].filters) == 0
+    assert afwizard.library._filter_libraries[3].name is not None
 
 
 def test_filter_only_add(monkeypatch, tmp_path):
@@ -44,8 +44,8 @@ def test_filter_only_add(monkeypatch, tmp_path):
 
     # This should be recognized although it has 0 filters
     add_filter_library(os.path.join(os.getcwd(), "lib"))
-    assert len(afwizard.library._filter_libraries) == 3
-    assert len(afwizard.library._filter_libraries[2].filters) == 1
+    assert len(afwizard.library._filter_libraries) == 4
+    assert len(afwizard.library._filter_libraries[3].filters) == 1
 
 
 def test_nonfilter_json(monkeypatch, tmp_path):

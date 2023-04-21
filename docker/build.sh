@@ -12,17 +12,20 @@
 #       The OPALS keyfile. This file will be present
 #       in the built image. Do only share the image with people that
 #       you are allowed to share the key with.
+# * LASTools.zip
+#       The ZIP archive with LASTools sources
+#
 
 # Exit on errors
 set -e
 
 # Build the open source Docker image
 docker build \
-    -t ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-free:latest \
+    -t ssc-jupyter.iwr.uni-heidelberg.de:5000/afwizard-free:latest \
     .
 
 # Build the image that includes OPALS
 docker build \
-    -t ssc-jupyter.iwr.uni-heidelberg.de:5000/filter-library-proprietary:latest \
+    -t ssc-jupyter.iwr.uni-heidelberg.de:5000/afwizard-proprietary:latest \
     --file ./docker/proprietary.dockerfile \
     .

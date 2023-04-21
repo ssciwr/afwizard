@@ -5,7 +5,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
-import subprocess
 import sys
 
 # -- Path setup --------------------------------------------------------------
@@ -14,14 +13,6 @@ import sys
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath("../.."))
-
-# Install the afwizard package - this is a horrible but necessary to work around
-# a Conda/Pip compatibility issue on RTD: We can only provide either a conda env
-# OR a pip requirements file. From the pip section of the env file, we cannot
-# specify the --no-deps flag, but without this the pip install of afwizard
-# corrupts the conda environment. See e.g. https://github.com/conda/conda/issues/6805
-if os.environ.get("READTHEDOCS", None) == "True":
-    subprocess.run([sys.executable, "-m", "pip", "install", "--no-deps", "../.."])
 
 import afwizard
 
