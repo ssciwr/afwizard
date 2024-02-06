@@ -83,6 +83,6 @@ def setup(app):
 # think it is a horrible situation and definitely a bug:
 # https://github.com/conda-forge/geopandas-feedstock/issues/63
 if os.environ.get("READTHEDOCS", None) == "True":
-    os.environ[
-        "PROJ_LIB"
-    ] = "/home/docs/checkouts/readthedocs.org/user_builds/afwizard/conda/latest/share/proj"
+    os.environ["PROJ_LIB"] = (
+        "/home/docs/checkouts/readthedocs.org/user_builds/afwizard/conda/latest/share/proj"
+    )
