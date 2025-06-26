@@ -15,7 +15,7 @@ on:
 jobs:
   linux-test:
     name: Testing on Linux
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
@@ -87,7 +87,7 @@ jobs:
 
   windows-test:
     name: Testing on Windows
-    runs-on: windows-2019
+    runs-on: windows-latest
     if: github.event_name == 'workflow_dispatch'
     defaults:
       run:
