@@ -61,9 +61,9 @@ jobs:
     - name: Install LAStools
       working-directory: ${{ runner.workspace }}
       run: |
-        wget https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_210628.zip
-        unzip LAStools_210628.zip
-        rm LAStools_210628.zip
+        wget https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_250207.zip
+        unzip LAStools_250207.zip
+        rm LAStools_250207.zip
         echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $GITHUB_ENV
 
     - name: Install Python package
@@ -136,7 +136,7 @@ jobs:
       working-directory: ${{ runner.workspace }}
       shell: powershell
       run: |
-        Invoke-WebRequest https://github.com/LAStools/LAStools.github.io/blob/master/download/LAStools_250207.zip -OutFile ${{ runner.workspace }}\LAStools.zip
+        Invoke-WebRequest https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_250207.zip -OutFile ${{ runner.workspace }}\LAStools.zip
         Expand-Archive -LiteralPath ${{ runner.workspace }}\LAStools.zip -DestinationPath ${{ runner.workspace }}
         echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $env:GITHUB_ENV
 
