@@ -126,8 +126,10 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
                 stderr=subprocess.STDOUT,
             )
 
-        if result.returncode != 0:
+        if result.returncode != 0 and not "done with " in result.stdout.decode():
             raise AFwizardError(f"LASTools error: {result.stdout.decode()}")
+        elif result.returncode != 0:
+            logger.warning(f"LASTools warning: {result.stdout.decode()}")
 
         return DataSet(
             filename=outfile,
