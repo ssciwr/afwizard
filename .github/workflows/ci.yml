@@ -15,17 +15,17 @@ on:
 jobs:
   linux-test:
     name: Testing on Linux
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
 
     - name: Create afwizard conda environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         auto-activate-base: false
@@ -33,7 +33,7 @@ jobs:
         environment-file: environment.yml
 
     - name: SSH setup
-      uses: webfactory/ssh-agent@v0.5.3
+      uses: webfactory/ssh-agent@v0.9.1
       with:
         ssh-private-key: |
           ${{ secrets.SSH_KEY }}
@@ -79,7 +79,7 @@ jobs:
         python -m pytest --cov=./afwizard --cov-report=xml
 
     - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: false
         files: ./coverage.xml
@@ -87,7 +87,7 @@ jobs:
 
   windows-test:
     name: Testing on Windows
-    runs-on: windows-2019
+    runs-on: windows-latest
     if: github.event_name == 'workflow_dispatch'
     defaults:
       run:
@@ -95,10 +95,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
 
     - name: Create afwizard conda environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         auto-activate-base: false
@@ -106,7 +106,7 @@ jobs:
         environment-file: environment.yml
 
     - name: SSH setup
-      uses: webfactory/ssh-agent@v0.5.3
+      uses: webfactory/ssh-agent@v0.9.1
       with:
         ssh-private-key: |
           ${{ secrets.SSH_KEY }}
