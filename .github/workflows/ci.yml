@@ -51,12 +51,15 @@ jobs:
       run: |
         python -m pip install -r requirements-dev.txt
 
-    - name: Install OPALS
-      working-directory: ${{ runner.workspace }}
-      run: |
-        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz ${{ runner.workspace }}
-        tar xzvf ${{ runner.workspace }}/opals_2.5.0_linux64.tar.gz
-        echo "OPALS_DIR=${{ runner.workspace }}/opals_2.5.0" >> $GITHUB_ENV
+    # OPALS does not provide an installation that runs on reasonably new Linux, because
+    # their dependency on outdated OpenSSL. Not wanting to support this right now.
+    #
+    # - name: Install OPALS
+    #   working-directory: ${{ runner.workspace }}
+    #   run: |
+    #     scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz ${{ runner.workspace }}
+    #     tar xzvf ${{ runner.workspace }}/opals_2.5.0_linux64.tar.gz
+    #     echo "OPALS_DIR=${{ runner.workspace }}/opals_2.5.0" >> $GITHUB_ENV
 
     - name: Install LAStools
       working-directory: ${{ runner.workspace }}
