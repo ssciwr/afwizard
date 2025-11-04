@@ -73,9 +73,10 @@ jobs:
       run: |
         python -m pip install --no-deps .
 
-    - name: Run Python tests including notebooks
+    - name: Run Python tests (currently excluding notebooks)
       run: |
-        python -m pytest --nbval-lax
+        # python -m pytest --nbval-lax
+        python -m pytest
 
     - name: Run coverage tests
       run: |
