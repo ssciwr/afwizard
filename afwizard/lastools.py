@@ -116,18 +116,35 @@ class LASToolsFilter(Filter, identifier="lastools", backend=True):
         args.extend(["-i", dataset.filename, "-o", outfile])
 
         # Call the executable
-        with within_temporary_workspace():
-            logger.info(
-                f"Executing LASTools command line '{' '.join(executable + args)}'"
-            )
-            result = subprocess.run(
-                executable + args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
+        def _call(demo=False):
+            demo_args = []
+            if demo:
+                demo_args.append("-demo")
 
-        if result.returncode != 0:
-            raise AFwizardError(f"LASTools error: {result.stdout.decode()}")
+            with within_temporary_workspace():
+                logger.info(
+                    f"Executing LASTools command line '{' '.join(executable + args)}'"
+                )
+                result = subprocess.run(
+                    executable + args + demo_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                )
+
+                if (
+                    result.returncode != 0
+                    and not "Please note that LAStools is not" in result.stdout.decode()
+                ):
+                    if demo:
+                        raise AFwizardError(f"LASTools error: {result.stdout.decode()}")
+                    else:
+                        return _call(demo=True)
+                elif result.returncode != 0:
+                    logger.warning(f"LASTools warning: {result.stdout.decode()}")
+
+                return result
+
+        result = _call()
 
         return DataSet(
             filename=outfile,

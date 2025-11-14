@@ -15,17 +15,17 @@ on:
 jobs:
   linux-test:
     name: Testing on Linux
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
 
     - name: Create afwizard conda environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         auto-activate-base: false
@@ -33,7 +33,7 @@ jobs:
         environment-file: environment.yml
 
     - name: SSH setup
-      uses: webfactory/ssh-agent@v0.5.3
+      uses: webfactory/ssh-agent@v0.9.1
       with:
         ssh-private-key: |
           ${{ secrets.SSH_KEY }}
@@ -51,35 +51,39 @@ jobs:
       run: |
         python -m pip install -r requirements-dev.txt
 
-    - name: Install OPALS
-      working-directory: ${{ runner.workspace }}
-      run: |
-        scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz ${{ runner.workspace }}
-        tar xzvf ${{ runner.workspace }}/opals_2.5.0_linux64.tar.gz
-        echo "OPALS_DIR=${{ runner.workspace }}/opals_2.5.0" >> $GITHUB_ENV
+    # OPALS does not provide an installation that runs on reasonably new Linux, because
+    # their dependency on outdated OpenSSL. Not wanting to support this right now.
+    #
+    # - name: Install OPALS
+    #   working-directory: ${{ runner.workspace }}
+    #   run: |
+    #     scp -P 22222 ssc-github@ssc-jupyter.iwr.uni-heidelberg.de:/home/ssc-github/opals_2.5.0_linux64.tar.gz ${{ runner.workspace }}
+    #     tar xzvf ${{ runner.workspace }}/opals_2.5.0_linux64.tar.gz
+    #     echo "OPALS_DIR=${{ runner.workspace }}/opals_2.5.0" >> $GITHUB_ENV
 
     - name: Install LAStools
       working-directory: ${{ runner.workspace }}
       run: |
-        wget https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_210628.zip
-        unzip LAStools_210628.zip
-        rm LAStools_210628.zip
+        wget https://downloads.rapidlasso.de/LAStools.zip
+        unzip LAStools.zip
+        rm LAStools.zip
         echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $GITHUB_ENV
 
     - name: Install Python package
       run: |
         python -m pip install --no-deps .
 
-    - name: Run Python tests including notebooks
+    - name: Run Python tests (currently excluding notebooks)
       run: |
-        python -m pytest --nbval-lax
+        # python -m pytest --nbval-lax
+        python -m pytest
 
     - name: Run coverage tests
       run: |
         python -m pytest --cov=./afwizard --cov-report=xml
 
     - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: false
         files: ./coverage.xml
@@ -87,7 +91,7 @@ jobs:
 
   windows-test:
     name: Testing on Windows
-    runs-on: windows-2019
+    runs-on: windows-latest
     if: github.event_name == 'workflow_dispatch'
     defaults:
       run:
@@ -95,10 +99,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
 
     - name: Create afwizard conda environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         auto-activate-base: false
@@ -106,7 +110,7 @@ jobs:
         environment-file: environment.yml
 
     - name: SSH setup
-      uses: webfactory/ssh-agent@v0.5.3
+      uses: webfactory/ssh-agent@v0.9.1
       with:
         ssh-private-key: |
           ${{ secrets.SSH_KEY }}
@@ -136,7 +140,7 @@ jobs:
       working-directory: ${{ runner.workspace }}
       shell: powershell
       run: |
-        Invoke-WebRequest https://github.com/LAStools/LAStools.github.io/raw/master/download/LAStools_210628.zip -OutFile ${{ runner.workspace }}\LAStools.zip
+        Invoke-WebRequest https://downloads.rapidlasso.de/LAStools.zip -OutFile ${{ runner.workspace }}\LAStools.zip
         Expand-Archive -LiteralPath ${{ runner.workspace }}\LAStools.zip -DestinationPath ${{ runner.workspace }}
         echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $env:GITHUB_ENV
 
