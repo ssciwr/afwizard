@@ -7,7 +7,6 @@ import os
 import pyrsistent
 import pytest
 
-
 # The list of implemented modules
 _availableOpalsModules = [
     "RobFilter",

@@ -1,6 +1,5 @@
 from afwizard.utils import AFwizardError
 
-
 # Define the current major version of the filter data model defined
 # by AFwizard. This number should be increased whenever there
 # is a *non-backwards compatible* change in the data model. It invalidates

@@ -3,7 +3,6 @@ from afwizard.pdal import PDALFilter
 
 import pytest
 
-
 # A list of simple no-op filters for test parametrization
 filters = [PDALFilter(type="filters.smrf")]
 pipelines = [filters[0] + filters[0], filters[0].as_pipeline()]

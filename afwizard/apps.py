@@ -33,7 +33,6 @@ import pytools
 import wrapt
 import functools
 
-
 fullwidth = ipywidgets.Layout(width="100%")
 
 

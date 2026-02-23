@@ -1,6 +1,5 @@
 from afwizard.utils import AFwizardError, is_iterable
 
-
 # Mapping from human-readable name to class codes
 _name_to_class = {
     "unclassified": (0, 1),

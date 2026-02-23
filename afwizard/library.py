@@ -11,7 +11,6 @@ import jsonschema
 import os
 import pyrsistent
 
-
 # Global storage for the list of directories
 _filter_libraries = []
 
