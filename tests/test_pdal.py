@@ -6,7 +6,6 @@ import os
 import pyrsistent
 import pytest
 
-
 _pdal_filter_list = [
     "filters.csf",
     "filters.elm",

@@ -3,7 +3,6 @@ from afwizard.widgets import *
 import pyrsistent
 import pytest
 
-
 _example_schema = [
     {
         "type": "object",
