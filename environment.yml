@@ -17,6 +17,7 @@ dependencies:
   - jupyter-resource-usage
   - jupyterlab
   - pdal
+  - pip
   - pooch
   - pyproj
   - pyrsistent

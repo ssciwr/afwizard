@@ -328,6 +328,14 @@ class BatchDataWidgetForm(WidgetFormWithLabels):
 
     def _construct_anyof(self, schema, label=None, key="anyOf"):
         original = super()._construct_anyof(schema, label, key)
+
+        # ipywidgets-jsonschema collapses an anyOf/allOf containing a single
+        # schema and therefore does not create a selector. In that case the
+        # recursively constructed element already has all batch-data handlers
+        # attached, so there is nothing left to wrap here.
+        if len(schema[key]) == 1:
+            return original
+
         selector = original.widgets[0].children[-1].children[0]
 
         def _setter(_data):
