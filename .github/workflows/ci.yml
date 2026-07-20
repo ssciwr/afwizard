@@ -67,7 +67,7 @@ jobs:
         wget https://downloads.rapidlasso.de/LAStools.zip
         unzip LAStools.zip
         rm LAStools.zip
-        echo "LASTOOLS_DIR=${{ runner.workspace }}/LAStools" >> $GITHUB_ENV
+        echo "LASTOOLS_DIR=${{ runner.workspace }}" >> $GITHUB_ENV
 
     - name: Install Python package
       run: |
