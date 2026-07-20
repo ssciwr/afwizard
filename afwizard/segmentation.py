@@ -19,6 +19,20 @@ from pyproj import Transformer, crs
 class Segmentation(geojson.FeatureCollection):
     def __init__(self, *args, spatial_reference=None, **kwargs):
         self.spatial_reference = spatial_reference
+
+        # geojson < 3 accepted a complete FeatureCollection as the first
+        # argument. Newer versions expect only its ``features`` member.
+        # Segmentation has historically supported both forms, notably in
+        # ``load`` and in the public constructor, so normalize collections
+        # before delegating to geojson.
+        if args and isinstance(args[0], collections.abc.Mapping):
+            feature_collection = args[0]
+            if feature_collection.get("type") == "FeatureCollection":
+                args = (feature_collection.get("features", []), *args[1:])
+                for key, value in feature_collection.items():
+                    if key not in ("type", "features"):
+                        kwargs.setdefault(key, value)
+
         super().__init__(*args, **kwargs)
 
     @classmethod
