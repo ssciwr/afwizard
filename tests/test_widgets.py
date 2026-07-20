@@ -50,3 +50,11 @@ def test_batchdata_getset(schema):
     data2 = widget.batchdata
 
     assert pyrsistent.freeze(data) == pyrsistent.freeze(data2)
+
+
+def test_batchdata_single_anyof():
+    widget = BatchDataWidgetForm({"anyOf": [_example_schema[0]]})
+
+    widget.data = {"price": 1.5, "name": "This is a constant"}
+    assert widget.data == {"price": 1.5, "name": "This is a constant"}
+    assert widget.batchdata == []
